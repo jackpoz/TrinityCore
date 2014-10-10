@@ -12,14 +12,16 @@ using namespace VMAP;
 
 namespace VMapCLI
 {
-    public ref class VMap
+    public ref class VMap abstract sealed
     {
     public:
-        VMap();
-        ~VMap();
+        static void Initialize(String^ vmapsPath);
+        static void LoadTiles(float X, float Y, float Z, int mapID);
+        static float GetHeight(float X, float Y, float Z, int mapID);
 
     private:
         static IVMapManager* vmapManager;
+        static String^ vmapsFolderPath;
         static VMap()
         {
             vmapManager = new VMapManager2();

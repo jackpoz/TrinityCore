@@ -2,11 +2,20 @@
 
 namespace VMapCLI
 {
-    VMap::VMap()
+    void VMap::Initialize(String^ vmapsPath)
     {
+        vmapsFolderPath = vmapsPath;
+        if (!vmapsFolderPath->EndsWith("\\"))
+            vmapsFolderPath += "\\";
     }
 
-    VMap::~VMap()
+    void VMap::LoadTiles(float X, float Y, float Z, int mapID)
     {
+        throw gcnew NotImplementedException();
+    }
+
+    float VMap::GetHeight(float X, float Y, float Z, int mapID)
+    {
+        throw gcnew NotImplementedException();
     }
 }
