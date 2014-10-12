@@ -14,7 +14,7 @@ namespace VMapCLI
 
     void VMap::LoadTile(int tileX, int tileY, int mapID)
     {
-        vmapManager->loadMap(marshal_as<std::string>(vmapsFolderPath).c_str(), tileX, tileY, mapID);
+        vmapManager->loadMap(marshal_as<std::string>(vmapsFolderPath).c_str(), mapID, tileX, tileY);
     }
 
     float VMap::GetHeight(float X, float Y, float Z, int mapID)
