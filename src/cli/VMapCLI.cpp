@@ -1,4 +1,7 @@
+#include <msclr\marshal_cppstd.h>
 #include "VMapCLI.h"
+
+using namespace msclr::interop;
 
 namespace VMapCLI
 {
@@ -9,13 +12,13 @@ namespace VMapCLI
             vmapsFolderPath += "\\";
     }
 
-    void VMap::LoadTiles(float X, float Y, float Z, int mapID)
+    void VMap::LoadTile(int tileX, int tileY, int mapID)
     {
-        throw gcnew NotImplementedException();
+        vmapManager->loadMap(marshal_as<std::string>(vmapsFolderPath).c_str(), tileX, tileY, mapID);
     }
 
     float VMap::GetHeight(float X, float Y, float Z, int mapID)
     {
-        throw gcnew NotImplementedException();
+        return vmapManager->getHeight(mapID, X, Y, Z + 2.0f, DEFAULT_HEIGHT_SEARCH);
     }
 }

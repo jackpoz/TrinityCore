@@ -1,6 +1,9 @@
 #include "DetourCLI.h"
+#include "VMapCLI.h"
 #include "SharedDefines.h"
 #include <memory>
+
+using namespace VMapCLI;
 
 namespace DetourCLI
 {
@@ -76,9 +79,13 @@ namespace DetourCLI
         for (int index = 0; index < pointCount; index++)
         {
             // Y,Z,X -> X,Y,Z
-            path->Add(gcnew Point(pathPoints[2 + index * VERTEX_SIZE],
-                                  pathPoints[0 + index * VERTEX_SIZE],
-                                  pathPoints[1 + index * VERTEX_SIZE]));
+            Point^ point = gcnew Point(pathPoints[2 + index * VERTEX_SIZE],
+                                       pathPoints[0 + index * VERTEX_SIZE],
+                                       pathPoints[1 + index * VERTEX_SIZE]);
+
+            point->Z = VMap::GetHeight(point->X, point->Y, point->Z, mapID);
+           
+            path->Add(point);
         }
 
         return true;
@@ -96,6 +103,8 @@ namespace DetourCLI
         {
             for (int col = -1; col <= 1; col++)
             {
+                VMap::LoadTile(tcX, tcY, mapID);
+
                 if (navMesh->getTileRefAt(X + row, Y + col, 0) != 0)
                     continue;
 

@@ -15,13 +15,27 @@ namespace VMapCLI
     public ref class VMap abstract sealed
     {
     public:
+        static const int DEFAULT_HEIGHT_SEARCH = 50.0f;
+
         static void Initialize(String^ vmapsPath);
-        static void LoadTiles(float X, float Y, float Z, int mapID);
+        static void LoadTile(int tileX, int tileY, int mapID);
         static float GetHeight(float X, float Y, float Z, int mapID);
 
     private:
         static IVMapManager* vmapManager;
-        static String^ vmapsFolderPath;
+        static property String^ vmapsFolderPath
+        {
+            String^ get()
+            {
+                return _vmapsFolderPath;
+            }
+            void set(String^ value)
+            {
+                _vmapsFolderPath = value;
+            }
+        }
+        static String^ _vmapsFolderPath;
+
         static VMap()
         {
             vmapManager = new VMapManager2();
