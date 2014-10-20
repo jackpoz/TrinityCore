@@ -76,16 +76,32 @@ namespace DetourCLI
 
         // clean the path up
         path = gcnew List<Point^>();
+
+        Point^ lastPoint = nullptr;
         for (int index = 0; index < pointCount; index++)
         {
             // Y,Z,X -> X,Y,Z
-            Point^ point = gcnew Point(pathPoints[2 + index * VERTEX_SIZE],
+            Point^ currentPoint = gcnew Point(pathPoints[2 + index * VERTEX_SIZE],
                                        pathPoints[0 + index * VERTEX_SIZE],
                                        pathPoints[1 + index * VERTEX_SIZE]);
 
-            point->Z = Map::GetHeight(point->X, point->Y, point->Z, mapID);
-           
-            path->Add(point);
+            if (lastPoint != nullptr)
+            {
+                Point^ distance = currentPoint - lastPoint;
+                Point^ direction = distance->Direction;
+                int steps = Math::Floor(distance->Length / SMOOTH_PATH_STEP_SIZE);
+                for (int step = 0; step < steps; step++)
+                {
+                    Point^ stepPoint = lastPoint + direction * SMOOTH_PATH_STEP_SIZE;
+                    stepPoint->Z = Map::GetHeight(stepPoint->X, stepPoint->Y, stepPoint->Z, mapID);
+                    path->Add(stepPoint);
+                }
+            }
+
+            currentPoint->Z = Map::GetHeight(currentPoint->X, currentPoint->Y, currentPoint->Z, mapID);
+            path->Add(currentPoint);
+
+            lastPoint = currentPoint;
         }
 
         return true;
