@@ -19,6 +19,6 @@ namespace VMapCLI
 
     float VMap::GetHeight(float X, float Y, float Z, int mapID)
     {
-        return vmapManager->getHeight(mapID, X, Y, Z + 2.0f, DEFAULT_HEIGHT_SEARCH);
+        return vmapManager->getHeight(mapID, X, Y, Z + SAFE_Z_HIGHER_BIAS, DEFAULT_HEIGHT_SEARCH);
     }
 }

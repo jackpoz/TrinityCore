@@ -26,12 +26,16 @@ namespace MapCLI
 
     float Map::GetHeight(float X, float Y, float Z, int mapID)
     {
-        float mapHeight = GetGrid(X, Y)->getHeight(X, Y);
+        float mapHeight = VMAP_INVALID_HEIGHT_VALUE;
+        float gridHeight = GetGrid(X, Y)->getHeight(X, Y);
+        if (Z + VMapCLI::VMap::SAFE_Z_HIGHER_BIAS > gridHeight)
+            mapHeight = gridHeight;
+
         float vmapHeight = VMapCLI::VMap::GetHeight(X, Y, Z, mapID);
 
         float height = Z;
 
-        if (vmapHeight >INVALID_HEIGHT)
+        if (vmapHeight > INVALID_HEIGHT)
         {
             if (mapHeight > INVALID_HEIGHT)
             {

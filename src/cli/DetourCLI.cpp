@@ -74,6 +74,9 @@ namespace DetourCLI
         if (dtStatusFailed(navQuery->findStraightPath(start, end, m_polys, m_npolys, pathPoints, nullptr, nullptr, &pointCount, MAX_POINT_PATH_LENGTH)))
             return false;
 
+        if (pointCount < 2)
+            return false;
+
         // clean the path up
         path = gcnew List<Point^>();
 
@@ -88,13 +91,14 @@ namespace DetourCLI
             if (lastPoint != nullptr)
             {
                 Point^ distance = currentPoint - lastPoint;
-                Point^ direction = distance->Direction;
+                Point^ direction = distance->Direction * SMOOTH_PATH_STEP_SIZE;
                 int steps = Math::Floor(distance->Length / SMOOTH_PATH_STEP_SIZE);
                 for (int step = 0; step < steps; step++)
                 {
-                    Point^ stepPoint = lastPoint + direction * SMOOTH_PATH_STEP_SIZE;
+                    Point^ stepPoint = lastPoint + direction;
                     stepPoint->Z = Map::GetHeight(stepPoint->X, stepPoint->Y, stepPoint->Z, mapID);
                     path->Add(stepPoint);
+                    lastPoint = stepPoint;
                 }
             }
 

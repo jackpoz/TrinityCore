@@ -16,6 +16,7 @@ namespace VMapCLI
     {
     public:
         static const int DEFAULT_HEIGHT_SEARCH = 50.0f;
+        static const float SAFE_Z_HIGHER_BIAS = 2.0f;
 
         static void Initialize(String^ vmapsPath);
         static void LoadTile(int tileX, int tileY, int mapID);
