@@ -1,5 +1,6 @@
 #include "DetourCLI.h"
 #include "MapCLI.h"
+#include "Lock.h"
 #include "SharedDefines.h"
 #include <memory>
 
@@ -123,10 +124,16 @@ namespace DetourCLI
         {
             for (int col = -1; col <= 1; col++)
             {
-                Map::LoadTile(tcX, tcY, mapID);
+                if (navMesh->getTileRefAt(X + row, Y + col, 0) != 0)
+                    continue;
+
+                //Lock the navMesh then check again if there's the tile, otherwise load it
+                Lock lock(navMeshes[mapID]);
 
                 if (navMesh->getTileRefAt(X + row, Y + col, 0) != 0)
                     continue;
+
+                Map::LoadTile(tcX, tcY, mapID);
 
                 // swap col and row due to different coordinate systems
                 String^ tileFilePath = mmapsFolderPath + String::Format("{0:D3}{1:D2}{2:D2}.mmtile", mapID, tcX - col, tcY - row);
@@ -166,27 +173,33 @@ namespace DetourCLI
     {
         if (navMeshes[mapID] == nullptr)
         {
-            String^ mmapFilePath = mmapsFolderPath + String::Format("{0:D3}.mmap", mapID);
-            if (!File::Exists(mmapFilePath))
-                return nullptr;
-            array<unsigned char>^ mmapData = File::ReadAllBytes(mmapFilePath);
-            if (mmapData->Length < sizeof(dtNavMeshParams))
-                return nullptr;
+            // Try with double-check lock mechanism. If it throws race conditions then we'll move to R/W locks
+            Lock lock((Array^)navMeshes);
 
-            dtNavMeshParams params;
-            pin_ptr<unsigned char> mmapDataPinned = &mmapData[0];
-            memcpy(&params, mmapDataPinned, sizeof(dtNavMeshParams));
-
-            dtNavMesh* mesh = dtAllocNavMesh();
-            if (dtStatusFailed(mesh->init(&params)))
+            if (navMeshes[mapID] == nullptr)
             {
-                dtFreeNavMesh(mesh);
-                return nullptr;
-            }
+                String^ mmapFilePath = mmapsFolderPath + String::Format("{0:D3}.mmap", mapID);
+                if (!File::Exists(mmapFilePath))
+                    return nullptr;
+                array<unsigned char>^ mmapData = File::ReadAllBytes(mmapFilePath);
+                if (mmapData->Length < sizeof(dtNavMeshParams))
+                    return nullptr;
 
-            navMeshes[mapID] = mesh;
+                dtNavMeshParams params;
+                pin_ptr<unsigned char> mmapDataPinned = &mmapData[0];
+                memcpy(&params, mmapDataPinned, sizeof(dtNavMeshParams));
+
+                dtNavMesh* mesh = dtAllocNavMesh();
+                if (dtStatusFailed(mesh->init(&params)))
+                {
+                    dtFreeNavMesh(mesh);
+                    return nullptr;
+                }
+
+                navMeshes[mapID] = gcnew IntPtr(mesh);
+            }
         }
 
-        return navMeshes[mapID];
+        return static_cast<dtNavMesh*>(navMeshes[mapID]->ToPointer());
     }
 }

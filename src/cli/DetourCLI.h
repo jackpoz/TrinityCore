@@ -78,10 +78,10 @@ namespace DetourCLI
         dtQueryFilter* filter;
 
         static String^ mmapsFolderPath;
-        static array<dtNavMesh*>^ navMeshes;
+        static array<IntPtr^>^ navMeshes;
         static Detour()
         {
-            navMeshes = gcnew array<dtNavMesh*>(MAX_MAP_ID);
+            navMeshes = gcnew array<IntPtr^>(MAX_MAP_ID);
         };
 	};
 }
