@@ -22,12 +22,15 @@
 #include "Define.h"
 #include "Appender.h"
 #include "Logger.h"
-#include <stdarg.h>
+#include "StringFormat.h"
+#include "Common.h"
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/strand.hpp>
 
+#include <stdarg.h>
 #include <unordered_map>
 #include <string>
+#include <memory>
 
 #define LOGGER_ROOT "root"
 
@@ -59,17 +62,35 @@ class Log
         bool ShouldLog(std::string const& type, LogLevel level) const;
         bool SetLogLevel(std::string const& name, char const* level, bool isLogger = true);
 
-        void outMessage(std::string const& f, LogLevel level, char const* str, ...) ATTR_PRINTF(4, 5);
+        template<typename Format, typename... Args>
+        inline void outMessage(std::string const& filter, LogLevel const level, Format&& fmt, Args&&... args)
+        {
+            write(Trinity::make_unique<LogMessage>(level, filter,
+                Trinity::StringFormat(std::forward<Format>(fmt), std::forward<Args>(args)...)));
+        }
 
-        void outCommand(uint32 account, const char * str, ...) ATTR_PRINTF(3, 4);
+        template<typename Format, typename... Args>
+        void outCommand(uint32 account, Format&& fmt, Args&&... args)
+        {
+            if (!ShouldLog("commands.gm", LOG_LEVEL_INFO))
+                return;
+
+            std::unique_ptr<LogMessage> msg =
+                Trinity::make_unique<LogMessage>(LOG_LEVEL_INFO, "commands.gm",
+                    Trinity::StringFormat(std::forward<Format>(fmt), std::forward<Args>(args)...));
+
+            msg->param1 = std::to_string(account);
+
+            write(std::move(msg));
+        }
+
         void outCharDump(char const* str, uint32 account_id, uint64 guid, char const* name);
 
         void SetRealmId(uint32 id);
 
     private:
         static std::string GetTimestampStr();
-        void vlog(std::string const& f, LogLevel level, char const* str, va_list argptr);
-        void write(LogMessage* msg) const;
+        void write(std::unique_ptr<LogMessage>&& msg) const;
 
         Logger const* GetLoggerByType(std::string const& type) const;
         Appender* GetAppenderByName(std::string const& name);
@@ -82,6 +103,7 @@ class Log
         AppenderMap appenders;
         LoggerMap loggers;
         uint8 AppenderId;
+        LogLevel lowestLogLevel;
 
         std::string m_logsDir;
         std::string m_logsTimestamp;
@@ -113,6 +135,10 @@ inline bool Log::ShouldLog(std::string const& type, LogLevel level) const
     // Speed up in cases where requesting "Type.sub1.sub2" but only configured
     // Logger "Type"
 
+    // Don't even look for a logger if the LogLevel is lower than lowest log levels across all loggers
+    if (level < lowestLogLevel)
+        return false;
+
     Logger const* logger = GetLoggerByType(type);
     if (!logger)
         return false;
@@ -121,23 +147,35 @@ inline bool Log::ShouldLog(std::string const& type, LogLevel level) const
     return logLevel != LOG_LEVEL_DISABLED && logLevel <= level;
 }
 
-inline void Log::outMessage(std::string const& filter, LogLevel level, const char * str, ...)
-{
-    va_list ap;
-    va_start(ap, str);
-
-    vlog(filter, level, str, ap);
-
-    va_end(ap);
-}
-
 #define sLog Log::instance()
 
+#define LOG_EXCEPTION_FREE(filterType__, level__, ...) \
+    { \
+        try \
+        { \
+            sLog->outMessage(filterType__, level__, __VA_ARGS__); \
+        } \
+        catch (std::exception& e) \
+        { \
+            sLog->outMessage("server", LOG_LEVEL_ERROR, "Wrong format occurred (%s) at %s:%u.", \
+                e.what(), __FILE__, __LINE__); \
+        } \
+    }
+
 #if PLATFORM != PLATFORM_WINDOWS
+void check_args(const char*, ...) ATTR_PRINTF(1, 2);
+void check_args(std::string const&, ...);
+
+// This will catch format errors on build time
 #define TC_LOG_MESSAGE_BODY(filterType__, level__, ...)                 \
         do {                                                            \
             if (sLog->ShouldLog(filterType__, level__))                 \
-                sLog->outMessage(filterType__, level__, __VA_ARGS__);   \
+            {                                                           \
+                if (false)                                              \
+                    check_args(__VA_ARGS__);                            \
+                                                                        \
+                LOG_EXCEPTION_FREE(filterType__, level__, __VA_ARGS__); \
+            }                                                           \
         } while (0)
 #else
 #define TC_LOG_MESSAGE_BODY(filterType__, level__, ...)                 \
@@ -145,7 +183,7 @@ inline void Log::outMessage(std::string const& filter, LogLevel level, const cha
         __pragma(warning(disable:4127))                                 \
         do {                                                            \
             if (sLog->ShouldLog(filterType__, level__))                 \
-                sLog->outMessage(filterType__, level__, __VA_ARGS__);   \
+                LOG_EXCEPTION_FREE(filterType__, level__, __VA_ARGS__); \
         } while (0)                                                     \
         __pragma(warning(pop))
 #endif

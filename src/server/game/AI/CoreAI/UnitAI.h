@@ -22,6 +22,7 @@
 #include "Define.h"
 #include "Unit.h"
 #include "Containers.h"
+#include "EventMap.h"
 #include <list>
 
 class Player;
@@ -128,7 +129,7 @@ class UnitAI
 
         virtual void InitializeAI() { if (!me->isDead()) Reset(); }
 
-        virtual void Reset() { };
+        virtual void Reset() { }
 
         // Called when unit is charmed
         virtual void OnCharmed(bool apply) = 0;

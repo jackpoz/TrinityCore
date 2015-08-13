@@ -23,6 +23,7 @@
 #include "ByteBuffer.h"
 
 #include <functional>
+#include <unordered_set>
 
 enum TypeID
 {
@@ -82,10 +83,12 @@ class ObjectGuid
     public:
         static ObjectGuid const Empty;
 
+        typedef uint32 LowType;
+
         ObjectGuid() : _guid(0) { }
         explicit ObjectGuid(uint64 guid) : _guid(guid) { }
-        ObjectGuid(HighGuid hi, uint32 entry, uint32 counter) : _guid(counter ? uint64(counter) | (uint64(entry) << 24) | (uint64(hi) << 48) : 0) { }
-        ObjectGuid(HighGuid hi, uint32 counter) : _guid(counter ? uint64(counter) | (uint64(hi) << 48) : 0) { }
+        ObjectGuid(HighGuid hi, uint32 entry, LowType counter) : _guid(counter ? uint64(counter) | (uint64(entry) << 24) | (uint64(hi) << 48) : 0) { }
+        ObjectGuid(HighGuid hi, LowType counter) : _guid(counter ? uint64(counter) | (uint64(hi) << 48) : 0) { }
 
         operator uint64() const { return _guid; }
         PackedGuidReader ReadAsPacked() { return PackedGuidReader(*this); }
@@ -98,11 +101,11 @@ class ObjectGuid
         uint64   GetRawValue() const { return _guid; }
         HighGuid GetHigh() const { return HighGuid((_guid >> 48) & 0x0000FFFF); }
         uint32   GetEntry() const { return HasEntry() ? uint32((_guid >> 24) & UI64LIT(0x0000000000FFFFFF)) : 0; }
-        uint32   GetCounter()  const
+        LowType  GetCounter()  const
         {
             return HasEntry()
-                   ? uint32(_guid & UI64LIT(0x0000000000FFFFFF))
-                   : uint32(_guid & UI64LIT(0x00000000FFFFFFFF));
+                   ? LowType(_guid & UI64LIT(0x0000000000FFFFFF))
+                   : LowType(_guid & UI64LIT(0x00000000FFFFFFFF));
         }
 
         static uint32 GetMaxCounter(HighGuid high)
@@ -202,6 +205,7 @@ typedef std::set<ObjectGuid> GuidSet;
 typedef std::list<ObjectGuid> GuidList;
 typedef std::deque<ObjectGuid> GuidDeque;
 typedef std::vector<ObjectGuid> GuidVector;
+typedef std::unordered_set<ObjectGuid> GuidUnorderedSet;
 
 // minimum buffer size for packed guid is 9 bytes
 #define PACKED_GUID_MIN_BUFFER_SIZE 9

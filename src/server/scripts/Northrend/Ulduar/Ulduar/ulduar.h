@@ -54,6 +54,7 @@ enum UlduarNPCs
     NPC_LEVIATHAN                           = 33113,
     NPC_SALVAGED_DEMOLISHER                 = 33109,
     NPC_SALVAGED_SIEGE_ENGINE               = 33060,
+    NPC_SALVAGED_CHOPPER                    = 33062,
     NPC_IGNIS                               = 33118,
     NPC_RAZORSCALE                          = 33186,
     NPC_RAZORSCALE_CONTROLLER               = 33233,
@@ -403,6 +404,7 @@ enum UlduarEvents
     EVENT_DESPAWN_ALGALON       = 1,
     EVENT_UPDATE_ALGALON_TIMER  = 2,
     ACTION_INIT_ALGALON         = 6,
+    EVENT_DESPAWN_LEVIATHAN_VEHICLES = 7
 };
 
 enum YoggSaronIllusions
@@ -423,11 +425,13 @@ class PlayerOrPetCheck
     public:
         bool operator()(WorldObject* object) const
         {
-            if (object->GetTypeId() != TYPEID_PLAYER)
-                if (!object->ToCreature()->IsPet())
-                    return true;
+            if (object->GetTypeId() == TYPEID_PLAYER)
+                return false;
 
-            return false;
+            if (Creature* creature = object->ToCreature())
+                return !creature->IsPet();
+
+            return true;
         }
 };
 

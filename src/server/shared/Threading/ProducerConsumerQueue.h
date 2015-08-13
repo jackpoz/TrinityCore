@@ -70,7 +70,10 @@ public:
     {
         std::unique_lock<std::mutex> lock(_queueLock);
 
-        _condition.wait(lock, [this]() { return !_queue.empty() || _shutdown; });
+        // we could be using .wait(lock, predicate) overload here but it is broken
+        // https://connect.microsoft.com/VisualStudio/feedback/details/1098841
+        while (_queue.empty() && !_shutdown)
+            _condition.wait(lock);
 
         if (_queue.empty() || _shutdown)
             return;
