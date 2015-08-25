@@ -2,7 +2,6 @@
 #include "MapCLI.h"
 #include "Lock.h"
 #include "MapDefines.h"
-#include "SharedDefines.h"
 #include <memory>
 
 using namespace MapCLI;
