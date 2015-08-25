@@ -1,6 +1,7 @@
 #include "DetourCLI.h"
 #include "MapCLI.h"
 #include "Lock.h"
+#include "MapDefines.h"
 #include "SharedDefines.h"
 #include <memory>
 
