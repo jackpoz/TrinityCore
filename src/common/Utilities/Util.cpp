@@ -30,6 +30,7 @@
   #include <arpa/inet.h>
 #endif
 
+/*
 static thread_local std::unique_ptr<SFMTRand> sfmtRand;
 
 static SFMTRand* GetRng()
@@ -72,6 +73,7 @@ double rand_chance()
 {
     return GetRng()->Random() * 100.0;
 }
+*/
 
 Tokenizer::Tokenizer(const std::string &src, const char sep, uint32 vectorReserve)
 {
