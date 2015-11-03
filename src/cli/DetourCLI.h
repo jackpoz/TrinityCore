@@ -36,6 +36,18 @@ namespace DetourCLI
             }
         }
 
+        property float DirectionOrientation
+        {
+            float get()
+            {
+                auto dir = Direction;
+                double orientation = Math::Atan2(dir->Y, dir->X);
+                if (orientation < 0)
+                    orientation += 2. * Math::PI;
+                return (float)orientation;
+            }
+        }
+
         static Point^ operator +(const Point^ a, const Point^ b)
         {
             return gcnew Point(a->X + b->X, a->Y + b->Y, a->Z + b->Z);
