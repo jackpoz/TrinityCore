@@ -1,11 +1,13 @@
 file(GLOB_RECURSE cli_sources *.cpp *.h)
 
 set(cli_includes
+  ${CMAKE_SOURCE_DIR}/src/cli
   ${CMAKE_BINARY_DIR}
   ${CMAKE_SOURCE_DIR}/dep/libmpq
   ${CMAKE_SOURCE_DIR}/dep/zlib
   ${CMAKE_SOURCE_DIR}/dep/bzip2
   ${CMAKE_SOURCE_DIR}/dep/g3dlite/include
+  ${CMAKE_SOURCE_DIR}/dep/cppformat
   ${CMAKE_SOURCE_DIR}/dep/recastnavigation/Recast
   ${CMAKE_SOURCE_DIR}/dep/recastnavigation/Recast/Include
   ${CMAKE_SOURCE_DIR}/dep/recastnavigation/Detour
@@ -15,9 +17,19 @@ set(cli_includes
   ${CMAKE_SOURCE_DIR}/src/common/Collision/Maps
   ${CMAKE_SOURCE_DIR}/src/common/Collision/Management
   ${CMAKE_SOURCE_DIR}/src/common/Collision/Models
+  ${CMAKE_SOURCE_DIR}/src/common/Debugging
+  ${CMAKE_SOURCE_DIR}/src/common/Logging
+  ${CMAKE_SOURCE_DIR}/src/common/Utilities
+  ${CMAKE_SOURCE_DIR}/src/server/database/Database
   ${CMAKE_SOURCE_DIR}/src/server/shared
+  ${CMAKE_SOURCE_DIR}/src/server/shared/DataStores
+  ${CMAKE_SOURCE_DIR}/src/server/shared/Packets
   ${CMAKE_SOURCE_DIR}/src/server/game/Conditions
+  ${CMAKE_SOURCE_DIR}/src/server/game/DataStores
+  ${CMAKE_SOURCE_DIR}/src/server/game/Entities/Object
+  ${CMAKE_SOURCE_DIR}/src/server/game/Maps
   ${CMAKE_SOURCE_DIR}/src/server/game/Miscellaneous
+  ${CMAKE_SOURCE_DIR}/src/server/game/Spells
 )
 
 if( WIN32 )
@@ -29,7 +41,9 @@ endif()
 
 include_directories(${cli_includes})
 
-add_library(cli SHARED ${cli_sources})
+add_library(cli SHARED ${cli_sources} 
+  ${CMAKE_SOURCE_DIR}/src/server/game/DataStores/DBCStores.cpp
+  ${CMAKE_SOURCE_DIR}/src/server/shared/DataStores/DBCFileLoader.cpp)
 
 target_link_libraries(cli
   common
@@ -43,7 +57,7 @@ target_link_libraries(cli
   ${Boost_SYSTEM_LIBRARY}
 )
 
-add_definitions( -D_UNICODE -DUNICODE )
+add_definitions( -D_UNICODE -DUNICODE -DLOCKEDQUEUE_H -D_DATABASEWORKERPOOL_H -D_WORLDDATABASE_H -DDATABASEENV_H -D_MUTEX_ -DTRANSPORTMGR_H)
 if(NOT CMAKE_CXX_FLAGS MATCHES "/clr")
    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /clr /EHa")
 endif()

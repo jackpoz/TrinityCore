@@ -136,6 +136,7 @@ namespace MapCLI
         ~GridMap();
         bool loadData(const char* filename);
         void unloadData();
+        bool getXYFromArea(uint16 areaId, uint32 gridX, uint32 gridY, float& x, float& y);
 
         inline float getHeight(float x, float y) const { return (this->*_gridGetHeight)(x, y); }
     };
@@ -152,6 +153,7 @@ namespace MapCLI
         static void Initialize(String^ mapsPath);
         static void LoadTile(int tileX, int tileY, int mapID);
         static float GetHeight(float X, float Y, float Z, int mapID);
+        static void GetXYZFromAreaId(uint32 areaId, int mapID, float& x, float& y, float& z);
 
     private:
         static String^ mapsFolderPath;
@@ -162,5 +164,58 @@ namespace MapCLI
         {
             GridMaps = gcnew array<GridMap*, 2>(MAX_NUMBER_OF_GRIDS, MAX_NUMBER_OF_GRIDS);
         };
+    };
+
+    public ref struct Point
+    {
+    public:
+        Point(float x, float y, float z) : X(x), Y(y), Z(z)
+        {}
+
+        property float Length
+        {
+            float get()
+            {
+                return (float)Math::Sqrt(X * X + Y * Y + Z * Z);
+            }
+        }
+
+        property Point^ Direction
+        {
+            Point^ get()
+            {
+                float length = Length;
+                return gcnew Point(X / length, Y / length, Z / length);
+            }
+        }
+
+        property float DirectionOrientation
+        {
+            float get()
+            {
+                auto dir = Direction;
+                double orientation = Math::Atan2(dir->Y, dir->X);
+                if (orientation < 0)
+                    orientation += 2. * Math::PI;
+                return (float)orientation;
+            }
+        }
+
+        static Point^ operator +(const Point^ a, const Point^ b)
+        {
+            return gcnew Point(a->X + b->X, a->Y + b->Y, a->Z + b->Z);
+        }
+
+        static Point^ operator -(const Point^ a, const Point^ b)
+        {
+            return gcnew Point(a->X - b->X, a->Y - b->Y, a->Z - b->Z);
+        }
+
+        static Point^ operator *(const Point^ point, const float scale)
+        {
+            return gcnew Point(point->X * scale, point->Y * scale, point->Z * scale);
+        }
+
+        float X, Y, Z;
     };
 }

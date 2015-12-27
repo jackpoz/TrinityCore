@@ -15,13 +15,16 @@ namespace MapCLI
 
     void Map::LoadTile(int tileX, int tileY, int mapID)
     {
-        String^ tileFilePath = mapsFolderPath + String::Format("{0:D3}{1:D2}{2:D2}.map", mapID, tileX, tileY);
-        // loading data
-        GridMap* gridMap = new GridMap();
-        gridMap->loadData(marshal_as<std::string>(tileFilePath).c_str());
-        GridMaps[tileX, tileY] = gridMap;
+        if (GridMaps[tileX, tileY] == nullptr)
+        {
+            String^ tileFilePath = mapsFolderPath + String::Format("{0:D3}{1:D2}{2:D2}.map", mapID, tileX, tileY);
+            // loading data
+            GridMap* gridMap = new GridMap();
+            gridMap->loadData(marshal_as<std::string>(tileFilePath).c_str());
+            GridMaps[tileX, tileY] = gridMap;
 
-        VMapCLI::VMap::LoadTile(tileX, tileY, mapID);
+            VMapCLI::VMap::LoadTile(tileX, tileY, mapID);
+        }
     }
 
     float Map::GetHeight(float X, float Y, float Z, int mapID)
@@ -57,6 +60,24 @@ namespace MapCLI
         return height;
     }
 
+    void Map::GetXYZFromAreaId(uint32 areaId, int mapID, float& x, float& y, float& z)
+    {
+        x = 0.f; y = 0.f; z = 0.f;
+        bool found = false;
+
+        for (uint32 gridX = 0; gridX < MAX_NUMBER_OF_GRIDS && !found; gridX++)
+        {
+            for (uint32 gridY = 0; gridY < MAX_NUMBER_OF_GRIDS && !found; gridY++)
+            {
+                LoadTile(gridX, gridY, mapID);
+                if (GridMaps[gridX, gridY]->getXYFromArea(areaId, gridX, gridY, x, y))
+                {
+                    found = true;
+                    z = GridMaps[gridX, gridY]->getHeight(x, y);
+                }
+            }
+        }
+    }
 
     GridMap* Map::GetGrid(float x, float y)
     {
@@ -65,6 +86,26 @@ namespace MapCLI
         int gy = (int)(CENTER_GRID_ID - y / SIZE_OF_GRIDS);                       //grid y
 
         return GridMaps[gx, gy];
+    }
+
+    bool GridMap::getXYFromArea(uint16 areaId, uint32 gridX, uint32 gridY, float& x, float& y)
+    {
+        if (!_areaMap)
+            return false;
+
+        for (uint32 index = 0; index < 16 * 16; index++)
+        {
+            if (_areaMap[index] == areaId)
+            {
+                int lx = (index / 16) + gridX * 16;
+                int ly = (index % 16) + gridY * 16;
+                x = SIZE_OF_GRIDS * (CENTER_GRID_ID - (lx + 0.5f) / 16.f);
+                y = SIZE_OF_GRIDS * (CENTER_GRID_ID - (ly + 0.5f) / 16.f);
+                return true;
+            }
+        }
+
+        return false;
     }
 
     #pragma region GridMap code from TC
