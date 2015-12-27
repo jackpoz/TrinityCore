@@ -24,9 +24,9 @@ namespace DBCStoresCLI
         }
     }
 
-    List<Point^>^ DBCStores::GetAchievementExploreLocations(float x, float y, float z, int mapID)
+    List<AchievementExploreLocation^>^ DBCStores::GetAchievementExploreLocations(float x, float y, float z, int mapID)
     {
-        auto locations = gcnew List<Point^>();
+        auto locations = gcnew List<AchievementExploreLocation^>();
         uint32 worldMapAreaId = 0;
 
         for (uint32 index = 0; index < sWorldMapAreaStore.GetNumRows(); index++)
@@ -106,7 +106,7 @@ namespace DBCStoresCLI
 
                 float x, y, z;
                 Map::GetXYZFromAreaId(areaTableEntry->exploreFlag, mapID, x, y, z);
-                locations->Add(gcnew Point(x, y, z));
+                locations->Add(gcnew AchievementExploreLocation(gcnew Point(x, y, z), achievementCriteria->ID));
             }
         }
 
