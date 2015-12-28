@@ -30,7 +30,7 @@ namespace MapCLI
     float Map::GetHeight(float X, float Y, float Z, int mapID)
     {
         float mapHeight = VMAP_INVALID_HEIGHT_VALUE;
-        float gridHeight = GetGrid(X, Y)->getHeight(X, Y);
+        float gridHeight = GetGrid(X, Y, mapID)->getHeight(X, Y);
         if (Z + VMapCLI::VMap::SAFE_Z_HIGHER_BIAS > gridHeight)
             mapHeight = gridHeight;
 
@@ -73,18 +73,19 @@ namespace MapCLI
                 if (GridMaps[gridX, gridY]->getXYFromArea(areaId, gridX, gridY, x, y))
                 {
                     found = true;
-                    z = GridMaps[gridX, gridY]->getHeight(x, y);
+                    z = GetHeight(x, y, -VMAP_INVALID_HEIGHT_VALUE, mapID);
                 }
             }
         }
     }
 
-    GridMap* Map::GetGrid(float x, float y)
+    GridMap* Map::GetGrid(float x, float y, int mapID)
     {
         // half opt method
         int gx = (int)(CENTER_GRID_ID - x / SIZE_OF_GRIDS);                       //grid x
         int gy = (int)(CENTER_GRID_ID - y / SIZE_OF_GRIDS);                       //grid y
 
+        LoadTile(gx, gy, mapID);
         return GridMaps[gx, gy];
     }
 

@@ -158,7 +158,7 @@ namespace MapCLI
     private:
         static String^ mapsFolderPath;
         static array<GridMap*, 2>^ GridMaps;
-        static GridMap* GetGrid(float X, float Y);
+        static GridMap* GetGrid(float X, float Y, int mapID);
 
         static Map()
         {
