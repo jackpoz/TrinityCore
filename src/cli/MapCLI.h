@@ -166,7 +166,7 @@ namespace MapCLI
         };
     };
 
-    public ref struct Point
+    public value struct Point
     {
     public:
         Point(float x, float y, float z) : X(x), Y(y), Z(z)
@@ -180,12 +180,12 @@ namespace MapCLI
             }
         }
 
-        property Point^ Direction
+        property Point Direction
         {
-            Point^ get()
+            Point get()
             {
                 float length = Length;
-                return gcnew Point(X / length, Y / length, Z / length);
+                return Point(X / length, Y / length, Z / length);
             }
         }
 
@@ -194,26 +194,36 @@ namespace MapCLI
             float get()
             {
                 auto dir = Direction;
-                double orientation = Math::Atan2(dir->Y, dir->X);
+                double orientation = Math::Atan2(dir.Y, dir.X);
                 if (orientation < 0)
                     orientation += 2. * Math::PI;
                 return (float)orientation;
             }
         }
 
-        static Point^ operator +(const Point^ a, const Point^ b)
+        static Point operator +(const Point a, const Point b)
         {
-            return gcnew Point(a->X + b->X, a->Y + b->Y, a->Z + b->Z);
+            return Point(a.X + b.X, a.Y + b.Y, a.Z + b.Z);
         }
 
-        static Point^ operator -(const Point^ a, const Point^ b)
+        static Point operator -(const Point a, const Point b)
         {
-            return gcnew Point(a->X - b->X, a->Y - b->Y, a->Z - b->Z);
+            return Point(a.X - b.X, a.Y - b.Y, a.Z - b.Z);
         }
 
-        static Point^ operator *(const Point^ point, const float scale)
+        static Point operator *(const Point point, const float scale)
         {
-            return gcnew Point(point->X * scale, point->Y * scale, point->Z * scale);
+            return Point(point.X * scale, point.Y * scale, point.Z * scale);
+        }
+
+        static bool operator ==(const Point a, const Point b)
+        {
+            return a.X == b.X && a.Y == b.Y && a.Z == b.Z;
+        }
+
+        String^ ToString() override
+        {
+            return "X: " + X + " | Y: " + Y + " | Z: " + Z;
         }
 
         float X, Y, Z;

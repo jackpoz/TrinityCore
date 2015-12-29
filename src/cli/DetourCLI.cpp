@@ -27,10 +27,10 @@ namespace DetourCLI
         delete filter;
     }
 
-    bool Detour::FindPath(float startX, float startY, float startZ, float endX, float endY, float endZ, int mapID, [Out] List<Point^>^% path)
+    PathType Detour::FindPath(float startX, float startY, float startZ, float endX, float endY, float endZ, int mapID, [Out] List<Point>^% path)
     {
         if (String::IsNullOrEmpty(mmapsFolderPath))
-            return false;
+            return PathType::None;
 
         // X,Y,z -> Y,Z,X
         float start[] = { startY, startZ, startX };
@@ -39,16 +39,16 @@ namespace DetourCLI
         // get the navMesh or initialize it
         dtNavMesh* navMesh = LoadNavMesh(mapID);
         if (navMesh == nullptr)
-            return false;
+            return PathType::None;
 
         navQuery->init(navMesh, 2048);
 
         // check if the tiles have been added already or load them
         if (!LoadTiles(start, mapID, navMesh))
-            return false;
+            return PathType::None;
 
         if (!LoadTiles(end, mapID, navMesh))
-            return false;
+            return PathType::None;
 
         // check if there is a path
         dtPolyRef startRef;
@@ -57,59 +57,63 @@ namespace DetourCLI
         float polyPickExt[] = { 3.0f, 5.0f, 3.0f };
 
         if (dtStatusFailed(navQuery->findNearestPoly(start, polyPickExt, filter, &startRef, 0)))
-            return false;
+            return PathType::None;
         if (dtStatusFailed(navQuery->findNearestPoly(end, polyPickExt, filter, &endRef, 0)))
-            return false;
+            return PathType::None;
         if (startRef == 0 || endRef == 0)
-            return false;
+            return PathType::None;
 
         dtPolyRef m_polys[MAX_PATH_LENGTH];
         int m_npolys;
         if (dtStatusFailed(navQuery->findPath(startRef, endRef, start, end, filter, m_polys, &m_npolys, MAX_PATH_LENGTH)))
-            return false;
+            return PathType::None;
         if (m_npolys == 0)
-            return false;
+            return PathType::None;
 
         float pathPoints[MAX_POINT_PATH_LENGTH*VERTEX_SIZE];
         int pointCount;
-        if (dtStatusFailed(navQuery->findStraightPath(start, end, m_polys, m_npolys, pathPoints, nullptr, nullptr, &pointCount, MAX_POINT_PATH_LENGTH)))
-            return false;
+        dtStatus findPathResult = navQuery->findStraightPath(start, end, m_polys, m_npolys, pathPoints, nullptr, nullptr, &pointCount, MAX_POINT_PATH_LENGTH);
+        if (dtStatusFailed(findPathResult))
+            return PathType::None;
 
         if (pointCount < 2)
-            return false;
+            return PathType::None;
 
         // clean the path up
-        path = gcnew List<Point^>();
+        path = gcnew List<Point>();
 
         Point^ lastPoint = nullptr;
         for (int index = 0; index < pointCount; index++)
         {
             // Y,Z,X -> X,Y,Z
-            Point^ currentPoint = gcnew Point(pathPoints[2 + index * VERTEX_SIZE],
+            Point currentPoint = Point(pathPoints[2 + index * VERTEX_SIZE],
                                        pathPoints[0 + index * VERTEX_SIZE],
                                        pathPoints[1 + index * VERTEX_SIZE]);
 
             if (lastPoint != nullptr)
             {
-                Point^ distance = currentPoint - lastPoint;
-                Point^ direction = distance->Direction * SMOOTH_PATH_STEP_SIZE;
-                int steps = Math::Floor(distance->Length / SMOOTH_PATH_STEP_SIZE);
+                Point distance = currentPoint - *lastPoint;
+                Point direction = distance.Direction * SMOOTH_PATH_STEP_SIZE;
+                int steps = Math::Floor(distance.Length / SMOOTH_PATH_STEP_SIZE);
                 for (int step = 0; step < steps; step++)
                 {
-                    Point^ stepPoint = lastPoint + direction;
-                    stepPoint->Z = Map::GetHeight(stepPoint->X, stepPoint->Y, stepPoint->Z, mapID);
+                    Point stepPoint = *lastPoint + direction;
+                    stepPoint.Z = Map::GetHeight(stepPoint.X, stepPoint.Y, stepPoint.Z, mapID);
                     path->Add(stepPoint);
                     lastPoint = stepPoint;
                 }
             }
 
-            currentPoint->Z = Map::GetHeight(currentPoint->X, currentPoint->Y, currentPoint->Z, mapID);
+            currentPoint.Z = Map::GetHeight(currentPoint.X, currentPoint.Y, currentPoint.Z, mapID);
             path->Add(currentPoint);
 
             lastPoint = currentPoint;
         }
 
-        return true;
+        if (findPathResult & (DT_PARTIAL_RESULT | DT_BUFFER_TOO_SMALL))
+            return PathType::Partial;
+
+        return PathType::Complete;
     }
 
     bool Detour::LoadTiles(float position[3], int mapID, dtNavMesh* navMesh)

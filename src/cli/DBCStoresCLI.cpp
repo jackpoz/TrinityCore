@@ -106,7 +106,7 @@ namespace DBCStoresCLI
 
                 float x, y, z;
                 Map::GetXYZFromAreaId(areaTableEntry->exploreFlag, mapID, x, y, z);
-                locations->Add(gcnew AchievementExploreLocation(gcnew Point(x, y, z), achievementCriteria->ID));
+                locations->Add(gcnew AchievementExploreLocation(Point(x, y, z), achievementCriteria->ID));
             }
         }
 

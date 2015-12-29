@@ -16,16 +16,23 @@ using namespace MapCLI;
 
 namespace DetourCLI
 {
+    public enum class PathType
+    {
+        None,
+        Complete,
+        Partial
+    };
+
 	public ref class Detour
 	{
     public:
         static const int MAX_PATH_LENGTH = 74;
         static const int MAX_POINT_PATH_LENGTH = 74;
         static const int VERTEX_SIZE = 3;
-        static const float SMOOTH_PATH_STEP_SIZE = 4.0f;
+        static const float SMOOTH_PATH_STEP_SIZE = 3.0f;
         static const int MAX_MAP_ID = 724 + 1;
 
-        bool FindPath(float startX, float startY, float startZ, float endX, float endY, float endZ, int mapID, [Out] List<Point^>^% path);
+        PathType FindPath(float startX, float startY, float startZ, float endX, float endY, float endZ, int mapID, [Out] List<Point>^% path);
 
         Detour();
         ~Detour();

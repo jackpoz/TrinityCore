@@ -10,14 +10,14 @@ namespace DBCStoresCLI
     public ref class AchievementExploreLocation
     {
     public:
-        AchievementExploreLocation(Point^ location, uint32 criteriaID)
+        AchievementExploreLocation(Point location, uint32 criteriaID)
         {
             this->Location = location;
             this->CriteriaID = criteriaID;
         }
 
         uint32 CriteriaID;
-        Point^ Location;
+        Point Location;
     };
 
     public ref class DBCStores
