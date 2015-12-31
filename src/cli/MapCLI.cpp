@@ -13,18 +13,22 @@ namespace MapCLI
             mapsFolderPath += "\\";
     }
 
-    void Map::LoadTile(int tileX, int tileY, int mapID)
+    GridMap* Map::GetTile(int tileX, int tileY, int mapID)
     {
-        if (GridMaps[tileX, tileY] == nullptr)
+        auto gridMaps = GridMaps->GetOrAdd(mapID, gcnew Func<uint32, array<GridMap*, 2>^ >(CreateGridMap));
+
+        if (gridMaps[tileX, tileY] == nullptr)
         {
             String^ tileFilePath = mapsFolderPath + String::Format("{0:D3}{1:D2}{2:D2}.map", mapID, tileX, tileY);
             // loading data
             GridMap* gridMap = new GridMap();
             gridMap->loadData(marshal_as<std::string>(tileFilePath).c_str());
-            GridMaps[tileX, tileY] = gridMap;
+            gridMaps[tileX, tileY] = gridMap;
 
             VMapCLI::VMap::LoadTile(tileX, tileY, mapID);
         }
+
+        return gridMaps[tileX, tileY];
     }
 
     float Map::GetHeight(float X, float Y, float Z, int mapID)
@@ -69,8 +73,7 @@ namespace MapCLI
         {
             for (uint32 gridY = 0; gridY < MAX_NUMBER_OF_GRIDS && !found; gridY++)
             {
-                LoadTile(gridX, gridY, mapID);
-                if (GridMaps[gridX, gridY]->getXYFromArea(areaId, gridX, gridY, x, y))
+                if (GetTile(gridX, gridY, mapID)->getXYFromArea(areaId, gridX, gridY, x, y))
                 {
                     found = true;
                     z = GetHeight(x, y, -VMAP_INVALID_HEIGHT_VALUE, mapID);
@@ -85,8 +88,7 @@ namespace MapCLI
         int gx = (int)(CENTER_GRID_ID - x / SIZE_OF_GRIDS);                       //grid x
         int gy = (int)(CENTER_GRID_ID - y / SIZE_OF_GRIDS);                       //grid y
 
-        LoadTile(gx, gy, mapID);
-        return GridMaps[gx, gy];
+        return GetTile(gx, gy, mapID);
     }
 
     bool GridMap::getXYFromArea(uint16 areaId, uint32 gridX, uint32 gridY, float& x, float& y)

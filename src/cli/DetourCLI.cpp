@@ -137,7 +137,7 @@ namespace DetourCLI
                 if (navMesh->getTileRefAt(X + row, Y + col, 0) != 0)
                     continue;
 
-                Map::LoadTile(tcX, tcY, mapID);
+                Map::GetTile(tcX, tcY, mapID);
 
                 // swap col and row due to different coordinate systems
                 String^ tileFilePath = mmapsFolderPath + String::Format("{0:D3}{1:D2}{2:D2}.mmtile", mapID, tcX - col, tcY - row);

@@ -4,6 +4,7 @@
 
 using namespace System;
 using namespace System::IO;
+using namespace System::Collections::Concurrent;
 using namespace System::Collections::Generic;
 using namespace System::Runtime::InteropServices;
 
@@ -151,19 +152,24 @@ namespace MapCLI
     {
     public:
         static void Initialize(String^ mapsPath);
-        static void LoadTile(int tileX, int tileY, int mapID);
+        static GridMap* GetTile(int tileX, int tileY, int mapID);
         static float GetHeight(float X, float Y, float Z, int mapID);
         static void GetXYZFromAreaId(uint32 areaId, int mapID, float& x, float& y, float& z);
 
     private:
         static String^ mapsFolderPath;
-        static array<GridMap*, 2>^ GridMaps;
+        static ConcurrentDictionary<uint32, array<GridMap*, 2>^>^ GridMaps;
         static GridMap* GetGrid(float X, float Y, int mapID);
 
         static Map()
         {
-            GridMaps = gcnew array<GridMap*, 2>(MAX_NUMBER_OF_GRIDS, MAX_NUMBER_OF_GRIDS);
+            GridMaps = gcnew ConcurrentDictionary<uint32, array<GridMap*, 2>^>();
         };
+
+        static array<GridMap*, 2>^ CreateGridMap(uint32 mapID)
+        {
+            return gcnew array<GridMap*, 2>(MAX_NUMBER_OF_GRIDS, MAX_NUMBER_OF_GRIDS);
+        }
     };
 
     public value struct Point
