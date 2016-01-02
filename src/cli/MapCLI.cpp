@@ -1,6 +1,7 @@
 #include <msclr\marshal_cppstd.h>
 #include "MapCLI.h"
 #include "VMapCLI.h"
+#include "Lock.h"
 
 using namespace msclr::interop;
 
@@ -19,13 +20,17 @@ namespace MapCLI
 
         if (gridMaps[tileX, tileY] == nullptr)
         {
-            String^ tileFilePath = mapsFolderPath + String::Format("{0:D3}{1:D2}{2:D2}.map", mapID, tileX, tileY);
-            // loading data
-            GridMap* gridMap = new GridMap();
-            gridMap->loadData(marshal_as<std::string>(tileFilePath).c_str());
-            gridMaps[tileX, tileY] = gridMap;
-
-            VMapCLI::VMap::LoadTile(tileX, tileY, mapID);
+            auto lockObject = GridMapsLocks->GetOrAdd(mapID, gcnew Func<uint32, Object^>(CreateGridMapsLock));
+            Lock lock(lockObject);
+            if (gridMaps[tileX, tileY] == nullptr)
+            {
+                String^ tileFilePath = mapsFolderPath + String::Format("{0:D3}{1:D2}{2:D2}.map", mapID, tileX, tileY);
+                // loading data
+                GridMap* gridMap = new GridMap();
+                gridMap->loadData(marshal_as<std::string>(tileFilePath).c_str());
+                VMapCLI::VMap::LoadTile(tileX, tileY, mapID);
+                gridMaps[tileX, tileY] = gridMap;
+            }
         }
 
         return gridMaps[tileX, tileY];

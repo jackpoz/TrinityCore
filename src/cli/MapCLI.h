@@ -159,16 +159,23 @@ namespace MapCLI
     private:
         static String^ mapsFolderPath;
         static ConcurrentDictionary<uint32, array<GridMap*, 2>^>^ GridMaps;
+        static ConcurrentDictionary<uint32, Object^>^ GridMapsLocks;
         static GridMap* GetGrid(float X, float Y, int mapID);
 
         static Map()
         {
             GridMaps = gcnew ConcurrentDictionary<uint32, array<GridMap*, 2>^>();
+            GridMapsLocks = gcnew ConcurrentDictionary<uint32, Object^>();
         };
 
         static array<GridMap*, 2>^ CreateGridMap(uint32 mapID)
         {
             return gcnew array<GridMap*, 2>(MAX_NUMBER_OF_GRIDS, MAX_NUMBER_OF_GRIDS);
+        }
+
+        static Object^ CreateGridMapsLock(uint32 mapID)
+        {
+            return gcnew Object();
         }
     };
 
