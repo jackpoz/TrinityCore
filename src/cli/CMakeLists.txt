@@ -76,3 +76,5 @@ if( UNIX )
 elseif( WIN32 )
   install(TARGETS cli DESTINATION "${CMAKE_INSTALL_PREFIX}")
 endif()
+
+set_target_properties(cli PROPERTIES VS_DOTNET_TARGET_FRAMEWORK_VERSION "v4.6.1")
