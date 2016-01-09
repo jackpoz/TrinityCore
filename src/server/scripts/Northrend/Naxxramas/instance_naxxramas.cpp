@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2015 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -60,8 +60,6 @@ DoorData const doorData[] =
 
 MinionData const minionData[] =
 {
-    { NPC_FOLLOWER_WORSHIPPER,  BOSS_FAERLINA   },
-    { NPC_DK_UNDERSTUDY,        BOSS_RAZUVIOUS  },
     { NPC_SIR,                  BOSS_HORSEMEN   },
     { NPC_THANE,                BOSS_HORSEMEN   },
     { NPC_LADY,                 BOSS_HORSEMEN   },
@@ -126,6 +124,9 @@ class instance_naxxramas : public InstanceMapScript
                 minHorsemenDiedTime     = 0;
                 maxHorsemenDiedTime     = 0;
                 AbominationCount        = 0;
+                hadAnubRekhanGreet      = false;
+                hadFaerlinaGreet        = false;
+                hadThaddiusGreet        = false;
                 CurrentWingTaunt        = SAY_KELTHUZAD_FIRST_WING_TAUNT;
 
                 playerDied              = 0;
@@ -135,8 +136,14 @@ class instance_naxxramas : public InstanceMapScript
             {
                 switch (creature->GetEntry())
                 {
+                    case NPC_ANUBREKHAN:
+                        AnubRekhanGUID = creature->GetGUID();
+                        break;
                     case NPC_FAERLINA:
                         FaerlinaGUID = creature->GetGUID();
+                        break;
+                    case NPC_RAZUVIOUS:
+                        RazuviousGUID = creature->GetGUID();
                         break;
                     case NPC_THANE:
                         ThaneGUID = creature->GetGUID();
@@ -150,11 +157,11 @@ class instance_naxxramas : public InstanceMapScript
                     case NPC_SIR:
                         SirGUID = creature->GetGUID();
                         break;
-                    case NPC_THADDIUS:
-                        ThaddiusGUID = creature->GetGUID();
-                        break;
                     case NPC_HEIGAN:
                         HeiganGUID = creature->GetGUID();
+                        break;
+                    case NPC_THADDIUS:
+                        ThaddiusGUID = creature->GetGUID();
                         break;
                     case NPC_FEUGEN:
                         FeugenGUID = creature->GetGUID();
@@ -181,6 +188,19 @@ class instance_naxxramas : public InstanceMapScript
             void OnCreatureRemove(Creature* creature) override
             {
                 AddMinion(creature, false);
+            }
+
+            void ProcessEvent(WorldObject* /*source*/, uint32 eventId) override
+            {
+                switch (eventId)
+                {
+                    case EVENT_THADDIUS_BEGIN_RESET:
+                        if (GetBossState(BOSS_THADDIUS) == SPECIAL) // this is the initial spawn, we want a shorter spawn time
+                            events.ScheduleEvent(EVENT_THADDIUS_RESET, 5 * IN_MILLISECONDS);
+                        else
+                            events.ScheduleEvent(EVENT_THADDIUS_RESET, 30 * IN_MILLISECONDS);
+                        break;
+                }
             }
 
             void OnGameObjectCreate(GameObject* go) override
@@ -319,6 +339,17 @@ class instance_naxxramas : public InstanceMapScript
                     case DATA_ABOMINATION_KILLED:
                         AbominationCount = value;
                         break;
+                    case DATA_HAD_ANUBREKHAN_GREET:
+                        hadAnubRekhanGreet = (value == 1u);
+                        break;
+                    case DATA_HAD_FAERLINA_GREET:
+                        hadFaerlinaGreet = (value == 1u);
+                        break;
+                    case DATA_HAD_THADDIUS_GREET:
+                        hadThaddiusGreet = (value == 1u);
+                        break;
+                    default:
+                        break;
                 }
             }
 
@@ -328,6 +359,12 @@ class instance_naxxramas : public InstanceMapScript
                 {
                     case DATA_ABOMINATION_KILLED:
                         return AbominationCount;
+                    case DATA_HAD_ANUBREKHAN_GREET:
+                        return hadAnubRekhanGreet ? 1u : 0u;
+                    case DATA_HAD_FAERLINA_GREET:
+                        return hadFaerlinaGreet ? 1u : 0u;
+                    case DATA_HAD_THADDIUS_GREET:
+                        return hadThaddiusGreet ? 1u : 0u;
                     default:
                         break;
                 }
@@ -339,8 +376,12 @@ class instance_naxxramas : public InstanceMapScript
             {
                 switch (id)
                 {
+                    case DATA_ANUBREKHAN:
+                        return AnubRekhanGUID;
                     case DATA_FAERLINA:
                         return FaerlinaGUID;
+                    case DATA_RAZUVIOUS:
+                        return RazuviousGUID;
                     case DATA_THANE:
                         return ThaneGUID;
                     case DATA_LADY:
@@ -349,14 +390,14 @@ class instance_naxxramas : public InstanceMapScript
                         return BaronGUID;
                     case DATA_SIR:
                         return SirGUID;
-                    case DATA_THADDIUS:
-                        return ThaddiusGUID;
                     case DATA_HEIGAN:
                         return HeiganGUID;
                     case DATA_FEUGEN:
                         return FeugenGUID;
                     case DATA_STALAGG:
                         return StalaggGUID;
+                    case DATA_THADDIUS:
+                        return ThaddiusGUID;
                     case DATA_KELTHUZAD:
                         return KelthuzadGUID;
                     case DATA_KELTHUZAD_PORTAL01:
@@ -525,6 +566,11 @@ class instance_naxxramas : public InstanceMapScript
                                 kelthuzad->AI()->Talk(SAY_DIALOGUE_SAPPHIRON_KELTHUZAD4);
                             HandleGameObject(KelthuzadDoorGUID, true);
                             break;
+                        case EVENT_THADDIUS_RESET:
+                            if (GetBossState(BOSS_THADDIUS) != DONE)
+                                if (Creature* thaddius = instance->GetCreature(ThaddiusGUID))
+                                    thaddius->AI()->DoAction(-1);
+                            break;
                         default:
                             break;
                     }
@@ -599,6 +645,8 @@ class instance_naxxramas : public InstanceMapScript
 
         protected:
             /* The Arachnid Quarter */
+            // Anub'rekhan
+            ObjectGuid AnubRekhanGUID;
             // Grand Widow Faerlina
             ObjectGuid FaerlinaGUID;
 
@@ -608,6 +656,8 @@ class instance_naxxramas : public InstanceMapScript
             ObjectGuid HeiganGUID;
 
             /* The Military Quarter */
+            // Instructor Razuvious
+            ObjectGuid RazuviousGUID;
             // Gothik the Harvester
             ObjectGuid GothikGateGUID;
             // The Four Horsemen
@@ -635,6 +685,9 @@ class instance_naxxramas : public InstanceMapScript
             ObjectGuid KelthuzadDoorGUID;
             ObjectGuid LichKingGUID;
             uint8 AbominationCount;
+            bool hadAnubRekhanGreet;
+            bool hadFaerlinaGreet;
+            bool hadThaddiusGreet;
             uint8 CurrentWingTaunt;
 
             /* The Immortal / The Undying */

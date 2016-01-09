@@ -1,4 +1,4 @@
-# Copyright (C) 2008-2015 TrinityCore <http://www.trinitycore.org/>
+# Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
 #
 # This file is free software; as a special exception the author gives
 # unlimited permission to copy and/or distribute it, with or without
@@ -82,6 +82,8 @@ add_library(common STATIC
   ${common_STAT_SRCS}
   ${common_STAT_PCH_SRC}
 )
+
+add_dependencies(common revision_data.h)
 
 # Generate precompiled header
 if (USE_COREPCH)

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2015 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -81,6 +81,9 @@ int32 irand(int32 min, int32 max);
 
 /* Return a random number in the range min..max (inclusive). */
 uint32 urand(uint32 min, uint32 max);
+
+/* Return a random millisecond value between min and max seconds. Functionally equivalent to urand(min*IN_MILLISECONDS, max*IN_MILLISECONDS). */
+uint32 urandms(uint32 min, uint32 max);
 
 /* Return a random number in the range 0 .. UINT32_MAX. */
 uint32 rand32();

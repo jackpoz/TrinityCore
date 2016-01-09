@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2015 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -286,6 +286,7 @@ enum CharacterDatabaseStatements
     CHAR_DEL_GM_TICKET,
     CHAR_DEL_ALL_GM_TICKETS,
     CHAR_DEL_PLAYER_GM_TICKETS,
+    CHAR_UPD_PLAYER_GM_TICKETS_ON_CHAR_DELETION,
 
     CHAR_INS_GM_SURVEY,
     CHAR_INS_GM_SUBSURVEY,

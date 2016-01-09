@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2015 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -51,6 +51,13 @@ uint32 urand(uint32 min, uint32 max)
 {
     ASSERT(max >= min);
     return GetRng()->URandom(min, max);
+}
+
+uint32 urandms(uint32 min, uint32 max)
+{
+    ASSERT(max >= min);
+    ASSERT(INT_MAX/IN_MILLISECONDS >= max);
+    return GetRng()->URandom(min * IN_MILLISECONDS, max * IN_MILLISECONDS);
 }
 
 float frand(float min, float max)

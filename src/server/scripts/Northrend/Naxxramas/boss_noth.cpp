@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2015 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -155,7 +155,7 @@ public:
 
         void KilledUnit(Unit* victim) override
         {
-            if(victim->GetTypeId() == TYPEID_PLAYER)
+            if (victim->GetTypeId() == TYPEID_PLAYER)
                 Talk(SAY_SLAY);
         }
 
@@ -172,13 +172,13 @@ public:
             Talk(SAY_DEATH);
         }
 
-        void DamageTaken(Unit* /*who*/, uint32& damage) // prevent noth from somehow dying in the balcony phase
+        void DamageTaken(Unit* /*who*/, uint32& damage) override // prevent noth from somehow dying in the balcony phase
         {
             if (!events.IsInPhase(PHASE_BALCONY))
                 return;
             if (damage < me->GetHealth())
                 return;
-            
+
             me->SetHealth(1u);
             damage = 0u;
         }
@@ -226,7 +226,7 @@ public:
                     case EVENT_WARRIOR:
                         Talk(SAY_SUMMON);
                         Talk(EMOTE_SUMMON);
-                        
+
                         CastSummon(RAID_MODE(2, 3), 0, 0);
 
                         events.ScheduleEvent(EVENT_WARRIOR, 40 * IN_MILLISECONDS, 0, PHASE_GROUND);
@@ -291,7 +291,7 @@ public:
                         break;
                     case EVENT_GROUND:
                         ++balconyCount;
-                        
+
                         DoCastAOE(SPELL_TELEPORT_BACK);
                         Talk(EMOTE_TELEPORT_2);
 
@@ -308,7 +308,7 @@ public:
             {
                 /* workaround for movechase breaking after blinking
                    without this noth would just stand there unless his current target moves */
-                if (justBlinked && me->GetVictim() && !me->IsWithinMeleeRange(me->EnsureVictim())) 
+                if (justBlinked && me->GetVictim() && !me->IsWithinMeleeRange(me->EnsureVictim()))
                 {
                     me->GetMotionMaster()->Clear();
                     me->GetMotionMaster()->MoveChase(me->EnsureVictim());
@@ -321,7 +321,7 @@ public:
 
         private:
             uint32 balconyCount;
-            
+
             bool justBlinked;
 
             uint32 _SummonWarriorSpells[N_WARRIOR_SPELLS];

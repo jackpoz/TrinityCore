@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2015 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -308,7 +308,7 @@ bool ChatHandler::ExecuteCommandInTable(std::vector<ChatCommand> const& table, c
                     fullcmd.c_str(), player->GetName().c_str(), player->GetGUID().ToString().c_str(),
                     m_session->GetAccountId(), player->GetPositionX(), player->GetPositionY(),
                     player->GetPositionZ(), player->GetMapId(),
-                    player->GetMap() ? player->GetMap()->GetMapName() : "Unknown",
+                    player->FindMap() ? player->FindMap()->GetMapName() : "Unknown",
                     areaId, areaName.c_str(), zoneName.c_str(),
                     (player->GetSelectedUnit()) ? player->GetSelectedUnit()->GetName().c_str() : "",
                     guid.ToString().c_str());
@@ -1131,7 +1131,7 @@ void ChatHandler::extractOptFirstArg(char* args, char** arg1, char** arg2)
 
 char* ChatHandler::extractQuotedArg(char* args)
 {
-    if (!*args)
+    if (!args || !*args)
         return NULL;
 
     if (*args == '"')

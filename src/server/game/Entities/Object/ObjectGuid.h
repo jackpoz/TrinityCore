@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2015 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -21,10 +21,8 @@
 
 #include "Common.h"
 #include "ByteBuffer.h"
-
 #include <type_traits>
 #include <functional>
-#include <unordered_set>
 
 enum TypeID
 {

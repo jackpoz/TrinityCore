@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2015 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -175,7 +175,7 @@ namespace Trinity
                     if (creature->isElite())
                     {
                         // Elites in instances have a 2.75x XP bonus instead of the regular 2x world bonus.
-                        if (u->GetMap() && u->GetMap()->IsDungeon())
+                        if (u->GetMap()->IsDungeon())
                             xpMod *= 2.75f;
                         else
                             xpMod *= 2.0f;
