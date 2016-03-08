@@ -100,7 +100,7 @@ namespace DBCStoresCLI
                 if (!worldMapOverlay)
                     continue;
 
-                auto areaTableEntry = GetAreaEntryByAreaID(worldMapOverlay->areatableID[0]);
+                auto areaTableEntry = sAreaTableStore.LookupEntry(worldMapOverlay->areatableID[0]);
                 if (!areaTableEntry)
                     continue;
 

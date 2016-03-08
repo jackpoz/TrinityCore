@@ -19,7 +19,8 @@
 #include "Common.h"
 #include "Errors.h"
 #include "SFMT.h"
-#include <boost/thread/tss.hpp>
+/*#include <boost/thread/tss.hpp>
+
 
 static boost::thread_specific_ptr<SFMTRand> sfmtRand;
 
@@ -89,3 +90,4 @@ SFMTEngine& SFMTEngine::Instance()
     static SFMTEngine engine;
     return engine;
 }
+*/
