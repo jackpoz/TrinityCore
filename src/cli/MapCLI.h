@@ -46,6 +46,7 @@ namespace MapCLI
     #define MAP_HEIGHT_NO_HEIGHT    0x0001
     #define MAP_HEIGHT_AS_INT16     0x0002
     #define MAP_HEIGHT_AS_INT8      0x0004
+    #define MAP_HEIGHT_HAS_FLIGHT_BOUNDS    0x0008
 
     struct map_heightHeader
     {
@@ -100,6 +101,8 @@ namespace MapCLI
             uint16* m_uint16_V8;
             uint8* m_uint8_V8;
         };
+        int16* _maxHeight;
+        int16* _minHeight;
         // Height level data
         float _gridHeight;
         float _gridIntHeightMultiplier;

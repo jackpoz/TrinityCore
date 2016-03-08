@@ -118,7 +118,7 @@ namespace MapCLI
 
     #pragma region GridMap code from TC
     u_map_magic MapMagic = { { 'M', 'A', 'P', 'S' } };
-    u_map_magic MapVersionMagic = { { 'v', '1', '.', '3' } };
+    u_map_magic MapVersionMagic = { { 'v', '1', '.', '8' } };
     u_map_magic MapAreaMagic = { { 'A', 'R', 'E', 'A' } };
     u_map_magic MapHeightMagic = { { 'M', 'H', 'G', 'T' } };
     u_map_magic MapLiquidMagic = { { 'M', 'L', 'I', 'Q' } };
@@ -135,6 +135,8 @@ namespace MapCLI
         _gridIntHeightMultiplier = 0;
         m_V9 = NULL;
         m_V8 = NULL;
+        _maxHeight = nullptr;
+        _minHeight = nullptr;
         // Liquid data
         _liquidType = 0;
         _liquidOffX = 0;
@@ -202,12 +204,16 @@ namespace MapCLI
         delete[] _areaMap;
         delete[] m_V9;
         delete[] m_V8;
+        delete[] _maxHeight;
+        delete[] _minHeight;
         delete[] _liquidEntry;
         delete[] _liquidFlags;
         delete[] _liquidMap;
         _areaMap = NULL;
         m_V9 = NULL;
         m_V8 = NULL;
+        _maxHeight = nullptr;
+        _minHeight = nullptr;
         _liquidEntry = NULL;
         _liquidFlags = NULL;
         _liquidMap = NULL;
@@ -275,6 +281,15 @@ namespace MapCLI
         }
         else
             _gridGetHeight = &GridMap::getHeightFromFlat;
+
+        if (header.flags & MAP_HEIGHT_HAS_FLIGHT_BOUNDS)
+        {
+            _maxHeight = new int16[3 * 3];
+            _minHeight = new int16[3 * 3];
+            if (fread(_maxHeight, sizeof(int16), 3 * 3, in) != 3 * 3 ||
+                fread(_minHeight, sizeof(int16), 3 * 3, in) != 3 * 3)
+                return false;
+        }
         return true;
     }
 
