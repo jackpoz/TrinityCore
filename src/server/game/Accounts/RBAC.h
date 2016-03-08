@@ -670,8 +670,8 @@ enum RBACPermissions
     RBAC_PERM_COMMAND_WP_UNLOAD                              = 772,
     RBAC_PERM_COMMAND_WP_RELOAD                              = 773,
     RBAC_PERM_COMMAND_WP_SHOW                                = 774,
-    RBAC_PERM_COMMAND_MODIFY_CURRENCY                        = 775, // only 4.3.4
-    RBAC_PERM_COMMAND_DEBUG_PHASE                            = 776, // only 4.3.4
+    RBAC_PERM_COMMAND_MODIFY_CURRENCY                        = 775, // only 6.x
+    RBAC_PERM_COMMAND_DEBUG_PHASE                            = 776, // only 6.x
     RBAC_PERM_COMMAND_MAILBOX                                = 777,
     RBAC_PERM_COMMAND_AHBOT                                  = 778,
     RBAC_PERM_COMMAND_AHBOT_ITEMS                            = 779,
@@ -696,6 +696,7 @@ enum RBACPermissions
     RBAC_PERM_COMMAND_MODIFY_XP                              = 798,
     // 799 - 834 6.x only
     RBAC_PERM_COMMAND_DEBUG_LOADCELLS                        = 835,
+    RBAC_PERM_COMMAND_DEBUG_BOUNDARY                         = 836,
 
     // custom permissions 1000+
     RBAC_PERM_MAX
