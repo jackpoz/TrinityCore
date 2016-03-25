@@ -19,12 +19,14 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+#include "Define.h"
+
 #include <string>
 #include <list>
 #include <mutex>
 #include <boost/property_tree/ptree.hpp>
 
-class ConfigMgr
+class TC_COMMON_API ConfigMgr
 {
     ConfigMgr() { }
     ~ConfigMgr() { }
@@ -33,11 +35,7 @@ public:
     /// Method used only for loading main configuration files (authserver.conf and worldserver.conf)
     bool LoadInitial(std::string const& file, std::string& error);
 
-    static ConfigMgr* instance()
-    {
-        static ConfigMgr instance;
-        return &instance;
-    }
+    static ConfigMgr* instance();
 
     bool Reload(std::string& error);
 

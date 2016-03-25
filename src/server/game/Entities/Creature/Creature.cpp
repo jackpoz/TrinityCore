@@ -1357,8 +1357,8 @@ bool Creature::LoadCreatureFromDB(ObjectGuid::LowType spawnId, Map* map, bool ad
         m_deathState = DEAD;
         if (CanFly())
         {
-            float tz = map->GetHeight(GetPhaseMask(), data->posX, data->posY, data->posZ, false);
-            if (data->posZ - tz > 0.1f)
+            float tz = map->GetHeight(GetPhaseMask(), data->posX, data->posY, data->posZ, true, MAX_FALL_DISTANCE);
+            if (data->posZ - tz > 0.1f && Trinity::IsValidMapCoord(tz))
                 Relocate(data->posX, data->posY, tz);
         }
     }
@@ -2775,12 +2775,12 @@ bool Creature::FocusTarget(Spell const* focusSpell, WorldObject const* target)
         SetGuidValue(UNIT_FIELD_TARGET, newTarget);
         if (target)
             SetFacingToObject(target);
-        
+
         if ( // here we determine if the (relatively expensive) forced update is worth it, or whether we can afford to wait until the scheduled update tick
             ( // only require instant update for spells that actually have a visual
                 focusSpell->GetSpellInfo()->SpellVisual[0] ||
                 focusSpell->GetSpellInfo()->SpellVisual[1]
-            ) && ( 
+            ) && (
                 !focusSpell->GetCastTime() || // if the spell is instant cast
                 focusSpell->GetSpellInfo()->HasAttribute(SPELL_ATTR5_DONT_TURN_DURING_CAST) // client gets confused if we attempt to turn at the regularly scheduled update packet
             )
@@ -2804,14 +2804,16 @@ bool Creature::FocusTarget(Spell const* focusSpell, WorldObject const* target)
     }
 
     // tell the creature that it should reacquire its current target after the cast is done (this is handled in ::Attack)
-    MustReacquireTarget();
+    // player pets don't need to do this, as they automatically reacquire their target on focus release
+    if (!IsPet())
+        MustReacquireTarget();
 
     bool canTurnDuringCast = !focusSpell->GetSpellInfo()->HasAttribute(SPELL_ATTR5_DONT_TURN_DURING_CAST);
     // Face the target - we need to do this before the unit state is modified for no-turn spells
     if (target)
         SetInFront(target);
     else if (!canTurnDuringCast)
-        if(Unit* victim = GetVictim())
+        if (Unit* victim = GetVictim())
             SetInFront(victim); // ensure server-side orientation is correct at beginning of cast
 
     if (!canTurnDuringCast)
@@ -2854,13 +2856,16 @@ void Creature::ReleaseFocus(Spell const* focusSpell, bool withDelay)
     if (focusSpell && focusSpell != _focusSpell)
         return;
 
-    SetGuidValue(UNIT_FIELD_TARGET, ObjectGuid::Empty);
+    if (IsPet() && GetVictim()) // player pets do not use delay system
+        SetGuidValue(UNIT_FIELD_TARGET, EnsureVictim()->GetGUID());
+    else
+        SetGuidValue(UNIT_FIELD_TARGET, ObjectGuid::Empty);
 
     if (_focusSpell->GetSpellInfo()->HasAttribute(SPELL_ATTR5_DONT_TURN_DURING_CAST))
         ClearUnitState(UNIT_STATE_CANNOT_TURN);
 
     _focusSpell = nullptr;
-    _focusDelay = withDelay ? getMSTime() : 0; // don't allow re-target right away to prevent visual bugs
+    _focusDelay = (!IsPet() && withDelay) ? getMSTime() : 0; // don't allow re-target right away to prevent visual bugs
 }
 
 void Creature::StartPickPocketRefillTimer()
