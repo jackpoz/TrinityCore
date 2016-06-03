@@ -489,7 +489,7 @@ void SmartScript::ProcessAction(SmartScriptHolder& e, Unit* unit, uint32 var0, u
                             // unless target is outside spell range, out of mana, or LOS.
 
                             bool _allowMove = false;
-                            SpellInfo const* spellInfo = sSpellMgr->EnsureSpellInfo(e.action.cast.spell);
+                            SpellInfo const* spellInfo = sSpellMgr->AssertSpellInfo(e.action.cast.spell);
                             int32 mana = me->GetPower(POWER_MANA);
 
                             if (me->GetDistance(*itr) > spellInfo->GetMaxRange(true) ||
@@ -1037,10 +1037,7 @@ void SmartScript::ProcessAction(SmartScriptHolder& e, Unit* unit, uint32 var0, u
                         target->DespawnOrUnsummon(e.action.forceDespawn.delay);
                 }
                 else if (GameObject* goTarget = (*itr)->ToGameObject())
-                {
-                    if (IsSmartGO(goTarget))
-                        goTarget->SetRespawnTime(e.action.forceDespawn.delay + 1);
-                }
+                    goTarget->SetRespawnTime(e.action.forceDespawn.delay + 1);
             }
 
             delete targets;
@@ -3239,29 +3236,28 @@ void SmartScript::ProcessEvent(SmartScriptHolder& e, Unit* unit, uint32 var0, ui
             if (!me)
                 return;
 
-            WorldObject* creature = NULL;
+            Creature* creature = nullptr;
 
             if (e.event.distance.guid != 0)
             {
                 creature = FindCreatureNear(me, e.event.distance.guid);
-
                 if (!creature)
                     return;
 
-                if (!me->IsInRange(creature, 0, (float)e.event.distance.dist))
+                if (!me->IsInRange(creature, 0, static_cast<float>(e.event.distance.dist)))
                     return;
             }
             else if (e.event.distance.entry != 0)
             {
                 std::list<Creature*> list;
-                me->GetCreatureListWithEntryInGrid(list, e.event.distance.entry, (float)e.event.distance.dist);
+                me->GetCreatureListWithEntryInGrid(list, e.event.distance.entry, static_cast<float>(e.event.distance.dist));
 
                 if (!list.empty())
                     creature = list.front();
             }
 
             if (creature)
-                ProcessTimedAction(e, e.event.distance.repeat, e.event.distance.repeat);
+                ProcessTimedAction(e, e.event.distance.repeat, e.event.distance.repeat, creature);
 
             break;
         }
@@ -3270,29 +3266,28 @@ void SmartScript::ProcessEvent(SmartScriptHolder& e, Unit* unit, uint32 var0, ui
             if (!me)
                 return;
 
-            WorldObject* gameobject = NULL;
+            GameObject* gameobject = nullptr;
 
             if (e.event.distance.guid != 0)
             {
                 gameobject = FindGameObjectNear(me, e.event.distance.guid);
-
                 if (!gameobject)
                     return;
 
-                if (!me->IsInRange(gameobject, 0, (float)e.event.distance.dist))
+                if (!me->IsInRange(gameobject, 0, static_cast<float>(e.event.distance.dist)))
                     return;
             }
             else if (e.event.distance.entry != 0)
             {
                 std::list<GameObject*> list;
-                me->GetGameObjectListWithEntryInGrid(list, e.event.distance.entry, (float)e.event.distance.dist);
+                me->GetGameObjectListWithEntryInGrid(list, e.event.distance.entry, static_cast<float>(e.event.distance.dist));
 
                 if (!list.empty())
                     gameobject = list.front();
             }
 
             if (gameobject)
-                ProcessTimedAction(e, e.event.distance.repeat, e.event.distance.repeat);
+                ProcessTimedAction(e, e.event.distance.repeat, e.event.distance.repeat, nullptr, 0, 0, false, nullptr, gameobject);
 
             break;
         }
