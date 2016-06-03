@@ -53,9 +53,9 @@ namespace MapCLI
             {
                 // we have mapheight and vmapheight and must select more appropriate
 
-                // we are already under the surface or vmap height above map heigt
+                // vmap height above map height
                 // or if the distance of the vmap height is less the land height distance
-                if (Z < mapHeight || vmapHeight > mapHeight || std::fabs(mapHeight - Z) > std::fabs(vmapHeight - Z))
+                if (vmapHeight > mapHeight || std::fabs(mapHeight - Z) > std::fabs(vmapHeight - Z))
                     height = vmapHeight;
                 else
                     height = mapHeight;                           // better use .map surface height
