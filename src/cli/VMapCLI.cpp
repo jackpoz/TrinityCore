@@ -1,5 +1,6 @@
 #include <msclr\marshal_cppstd.h>
 #include "VMapCLI.h"
+#include "Lock.h"
 
 using namespace msclr::interop;
 
@@ -10,10 +11,12 @@ namespace VMapCLI
         vmapsFolderPath = vmapsPath;
         if (!vmapsFolderPath->EndsWith("\\"))
             vmapsFolderPath += "\\";
+        _vmapManagerLock = gcnew Object();
     }
 
     void VMap::LoadTile(int tileX, int tileY, int mapID)
     {
+        Lock lock(_vmapManagerLock);
         vmapManager->loadMap(marshal_as<std::string>(vmapsFolderPath).c_str(), mapID, tileX, tileY);
     }
 

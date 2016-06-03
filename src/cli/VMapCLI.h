@@ -36,6 +36,7 @@ namespace VMapCLI
             }
         }
         static String^ _vmapsFolderPath;
+        static Object^ _vmapManagerLock;
 
         static VMap()
         {
