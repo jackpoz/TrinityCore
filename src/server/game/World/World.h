@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2017 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -28,7 +28,7 @@
 #include "Timer.h"
 #include "SharedDefines.h"
 #include "QueryResult.h"
-#include "QueryCallback.h"
+#include "QueryCallbackProcessor.h"
 #include "Realm/Realm.h"
 
 #include <atomic>
@@ -83,6 +83,7 @@ enum WorldTimers
     WUPDATE_AHBOT,
     WUPDATE_PINGDB,
     WUPDATE_CHECK_FILECHANGES,
+    WUPDATE_WHO_LIST,
     WUPDATE_COUNT
 };
 
@@ -91,7 +92,6 @@ enum WorldBoolConfigs
 {
     CONFIG_DURABILITY_LOSS_IN_PVP = 0,
     CONFIG_ADDON_CHANNEL,
-    CONFIG_ALLOW_PLAYER_COMMANDS,
     CONFIG_CLEAN_CHARACTER_DB,
     CONFIG_GRID_UNLOAD,
     CONFIG_STATS_SAVE_ONLY_ON_LOGOUT,
@@ -114,6 +114,7 @@ enum WorldBoolConfigs
     CONFIG_WEATHER,
     CONFIG_ALWAYS_MAX_SKILL_FOR_LEVEL,
     CONFIG_QUEST_IGNORE_RAID,
+    CONFIG_CHAT_PARTY_RAID_WARNINGS,
     CONFIG_DETECT_POS_COLLISION,
     CONFIG_RESTRICTED_LFG_CHANNEL,
     CONFIG_CHAT_FAKE_MESSAGE_PREVENTING,
@@ -175,6 +176,8 @@ enum WorldBoolConfigs
     CONFIG_HOTSWAP_BUILD_FILE_RECREATION_ENABLED,
     CONFIG_HOTSWAP_INSTALL_ENABLED,
     CONFIG_HOTSWAP_PREFIX_CORRECTION_ENABLED,
+    CONFIG_PREVENT_RENAME_CUSTOMIZATION,
+    CONFIG_CACHE_DATA_QUERIES,
     BOOL_CONFIG_VALUE_COUNT
 };
 
@@ -241,6 +244,7 @@ enum WorldIntConfigs
     CONFIG_MAX_RECRUIT_A_FRIEND_BONUS_PLAYER_LEVEL_DIFFERENCE,
     CONFIG_INSTANCE_RESET_TIME_HOUR,
     CONFIG_INSTANCE_UNLOAD_DELAY,
+    CONFIG_DAILY_QUEST_RESET_TIME_HOUR,
     CONFIG_MAX_PRIMARY_TRADE_SKILL,
     CONFIG_MIN_PETITION_SIGNS,
     CONFIG_GM_LOGIN_STATE,
@@ -280,7 +284,10 @@ enum WorldIntConfigs
     CONFIG_CHAT_STRICT_LINK_CHECKING_KICK,
     CONFIG_CHAT_CHANNEL_LEVEL_REQ,
     CONFIG_CHAT_WHISPER_LEVEL_REQ,
+    CONFIG_CHAT_EMOTE_LEVEL_REQ,
     CONFIG_CHAT_SAY_LEVEL_REQ,
+    CONFIG_CHAT_YELL_LEVEL_REQ,
+    CONFIG_PARTY_LEVEL_REQ,
     CONFIG_TRADE_LEVEL_REQ,
     CONFIG_TICKET_LEVEL_REQ,
     CONFIG_AUCTION_LEVEL_REQ,
@@ -296,6 +303,7 @@ enum WorldIntConfigs
     CONFIG_BATTLEGROUND_INVITATION_TYPE,
     CONFIG_BATTLEGROUND_PREMATURE_FINISH_TIMER,
     CONFIG_BATTLEGROUND_PREMADE_GROUP_WAIT_FOR_MATCH,
+    CONFIG_BATTLEGROUND_REPORT_AFK,
     CONFIG_ARENA_MAX_RATING_DIFFERENCE,
     CONFIG_ARENA_RATING_DISCARD_TIMER,
     CONFIG_ARENA_RATED_UPDATE_TIMER,
@@ -501,6 +509,7 @@ enum RealmZone
 
 enum WorldStates
 {
+    WS_ARENA_DISTRIBUTION_TIME  = 20001,                     // Next arena distribution time
     WS_WEEKLY_QUEST_RESET_TIME  = 20002,                     // Next weekly reset time
     WS_BG_DAILY_RESET_TIME      = 20003,                     // Next daily BG reset time
     WS_CLEANING_FLAGS           = 20004,                     // Cleaning Flags
@@ -542,6 +551,8 @@ struct CharacterInfo
     uint8 Race;
     uint8 Sex;
     uint8 Level;
+    ObjectGuid::LowType GuildId;
+    uint32 ArenaTeamId[3];
 };
 
 /// The World
@@ -659,7 +670,7 @@ class TC_GAME_API World
         bool IsShuttingDown() const { return m_ShutdownTimer > 0; }
         uint32 GetShutDownTimeLeft() const { return m_ShutdownTimer; }
         void ShutdownServ(uint32 time, uint32 options, uint8 exitcode, const std::string& reason = std::string());
-        void ShutdownCancel();
+        uint32 ShutdownCancel();
         void ShutdownMsg(bool show = false, Player* player = NULL, const std::string& reason = std::string());
         static uint8 GetExitCode() { return m_ExitCode; }
         static void StopNow(uint8 exitcode) { m_stopEvent = true; m_ExitCode = exitcode; }
@@ -757,13 +768,6 @@ class TC_GAME_API World
 
         void UpdateAreaDependentAuras();
 
-        CharacterInfo const* GetCharacterInfo(ObjectGuid const& guid) const;
-        void AddCharacterInfo(ObjectGuid const& guid, uint32 accountId, std::string const& name, uint8 gender, uint8 race, uint8 playerClass, uint8 level);
-        void DeleteCharacterInfo(ObjectGuid const& guid) { _characterInfoStore.erase(guid); }
-        bool HasCharacterInfo(ObjectGuid const& guid) { return _characterInfoStore.find(guid) != _characterInfoStore.end(); }
-        void UpdateCharacterInfo(ObjectGuid const& guid, std::string const& name, uint8 gender = GENDER_NONE, uint8 race = RACE_NONE);
-        void UpdateCharacterInfoLevel(ObjectGuid const& guid, uint8 level);
-
         uint32 GetCleaningFlags() const { return m_CleaningFlags; }
         void   SetCleaningFlags(uint32 flags) { m_CleaningFlags = flags; }
         void   ResetEventSeasonalQuests(uint16 event_id);
@@ -777,7 +781,7 @@ class TC_GAME_API World
         // callback for UpdateRealmCharacters
         void _UpdateRealmCharCount(PreparedQueryResult resultCharCount);
 
-        void InitDailyQuestResetTime();
+        void InitDailyQuestResetTime(bool loading = true);
         void InitWeeklyQuestResetTime();
         void InitMonthlyQuestResetTime();
         void InitRandomBGResetTime();
@@ -869,12 +873,8 @@ class TC_GAME_API World
         typedef std::map<uint8, uint8> AutobroadcastsWeightMap;
         AutobroadcastsWeightMap m_AutobroadcastsWeights;
 
-        typedef std::unordered_map<ObjectGuid, CharacterInfo> CharacterInfoContainer;
-        CharacterInfoContainer _characterInfoStore;
-        void LoadCharacterInfoStore();
-
         void ProcessQueryCallbacks();
-        std::deque<std::future<PreparedQueryResult>> m_realmCharCallbacks;
+        QueryCallbackProcessor _queryProcessor;
 };
 
 TC_GAME_API extern Realm realm;

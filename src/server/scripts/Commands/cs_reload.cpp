@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2017 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -144,7 +144,6 @@ public:
             { "spell_loot_template",           rbac::RBAC_PERM_COMMAND_RELOAD_SPELL_LOOT_TEMPLATE,              true,  &HandleReloadLootTemplatesSpellCommand,         "" },
             { "spell_linked_spell",            rbac::RBAC_PERM_COMMAND_RELOAD_SPELL_LINKED_SPELL,               true,  &HandleReloadSpellLinkedSpellCommand,           "" },
             { "spell_pet_auras",               rbac::RBAC_PERM_COMMAND_RELOAD_SPELL_PET_AURAS,                  true,  &HandleReloadSpellPetAurasCommand,              "" },
-            { "spell_proc_event",              rbac::RBAC_PERM_COMMAND_RELOAD_SPELL_PROC_EVENT,                 true,  &HandleReloadSpellProcEventCommand,             "" },
             { "spell_proc",                    rbac::RBAC_PERM_COMMAND_RELOAD_SPELL_PROC,                       true,  &HandleReloadSpellProcsCommand,                 "" },
             { "spell_scripts",                 rbac::RBAC_PERM_COMMAND_RELOAD_SPELL_SCRIPTS,                    true,  &HandleReloadSpellScriptsCommand,               "" },
             { "spell_target_position",         rbac::RBAC_PERM_COMMAND_RELOAD_SPELL_TARGET_POSITION,            true,  &HandleReloadSpellTargetPositionCommand,        "" },
@@ -276,7 +275,6 @@ public:
         HandleReloadSpellGroupsCommand(handler, "a");
         HandleReloadSpellLearnSpellCommand(handler, "a");
         HandleReloadSpellLinkedSpellCommand(handler, "a");
-        HandleReloadSpellProcEventCommand(handler, "a");
         HandleReloadSpellProcsCommand(handler, "a");
         HandleReloadSpellBonusesCommand(handler, "a");
         HandleReloadSpellTargetPositionCommand(handler, "a");
@@ -449,6 +447,7 @@ public:
             sObjectMgr->CheckCreatureTemplate(cInfo);
         }
 
+        sObjectMgr->InitializeQueriesData(QUERY_DATA_CREATURES);
         handler->SendGlobalGMSysMessage("Creature template reloaded.");
         return true;
     }
@@ -523,6 +522,7 @@ public:
     {
         TC_LOG_INFO("misc", "Re-Loading Quest Templates...");
         sObjectMgr->LoadQuests();
+        sObjectMgr->InitializeQueriesData(QUERY_DATA_QUESTS);
         handler->SendGlobalGMSysMessage("DB table `quest_template` (quest definitions) reloaded.");
 
         /// dependent also from `gameobject` but this table not reloaded anyway
@@ -702,6 +702,7 @@ public:
     {
         TC_LOG_INFO("misc", "Re-Loading Quest POI ..." );
         sObjectMgr->LoadQuestPOI();
+        sObjectMgr->InitializeQueriesData(QUERY_DATA_POIS);
         handler->SendGlobalGMSysMessage("DB Table `quest_poi` and `quest_poi_points` reloaded.");
         return true;
     }
@@ -808,14 +809,6 @@ public:
         TC_LOG_INFO("misc", "Re-Loading Spell Linked Spells...");
         sSpellMgr->LoadSpellLinked();
         handler->SendGlobalGMSysMessage("DB table `spell_linked_spell` reloaded.");
-        return true;
-    }
-
-    static bool HandleReloadSpellProcEventCommand(ChatHandler* handler, const char* /*args*/)
-    {
-        TC_LOG_INFO("misc", "Re-Loading Spell Proc Event conditions...");
-        sSpellMgr->LoadSpellProcEvents();
-        handler->SendGlobalGMSysMessage("DB table `spell_proc_event` (spell proc trigger requirements) reloaded.");
         return true;
     }
 

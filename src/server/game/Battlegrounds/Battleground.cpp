@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2017 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -283,8 +283,12 @@ inline void Battleground::_CheckSafePositions(uint32 diff)
         m_ValidStartPositionTimer = 0;
 
         for (BattlegroundPlayerMap::const_iterator itr = GetPlayers().begin(); itr != GetPlayers().end(); ++itr)
+        {
             if (Player* player = ObjectAccessor::FindPlayer(itr->first))
             {
+                if (player->IsGameMaster())
+                    continue;
+
                 Position pos = player->GetPosition();
                 Position const* startPos = GetTeamStartPosition(Battleground::GetTeamIndexByTeamId(player->GetBGTeam()));
                 if (pos.GetExactDistSq(startPos) > maxDist)
@@ -293,6 +297,7 @@ inline void Battleground::_CheckSafePositions(uint32 diff)
                     player->TeleportTo(GetMapId(), startPos->GetPositionX(), startPos->GetPositionY(), startPos->GetPositionZ(), startPos->GetOrientation());
                 }
             }
+        }
     }
 }
 
@@ -509,20 +514,15 @@ inline void Battleground::_ProcessJoin(uint32 diff)
                     if (!player->IsGameMaster())
                     {
                         // remove auras with duration lower than 30s
-                        Unit::AuraApplicationMap & auraMap = player->GetAppliedAuras();
-                        for (Unit::AuraApplicationMap::iterator iter = auraMap.begin(); iter != auraMap.end();)
+                        player->RemoveAppliedAuras([](AuraApplication const* aurApp)
                         {
-                            AuraApplication * aurApp = iter->second;
                             Aura* aura = aurApp->GetBase();
-                            if (!aura->IsPermanent()
-                                && aura->GetDuration() <= 30*IN_MILLISECONDS
+                            return !aura->IsPermanent()
+                                && aura->GetDuration() <= 30 * IN_MILLISECONDS
                                 && aurApp->IsPositive()
-                                && (!aura->GetSpellInfo()->HasAttribute(SPELL_ATTR0_UNAFFECTED_BY_INVULNERABILITY))
-                                && (!aura->HasEffectType(SPELL_AURA_MOD_INVISIBILITY)))
-                                player->RemoveAura(iter);
-                            else
-                                ++iter;
-                        }
+                                && !aura->GetSpellInfo()->HasAttribute(SPELL_ATTR0_UNAFFECTED_BY_INVULNERABILITY)
+                                && !aura->HasEffectType(SPELL_AURA_MOD_INVISIBILITY);
+                        });
                     }
                 }
 
@@ -823,7 +823,7 @@ void Battleground::EndBattleground(uint32 winner)
                     player->SetRandomWinner(true);
             }
 
-            player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_WIN_BG, 1);
+            player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_WIN_BG, player->GetMapId());
         }
         else
         {
@@ -841,7 +841,7 @@ void Battleground::EndBattleground(uint32 winner)
         WorldPacket data;
         sBattlegroundMgr->BuildBattlegroundStatusPacket(&data, this, player->GetBattlegroundQueueIndex(bgQueueTypeId), STATUS_IN_PROGRESS, TIME_TO_AUTOREMOVE, GetStartTime(), GetArenaType(), player->GetBGTeam());
         player->SendDirectMessage(&data);
-        player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_COMPLETE_BATTLEGROUND, 1);
+        player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_COMPLETE_BATTLEGROUND, player->GetMapId());
     }
 
     if (winmsg_id)
@@ -963,6 +963,9 @@ void Battleground::RemovePlayerAtLeave(ObjectGuid guid, bool Transport, bool Sen
         // reset destination bg team
         player->SetBGTeam(0);
 
+        // remove all criterias on bg leave
+        player->ResetAchievementCriteria(ACHIEVEMENT_CRITERIA_CONDITION_BG_MAP, GetMapId(), true);
+
         if (Transport)
             player->TeleportToBGEntryPoint();
 
@@ -1062,17 +1065,8 @@ void Battleground::AddPlayer(Player* player)
             player->CastSpell(player, SPELL_PREPARATION, true);   // reduces all mana cost of spells.
     }
 
-    player->ResetAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_KILL_CREATURE, ACHIEVEMENT_CRITERIA_CONDITION_BG_MAP, GetMapId(), true);
-    player->ResetAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_WIN_BG, ACHIEVEMENT_CRITERIA_CONDITION_BG_MAP, GetMapId(), true);
-    player->ResetAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_DAMAGE_DONE, ACHIEVEMENT_CRITERIA_CONDITION_BG_MAP, GetMapId(), true);
-    player->ResetAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_BE_SPELL_TARGET, ACHIEVEMENT_CRITERIA_CONDITION_BG_MAP, GetMapId(), true);
-    player->ResetAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_CAST_SPELL, ACHIEVEMENT_CRITERIA_CONDITION_BG_MAP, GetMapId(), true);
-    player->ResetAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_BG_OBJECTIVE_CAPTURE, ACHIEVEMENT_CRITERIA_CONDITION_BG_MAP, GetMapId(), true);
-    player->ResetAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HONORABLE_KILL_AT_AREA, ACHIEVEMENT_CRITERIA_CONDITION_BG_MAP, GetMapId(), true);
-    player->ResetAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HONORABLE_KILL, ACHIEVEMENT_CRITERIA_CONDITION_BG_MAP, GetMapId(), true);
-    player->ResetAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HEALING_DONE, ACHIEVEMENT_CRITERIA_CONDITION_BG_MAP, GetMapId(), true);
-    player->ResetAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_GET_KILLING_BLOWS, ACHIEVEMENT_CRITERIA_CONDITION_BG_MAP, GetMapId(), true);
-    player->ResetAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_SPECIAL_PVP_KILL, ACHIEVEMENT_CRITERIA_CONDITION_BG_MAP, GetMapId(), true);
+    // reset all map criterias on map enter
+    player->ResetAchievementCriteria(ACHIEVEMENT_CRITERIA_CONDITION_BG_MAP, GetMapId(), true);
 
     // setup BG group membership
     PlayerAddedToBGCheckIfBGIsRunning(player);
@@ -1345,12 +1339,22 @@ bool Battleground::AddObject(uint32 type, uint32 entry, float x, float y, float 
     Map* map = FindBgMap();
     if (!map)
         return false;
+
+    G3D::Quat rot(rotation0, rotation1, rotation2, rotation3);
+    // Temporally add safety check for bad spawns and send log (object rotations need to be rechecked in sniff)
+    if (!rotation0 && !rotation1 && !rotation2 && !rotation3)
+    {
+        TC_LOG_DEBUG("bg.battleground", "Battleground::AddObject: gameoobject [entry: %u, object type: %u] for BG (map: %u) has zeroed rotation fields, "
+            "orientation used temporally, but please fix the spawn", entry, type, m_MapId);
+
+        rot = G3D::Matrix3::fromEulerAnglesZYX(o, 0.f, 0.f);
+    }
+
     // Must be created this way, adding to godatamap would add it to the base map of the instance
     // and when loading it (in go::LoadFromDB()), a new guid would be assigned to the object, and a new object would be created
     // So we must create it specific for this instance
     GameObject* go = new GameObject;
-    if (!go->Create(GetBgMap()->GenerateLowGuid<HighGuid::GameObject>(), entry, GetBgMap(),
-        PHASEMASK_NORMAL, x, y, z, o, rotation0, rotation1, rotation2, rotation3, 100, goState))
+    if (!go->Create(GetBgMap()->GenerateLowGuid<HighGuid::GameObject>(), entry, GetBgMap(), PHASEMASK_NORMAL, Position(x, y, z, o), rot, 255, goState))
     {
         TC_LOG_ERROR("bg.battleground", "Battleground::AddObject: cannot create gameobject (entry: %u) for BG (map: %u, instance id: %u)!",
                 entry, m_MapId, m_InstanceID);
@@ -1782,7 +1786,7 @@ uint32 Battleground::GetAlivePlayersCountByTeam(uint32 Team) const
         if (itr->second.Team == Team)
         {
             Player* player = ObjectAccessor::FindPlayer(itr->first);
-            if (player && player->IsAlive() && !player->HasByteFlag(UNIT_FIELD_BYTES_2, 3, FORM_SPIRITOFREDEMPTION))
+            if (player && player->IsAlive() && player->GetShapeshiftForm() != FORM_SPIRITOFREDEMPTION)
                 ++count;
         }
     }

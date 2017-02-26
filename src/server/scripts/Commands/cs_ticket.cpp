@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2017 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -23,6 +23,7 @@ Category: commandscripts
 EndScriptData */
 
 #include "AccountMgr.h"
+#include "CharacterCache.h"
 #include "Chat.h"
 #include "Language.h"
 #include "ObjectMgr.h"
@@ -92,8 +93,8 @@ public:
             return true;
         }
 
-        ObjectGuid targetGuid = sObjectMgr->GetPlayerGUIDByName(target);
-        uint32 accountId = sObjectMgr->GetPlayerAccountIdByGUID(targetGuid);
+        ObjectGuid targetGuid = sCharacterCache->GetCharacterGuidByName(target);
+        uint32 accountId = sCharacterCache->GetCharacterAccountIdByGuid(targetGuid);
         // Target must exist and have administrative rights
         if (!AccountMgr::HasPermission(accountId, rbac::RBAC_PERM_COMMANDS_BE_ASSIGNED_TICKET, realm.Id.Realm))
         {
@@ -199,7 +200,12 @@ public:
         ticket->SaveToDB(trans);
         sTicketMgr->UpdateLastChange();
 
-        std::string msg = ticket->FormatMessageString(*handler, NULL, ticket->GetAssignedToName().c_str(), NULL, NULL, NULL);
+        std::string msg = [&] {
+            std::string const assignedName = ticket->GetAssignedToName();
+            return ticket->FormatMessageString(*handler, nullptr,
+                assignedName.empty() ? nullptr : assignedName.c_str(), nullptr, nullptr, nullptr);
+        }();
+
         msg += handler->PGetParseString(LANG_COMMAND_TICKETLISTADDCOMMENT, player ? player->GetName().c_str() : "Console", comment);
         handler->SendGlobalGMSysMessage(msg.c_str());
 
@@ -386,7 +392,7 @@ public:
         else
         {
             ObjectGuid guid = ticket->GetAssignedToGUID();
-            uint32 accountId = sObjectMgr->GetPlayerAccountIdByGUID(guid);
+            uint32 accountId = sCharacterCache->GetCharacterAccountIdByGuid(guid);
             security = AccountMgr::GetSecurity(accountId, realm.Id.Realm);
         }
 
@@ -447,10 +453,10 @@ public:
         if (Player* player = ObjectAccessor::FindPlayerByName(name))
             guid = player->GetGUID();
         else
-            guid = sObjectMgr->GetPlayerGUIDByName(name);
+            guid = sCharacterCache->GetCharacterGuidByName(name);
 
         // Target must exist
-        if (!guid)
+        if (guid.IsEmpty())
         {
             handler->SendSysMessage(LANG_NO_PLAYERS_FOUND);
             return true;
