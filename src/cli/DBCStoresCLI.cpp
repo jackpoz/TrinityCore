@@ -72,12 +72,12 @@ namespace DBCStoresCLI
             if (!achievementCriteria)
                 continue;
 
-            if (achievementCriteria->requiredType != ACHIEVEMENT_CRITERIA_TYPE_EXPLORE_AREA)
+            if (achievementCriteria->Type != ACHIEVEMENT_CRITERIA_TYPE_EXPLORE_AREA)
                 continue;
 
-            if (achievementCriteria->explore_area.areaReference == worldMapOverlayId)
+            if (achievementCriteria->Asset.WorldMapOverlayID == worldMapOverlayId)
             {
-                achievementId = achievementCriteria->referredAchievement;
+                achievementId = achievementCriteria->ReferredAchievement;
                 break;
             }
         }
@@ -91,12 +91,12 @@ namespace DBCStoresCLI
             if (!achievementCriteria)
                 continue;
 
-            if (achievementCriteria->requiredType != ACHIEVEMENT_CRITERIA_TYPE_EXPLORE_AREA)
+            if (achievementCriteria->Type != ACHIEVEMENT_CRITERIA_TYPE_EXPLORE_AREA)
                 continue;
 
-            if (achievementCriteria->referredAchievement == achievementId)
+            if (achievementCriteria->ReferredAchievement == achievementId)
             {
-                auto worldMapOverlay = sWorldMapOverlayStore.LookupEntry(achievementCriteria->explore_area.areaReference);
+                auto worldMapOverlay = sWorldMapOverlayStore.LookupEntry(achievementCriteria->Asset.WorldMapOverlayID);
                 if (!worldMapOverlay)
                     continue;
 
