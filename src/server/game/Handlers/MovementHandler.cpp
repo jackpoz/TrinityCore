@@ -30,6 +30,7 @@
 #include "InstanceSaveMgr.h"
 #include "ObjectMgr.h"
 #include "Vehicle.h"
+#include "GameTime.h"
 
 #define MOVEMENT_PACKET_TIME_DELAY 0
 
@@ -162,7 +163,7 @@ void WorldSession::HandleMoveWorldportAck()
             {
                 if (time_t timeReset = sInstanceSaveMgr->GetResetTimeFor(mEntry->MapID, diff))
                 {
-                    uint32 timeleft = uint32(timeReset - time(NULL));
+                    uint32 timeleft = uint32(timeReset - time(nullptr));
                     GetPlayer()->SendInstanceResetWarning(mEntry->MapID, diff, timeleft, true);
                 }
             }
@@ -207,8 +208,8 @@ void WorldSession::HandleMoveTeleportAck(WorldPacket& recvData)
 
     recvData >> guid.ReadAsPacked();
 
-    uint32 flags, time;
-    recvData >> flags >> time;
+    uint32 sequenceIndex, time;
+    recvData >> sequenceIndex >> time;
 
     Player* plMover = _player->m_unitMovedByMe->ToPlayer();
 
@@ -256,7 +257,7 @@ void WorldSession::HandleMovementOpcodes(WorldPacket& recvData)
 
     Unit* mover = _player->m_unitMovedByMe;
 
-    ASSERT(mover != NULL);                      // there must always be a mover
+    ASSERT(mover != nullptr);                      // there must always be a mover
 
     Player* plrMover = mover->ToPlayer();
 
@@ -348,13 +349,17 @@ void WorldSession::HandleMovementOpcodes(WorldPacket& recvData)
     if (opcode == MSG_MOVE_FALL_LAND && plrMover && !plrMover->IsInFlight())
         plrMover->HandleFall(movementInfo);
 
+    // interrupt parachutes upon falling or landing in water
+    if (opcode == MSG_MOVE_FALL_LAND || opcode == MSG_MOVE_START_SWIM)
+        mover->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_LANDING); // Parachutes
+
     if (plrMover && ((movementInfo.flags & MOVEMENTFLAG_SWIMMING) != 0) != plrMover->IsInWater())
     {
         // now client not include swimming flag in case jumping under water
         plrMover->SetInWater(!plrMover->IsInWater() || plrMover->GetBaseMap()->IsUnderWater(movementInfo.pos.GetPositionX(), movementInfo.pos.GetPositionY(), movementInfo.pos.GetPositionZ()));
     }
 
-    uint32 mstime = getMSTime();
+    uint32 mstime = GameTime::GetGameTimeMS();
     /*----------------------*/
     if (m_clientTimeDelay == 0)
         m_clientTimeDelay = mstime - movementInfo.time;

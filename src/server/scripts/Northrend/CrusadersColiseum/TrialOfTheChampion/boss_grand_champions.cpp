@@ -24,11 +24,13 @@ SDCategory: Trial Of the Champion
 EndScriptData */
 
 #include "ScriptMgr.h"
-#include "ScriptedCreature.h"
-#include "ScriptedEscortAI.h"
-#include "Vehicle.h"
-#include "trial_of_the_champion.h"
+#include "InstanceScript.h"
+#include "Map.h"
+#include "ObjectAccessor.h"
 #include "Player.h"
+#include "ScriptedEscortAI.h"
+#include "trial_of_the_champion.h"
+#include "Vehicle.h"
 
 enum Spells
 {
@@ -95,7 +97,7 @@ const Point MovementPoint[] =
 */
 void AggroAllPlayers(Creature* temp)
 {
-    Map::PlayerList const &PlList = temp->GetMap()->GetPlayers();
+    Map::PlayerList const& PlList = temp->GetMap()->GetPlayers();
 
     if (PlList.isEmpty())
             return;
@@ -113,7 +115,7 @@ void AggroAllPlayers(Creature* temp)
                 temp->SetReactState(REACT_AGGRESSIVE);
                 temp->SetInCombatWith(player);
                 player->SetInCombatWith(temp);
-                temp->AddThreat(player, 0.0f);
+                temp->GetThreatManager().AddThreat(player, 0.0f);
             }
         }
     }
@@ -261,8 +263,8 @@ public:
                         Player* player = itr->GetSource();
                         if (player && !player->IsGameMaster() && me->IsInRange(player, 8.0f, 25.0f, false))
                         {
-                            DoResetThreat();
-                            me->AddThreat(player, 1.0f);
+                            ResetThreatList();
+                            me->GetThreatManager().AddThreat(player, 1.0f);
                             DoCast(player, SPELL_CHARGE);
                             break;
                         }
@@ -303,7 +305,7 @@ public:
 
     CreatureAI* GetAI(Creature* creature) const override
     {
-        return GetInstanceAI<generic_vehicleAI_toc5AI>(creature);
+        return GetTrialOfTheChampionAI<generic_vehicleAI_toc5AI>(creature);
     }
 };
 
@@ -407,8 +409,8 @@ public:
                         Player* player = itr->GetSource();
                         if (player && !player->IsGameMaster() && me->IsInRange(player, 8.0f, 25.0f, false))
                         {
-                            DoResetThreat();
-                            me->AddThreat(player, 5.0f);
+                            ResetThreatList();
+                            me->GetThreatManager().AddThreat(player, 5.0f);
                             DoCast(player, SPELL_INTERCEPT);
                             break;
                         }
@@ -440,7 +442,7 @@ public:
 
     CreatureAI* GetAI(Creature* creature) const override
     {
-        return GetInstanceAI<boss_warrior_toc5AI>(creature);
+        return GetTrialOfTheChampionAI<boss_warrior_toc5AI>(creature);
     }
 };
 
@@ -583,7 +585,7 @@ public:
 
     CreatureAI* GetAI(Creature* creature) const override
     {
-        return GetInstanceAI<boss_mage_toc5AI>(creature);
+        return GetTrialOfTheChampionAI<boss_mage_toc5AI>(creature);
     }
 };
 
@@ -734,7 +736,7 @@ public:
 
     CreatureAI* GetAI(Creature* creature) const override
     {
-        return GetInstanceAI<boss_shaman_toc5AI>(creature);
+        return GetTrialOfTheChampionAI<boss_shaman_toc5AI>(creature);
     }
 };
 
@@ -845,7 +847,7 @@ public:
 
             if (uiShootTimer <= uiDiff)
             {
-                if (Unit* target = SelectTarget(SELECT_TARGET_FARTHEST, 0, 30.0f))
+                if (Unit* target = SelectTarget(SELECT_TARGET_MAXDISTANCE, 0, 30.0f))
                 {
                     uiTargetGUID = target->GetGUID();
                     DoCast(target, SPELL_SHOOT);
@@ -894,7 +896,7 @@ public:
 
     CreatureAI* GetAI(Creature* creature) const override
     {
-        return GetInstanceAI<boss_hunter_toc5AI>(creature);
+        return GetTrialOfTheChampionAI<boss_hunter_toc5AI>(creature);
     }
 };
 
@@ -1019,7 +1021,7 @@ public:
 
     CreatureAI* GetAI(Creature* creature) const override
     {
-        return GetInstanceAI<boss_rouge_toc5AI>(creature);
+        return GetTrialOfTheChampionAI<boss_rouge_toc5AI>(creature);
     }
 };
 

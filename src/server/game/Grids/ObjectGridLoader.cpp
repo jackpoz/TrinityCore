@@ -17,15 +17,16 @@
  */
 
 #include "ObjectGridLoader.h"
+#include "CellImpl.h"
+#include "Corpse.h"
+#include "Creature.h"
+#include "CreatureAI.h"
+#include "DynamicObject.h"
+#include "Log.h"
+#include "GameObject.h"
 #include "ObjectAccessor.h"
 #include "ObjectMgr.h"
-#include "Creature.h"
-#include "GameObject.h"
-#include "DynamicObject.h"
-#include "Corpse.h"
 #include "World.h"
-#include "CellImpl.h"
-#include "CreatureAI.h"
 
 void ObjectGridEvacuator::Visit(CreatureMapType &m)
 {
@@ -216,10 +217,10 @@ void ObjectGridStoper::Visit(CreatureMapType &m)
     for (CreatureMapType::iterator iter = m.begin(); iter != m.end(); ++iter)
     {
         iter->GetSource()->RemoveAllDynObjects();
-        if (iter->GetSource()->IsInCombat() || !iter->GetSource()->getThreatManager().areThreatListsEmpty())
+        if (iter->GetSource()->IsInCombat() || !iter->GetSource()->GetThreatManager().areThreatListsEmpty())
         {
             iter->GetSource()->CombatStop();
-            iter->GetSource()->DeleteThreatList();
+            iter->GetSource()->GetThreatManager().ClearAllThreat();
             iter->GetSource()->AI()->EnterEvadeMode();
         }
     }

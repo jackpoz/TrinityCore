@@ -24,9 +24,11 @@ SDCategory: Karazhan
 EndScriptData */
 
 #include "ScriptMgr.h"
+#include "karazhan.h"
+#include "MotionMaster.h"
+#include "ObjectAccessor.h"
 #include "ScriptedCreature.h"
 #include "SpellInfo.h"
-#include "karazhan.h"
 
 enum Texts
 {
@@ -171,12 +173,11 @@ public:
                 scheduler.Schedule(Seconds(10), Seconds(25), [this](TaskContext task)
                 {
                     Unit* target = nullptr;
-                    ThreatContainer::StorageType const &t_list = me->getThreatManager().getThreatList();
                     std::vector<Unit*> target_list;
 
-                    for (ThreatContainer::StorageType::const_iterator itr = t_list.begin(); itr != t_list.end(); ++itr)
+                    for (auto* ref : me->GetThreatManager().GetUnsortedThreatList())
                     {
-                        target = ObjectAccessor::GetUnit(*me, (*itr)->getUnitGuid());
+                        target = ref->GetVictim();
                         if (target && !target->IsWithinDist(me, 8.00f, false) && target->IsWithinDist(me, 25.0f, false))
                             target_list.push_back(target);
 
@@ -222,7 +223,7 @@ public:
                 std::bind(&BossAI::DoMeleeAttackIfReady, this));
         }
 
-        void SpellHit(Unit* /*source*/, const SpellInfo* spell) override
+        void SpellHit(Unit* /*source*/, SpellInfo const* spell) override
         {
             if (spell->Mechanic == MECHANIC_DISARM)
                 Talk(SAY_DISARMED);
@@ -275,7 +276,7 @@ public:
 
     CreatureAI* GetAI(Creature* creature) const override
     {
-        return new boss_attumenAI(creature);
+        return GetKarazhanAI<boss_attumenAI>(creature);
     }
 };
 
@@ -377,7 +378,7 @@ public:
 
     CreatureAI* GetAI(Creature* creature) const override
     {
-        return new boss_midnightAI(creature);
+        return GetKarazhanAI<boss_midnightAI>(creature);
     }
 };
 

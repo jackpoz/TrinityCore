@@ -16,9 +16,12 @@
  */
 
 #include "ScriptMgr.h"
+#include "GameTime.h"
+#include "InstanceScript.h"
+#include "ObjectAccessor.h"
 #include "ScriptedCreature.h"
+#include "SpellAuras.h"
 #include "SpellScript.h"
-#include "SpellAuraEffects.h"
 #include "ulduar.h"
 #include "Vehicle.h"
 
@@ -176,7 +179,7 @@ class boss_ignis : public CreatureScript
             {
                 if (summon->GetEntry() == NPC_IRON_CONSTRUCT)
                 {
-                    summon->setFaction(16);
+                    summon->SetFaction(FACTION_MONSTER_2);
                     summon->SetReactState(REACT_AGGRESSIVE);
                     summon->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE | UNIT_FLAG_PACIFIED | UNIT_FLAG_STUNNED | UNIT_FLAG_IMMUNE_TO_PC);
                     summon->SetControlled(false, UNIT_STATE_ROOT);
@@ -194,7 +197,7 @@ class boss_ignis : public CreatureScript
 
                 me->RemoveAuraFromStack(SPELL_STRENGHT);
                 // Shattered Achievement
-                time_t secondKill = sWorld->GetGameTime();
+                time_t secondKill = GameTime::GetGameTime();
                 if ((secondKill - _firstConstructKill) < 5)
                     _shattered = true;
                 _firstConstructKill = secondKill;
@@ -251,7 +254,7 @@ class boss_ignis : public CreatureScript
                             if (Unit* slagPotTarget = ObjectAccessor::GetUnit(*me, _slagPotGUID))
                             {
                                 slagPotTarget->ExitVehicle();
-                                slagPotTarget = NULL;
+                                slagPotTarget = nullptr;
                                 _slagPotGUID.Clear();
                                 events.CancelEvent(EVENT_END_POT);
                             }
@@ -324,7 +327,7 @@ class npc_iron_construct : public CreatureScript
                 if (me->HasAura(RAID_MODE(SPELL_BRITTLE, SPELL_BRITTLE_25)) && damage >= 5000)
                 {
                     DoCast(SPELL_SHATTER);
-                    if (Creature* ignis = ObjectAccessor::GetCreature(*me, _instance->GetGuidData(BOSS_IGNIS)))
+                    if (Creature* ignis = _instance->GetCreature(BOSS_IGNIS))
                         if (ignis->AI())
                             ignis->AI()->DoAction(ACTION_REMOVE_BUFF);
 
@@ -453,10 +456,7 @@ class spell_ignis_slag_pot : public SpellScriptLoader
 
             bool Validate(SpellInfo const* /*spellInfo*/) override
             {
-                if (!sSpellMgr->GetSpellInfo(SPELL_SLAG_POT_DAMAGE)
-                    || !sSpellMgr->GetSpellInfo(SPELL_SLAG_IMBUED))
-                    return false;
-                return true;
+                return ValidateSpellInfo({ SPELL_SLAG_POT_DAMAGE, SPELL_SLAG_IMBUED });
             }
 
             void HandleEffectPeriodic(AuraEffect const* /*aurEff*/)

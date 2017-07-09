@@ -16,6 +16,8 @@
  */
 
 #include "ScriptMgr.h"
+#include "InstanceScript.h"
+#include "ObjectAccessor.h"
 #include "ScriptedCreature.h"
 #include "SpellScript.h"
 #include "ulduar.h"
@@ -150,7 +152,7 @@ class boss_auriaya : public CreatureScript
                 if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 0.0f, true))
                 {
                     summoned->AI()->AttackStart(target);
-                    summoned->AddThreat(target, 250.0f);
+                    AddThreat(target, 250.0f, summoned);
                     DoZoneInCombat(summoned);
                 }
 
@@ -324,7 +326,7 @@ class npc_auriaya_seeping_trigger : public CreatureScript
 
         CreatureAI* GetAI(Creature* creature) const override
         {
-            return GetInstanceAI<npc_auriaya_seeping_triggerAI>(creature);
+            return GetUlduarAI<npc_auriaya_seeping_triggerAI>(creature);
         }
 };
 
@@ -372,7 +374,7 @@ class npc_sanctum_sentry : public CreatureScript
                         case EVENT_POUNCE:
                             if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 0.0f, true))
                             {
-                                me->AddThreat(target, 100.0f);
+                                AddThreat(target, 100.0f);
                                 AttackStart(target);
                                 DoCast(target, SPELL_SAVAGE_POUNCE);
                             }
@@ -391,8 +393,8 @@ class npc_sanctum_sentry : public CreatureScript
 
             void JustDied(Unit* /*killer*/) override
             {
-                if (Creature* Auriaya = ObjectAccessor::GetCreature(*me, instance->GetGuidData(BOSS_AURIAYA)))
-                    Auriaya->AI()->DoAction(ACTION_CRAZY_CAT_LADY);
+                if (Creature* auriaya = instance->GetCreature(BOSS_AURIAYA))
+                    auriaya->AI()->DoAction(ACTION_CRAZY_CAT_LADY);
             }
 
         private:
@@ -402,7 +404,7 @@ class npc_sanctum_sentry : public CreatureScript
 
         CreatureAI* GetAI(Creature* creature) const override
         {
-            return GetInstanceAI<npc_sanctum_sentryAI>(creature);
+            return GetUlduarAI<npc_sanctum_sentryAI>(creature);
         }
 };
 
@@ -441,7 +443,7 @@ class npc_feral_defender : public CreatureScript
                         case EVENT_FERAL_POUNCE:
                             if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 0.0f, true))
                             {
-                                me->AddThreat(target, 100.0f);
+                                AddThreat(target, 100.0f);
                                 AttackStart(target);
                                 DoCast(target, SPELL_FERAL_POUNCE);
                             }
@@ -450,7 +452,7 @@ class npc_feral_defender : public CreatureScript
                         case EVENT_RUSH:
                             if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 0.0f, true))
                             {
-                                me->AddThreat(target, 100.0f);
+                                AddThreat(target, 100.0f);
                                 AttackStart(target);
                                 DoCast(target, SPELL_FERAL_RUSH);
                             }
@@ -470,8 +472,8 @@ class npc_feral_defender : public CreatureScript
             void JustDied(Unit* /*killer*/) override
             {
                 DoCast(me, SPELL_SUMMON_ESSENCE);
-                if (Creature* Auriaya = ObjectAccessor::GetCreature(*me, instance->GetGuidData(BOSS_AURIAYA)))
-                    Auriaya->AI()->DoAction(ACTION_RESPAWN_DEFENDER);
+                if (Creature* auriaya = instance->GetCreature(BOSS_AURIAYA))
+                    auriaya->AI()->DoAction(ACTION_RESPAWN_DEFENDER);
             }
 
         private:
@@ -481,7 +483,7 @@ class npc_feral_defender : public CreatureScript
 
         CreatureAI* GetAI(Creature* creature) const override
         {
-            return GetInstanceAI<npc_feral_defenderAI>(creature);
+            return GetUlduarAI<npc_feral_defenderAI>(creature);
         }
 };
 

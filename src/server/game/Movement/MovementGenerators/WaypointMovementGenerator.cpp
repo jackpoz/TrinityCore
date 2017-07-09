@@ -15,21 +15,17 @@
  * You should have received a copy of the GNU General Public License along
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-//Basic headers
+
 #include "WaypointMovementGenerator.h"
-//Extended headers
-#include "ObjectMgr.h"
-#include "Transport.h"
-//Flightmaster grid preloading
-#include "MapManager.h"
-//Creature-specific headers
-#include "Creature.h"
 #include "CreatureAI.h"
 #include "CreatureGroups.h"
-//Player-specific
-#include "Player.h"
-#include "MoveSplineInit.h"
+#include "Log.h"
+#include "MapManager.h"
 #include "MoveSpline.h"
+#include "MoveSplineInit.h"
+#include "ObjectMgr.h"
+#include "Transport.h"
+#include "World.h"
 
 void WaypointMovementGenerator<Creature>::LoadPath(Creature* creature)
 {
@@ -79,7 +75,7 @@ void WaypointMovementGenerator<Creature>::OnArrived(Creature* creature)
     {
         TC_LOG_DEBUG("maps.script", "Creature movement start script %u at point %u for %s.", i_path->at(i_currentNode)->event_id, i_currentNode, creature->GetGUID().ToString().c_str());
         creature->ClearUnitState(UNIT_STATE_ROAMING_MOVE);
-        creature->GetMap()->ScriptsStart(sWaypointScripts, i_path->at(i_currentNode)->event_id, creature, NULL);
+        creature->GetMap()->ScriptsStart(sWaypointScripts, i_path->at(i_currentNode)->event_id, creature, nullptr);
     }
 
     // Inform script
@@ -145,7 +141,7 @@ bool WaypointMovementGenerator<Creature>::StartMove(Creature* creature)
 
     creature->AddUnitState(UNIT_STATE_ROAMING_MOVE);
 
-    Movement::Location formationDest(node->x, node->y, node->z, 0.0f);
+    Position formationDest(node->x, node->y, node->z, (node->orientation && node->delay) ? node->orientation : 0.0f);
     Movement::MoveSplineInit init(creature);
 
     //! If creature is on transport, we assume waypoints set in DB are already transport offsets
@@ -153,7 +149,11 @@ bool WaypointMovementGenerator<Creature>::StartMove(Creature* creature)
     {
         init.DisableTransportPathTransformations();
         if (TransportBase* trans = creature->GetDirectTransport())
-            trans->CalculatePassengerPosition(formationDest.x, formationDest.y, formationDest.z, &formationDest.orientation);
+        {
+            float orientation = formationDest.GetOrientation();
+            trans->CalculatePassengerPosition(formationDest.m_positionX, formationDest.m_positionY, formationDest.m_positionZ, &orientation);
+            formationDest.SetOrientation(orientation);
+        }
     }
 
     //! Do not use formationDest here, MoveTo requires transport offsets due to DisableTransportPathTransformations() call
@@ -182,12 +182,9 @@ bool WaypointMovementGenerator<Creature>::StartMove(Creature* creature)
 
     init.Launch();
 
-    //Call for creature group update
+    // Call for creature group update
     if (creature->GetFormation() && creature->GetFormation()->getLeader() == creature)
-    {
-        creature->SetWalk(node->move_type != WAYPOINT_MOVE_TYPE_RUN);
-        creature->GetFormation()->LeaderMoveTo(formationDest.x, formationDest.y, formationDest.z);
-    }
+        creature->GetFormation()->LeaderMoveTo(formationDest, node->id, node->move_type, (node->orientation && node->delay) ? true : false);
 
     return true;
 }
@@ -239,7 +236,7 @@ bool WaypointMovementGenerator<Creature>::GetResetPos(Creature*, float& x, float
     if (!i_path || i_path->empty())
         return false;
 
-    const WaypointData* node = i_path->at(i_currentNode);
+    WaypointData const* node = i_path->at(i_currentNode);
     x = node->x; y = node->y; z = node->z;
     return true;
 }

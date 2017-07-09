@@ -15,13 +15,18 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ObjectMgr.h"
 #include "ScriptMgr.h"
+#include "icecrown_citadel.h"
+#include "InstanceScript.h"
+#include "Map.h"
+#include "MotionMaster.h"
+#include "MoveSplineInit.h"
+#include "ObjectAccessor.h"
+#include "Player.h"
 #include "ScriptedCreature.h"
 #include "SpellAuras.h"
-#include "MoveSplineInit.h"
-#include "Player.h"
-#include "icecrown_citadel.h"
+#include "SpellScript.h"
+#include "TemporarySummon.h"
 
 enum ScriptTexts
 {
@@ -383,7 +388,7 @@ class npc_coldflame : public CreatureScript
                 {
                     float ang = Position::NormalizeOrientation(pos.GetAngle(me));
                     me->SetOrientation(ang);
-                    owner->GetNearPoint2D(pos.m_positionX, pos.m_positionY, 5.0f - owner->GetObjectSize(), ang);
+                    owner->GetNearPoint2D(pos.m_positionX, pos.m_positionY, 5.0f - owner->GetCombatReach(), ang);
                 }
                 else
                 {
@@ -396,7 +401,7 @@ class npc_coldflame : public CreatureScript
 
                     float ang = Position::NormalizeOrientation(pos.GetAngle(target));
                     me->SetOrientation(ang);
-                    owner->GetNearPoint2D(pos.m_positionX, pos.m_positionY, 15.0f - owner->GetObjectSize(), ang);
+                    owner->GetNearPoint2D(pos.m_positionX, pos.m_positionY, 15.0f - owner->GetCombatReach(), ang);
                 }
 
                 me->NearTeleportTo(pos.GetPositionX(), pos.GetPositionY(), me->GetPositionZ(), me->GetOrientation());
@@ -513,8 +518,8 @@ class spell_marrowgar_coldflame : public SpellScriptLoader
             void SelectTarget(std::list<WorldObject*>& targets)
             {
                 targets.clear();
-                // select any unit but not the tank (by owners threatlist)
-                Unit* target = GetCaster()->GetAI()->SelectTarget(SELECT_TARGET_RANDOM, 1, -GetCaster()->GetObjectSize(), true, -SPELL_IMPALED);
+                // select any unit but not the tank
+                Unit* target = GetCaster()->GetAI()->SelectTarget(SELECT_TARGET_RANDOM, 0, -GetCaster()->GetCombatReach(), true, false, -SPELL_IMPALED);
                 if (!target)
                     target = GetCaster()->GetAI()->SelectTarget(SELECT_TARGET_RANDOM, 0, 0.0f, true); // or the tank if its solo
                 if (!target)
@@ -618,11 +623,7 @@ class spell_marrowgar_bone_spike_graveyard : public SpellScriptLoader
 
             bool Validate(SpellInfo const* /*spell*/) override
             {
-                for (uint32 i = 0; i < 3; ++i)
-                    if (!sSpellMgr->GetSpellInfo(BoneSpikeSummonId[i]))
-                        return false;
-
-                return true;
+                return ValidateSpellInfo(BoneSpikeSummonId);
             }
 
             bool Load() override
@@ -644,7 +645,7 @@ class spell_marrowgar_bone_spike_graveyard : public SpellScriptLoader
                     uint8 boneSpikeCount = uint8(GetCaster()->GetMap()->GetSpawnMode() & 1 ? 3 : 1);
 
                     std::list<Unit*> targets;
-                    marrowgarAI->SelectTargetList(targets, BoneSpikeTargetSelector(marrowgarAI), boneSpikeCount, SELECT_TARGET_RANDOM);
+                    marrowgarAI->SelectTargetList(targets, boneSpikeCount, SELECT_TARGET_RANDOM, 1, BoneSpikeTargetSelector(marrowgarAI));
                     if (targets.empty())
                         return;
 

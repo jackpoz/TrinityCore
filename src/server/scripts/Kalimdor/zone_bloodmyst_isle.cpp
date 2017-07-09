@@ -27,14 +27,15 @@ EndScriptData */
 npc_webbed_creature
 EndContentData */
 
-#include "Player.h"
-#include "Group.h"
-#include "GridNotifiersImpl.h"
 #include "ScriptMgr.h"
-#include "ScriptedCreature.h"
-#include "ScriptedEscortAI.h"
-#include "PassiveAI.h"
 #include "CellImpl.h"
+#include "GridNotifiersImpl.h"
+#include "Group.h"
+#include "MotionMaster.h"
+#include "ObjectAccessor.h"
+#include "PassiveAI.h"
+#include "Player.h"
+#include "ScriptedEscortAI.h"
 
 /*######
 ## npc_webbed_creature
@@ -361,7 +362,7 @@ public:
             Initialize();
         }
 
-        void sQuestAccept(Player* player, Quest const* quest) override
+        void QuestAccept(Player* player, Quest const* quest) override
         {
             if (quest->GetQuestId() == QUEST_ENDING_THEIR_WORLD)
             {
@@ -439,7 +440,7 @@ public:
                             break;
                         case EVENT_HEALING_SURGE:
                         {
-                            Unit* target = NULL;
+                            Unit* target = nullptr;
                             if (me->GetHealthPct() < 85)
                                 target = me;
                             else if (Player* player = GetPlayerForEscort())
@@ -508,7 +509,7 @@ public:
                             _explosivesGuids.clear();
                             for (uint8 i = 0; i != MAX_EXPLOSIVES; ++i)
                             {
-                                if (GameObject* explosive = me->SummonGameObject(GO_DRAENEI_EXPLOSIVES_1, ExplosivesPos[0][i], G3D::Quat(), 0))
+                                if (GameObject* explosive = me->SummonGameObject(GO_DRAENEI_EXPLOSIVES_1, ExplosivesPos[0][i], QuaternionData(), 0))
                                     _explosivesGuids.push_back(explosive->GetGUID());
                             }
                             me->HandleEmoteCommand(EMOTE_ONESHOT_NONE); // reset anim state
@@ -604,7 +605,7 @@ public:
                             _explosivesGuids.clear();
                             for (uint8 i = 0; i != MAX_EXPLOSIVES; ++i)
                             {
-                                if (GameObject* explosive = me->SummonGameObject(GO_DRAENEI_EXPLOSIVES_2, ExplosivesPos[1][i], G3D::Quat(), 0))
+                                if (GameObject* explosive = me->SummonGameObject(GO_DRAENEI_EXPLOSIVES_2, ExplosivesPos[1][i], QuaternionData(), 0))
                                     _explosivesGuids.push_back(explosive->GetGUID());
                             }
                             Talk(SAY_LEGOSO_15);
@@ -671,7 +672,7 @@ public:
                                 if (!target)
                                     target = me;
 
-                                target->AddThreat(sironas, 0.001f);
+                                AddThreat(sironas, 0.001f, target);
                                 sironas->Attack(target, true);
                                 sironas->GetMotionMaster()->MoveChase(target);
                             }
@@ -749,10 +750,10 @@ public:
                     SetEscortPaused(true);
 
                     //Find Sironas and make it respawn if needed
-                    Creature* sironas = NULL;
+                    Creature* sironas = nullptr;
                     Trinity::AllCreaturesOfEntryInRange check(me, NPC_SIRONAS, SIZE_OF_GRIDS);
                     Trinity::CreatureSearcher<Trinity::AllCreaturesOfEntryInRange> searcher(me, sironas, check);
-                    me->VisitNearbyObject(SIZE_OF_GRIDS, searcher);
+                    Cell::VisitAllObjects(me, searcher, SIZE_OF_GRIDS);
 
                     if (sironas)
                     {

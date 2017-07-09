@@ -16,8 +16,11 @@
  */
 
 #include "ScriptMgr.h"
-#include "ScriptedCreature.h"
+#include "InstanceScript.h"
 #include "magisters_terrace.h"
+#include "MotionMaster.h"
+#include "ObjectAccessor.h"
+#include "ScriptedCreature.h"
 
 enum Says
 {
@@ -123,7 +126,7 @@ class boss_selin_fireheart : public CreatureScript
                     Crystals.remove(CrystalChosen);
 
                     float x, y, z;
-                    CrystalChosen->GetClosePoint(x, y, z, me->GetObjectSize(), CONTACT_DISTANCE);
+                    CrystalChosen->GetClosePoint(x, y, z, me->GetCombatReach(), CONTACT_DISTANCE);
 
                     events.SetPhase(PHASE_DRAIN);
                     me->SetWalk(false);
@@ -263,7 +266,7 @@ class boss_selin_fireheart : public CreatureScript
 
         CreatureAI* GetAI(Creature* creature) const override
         {
-            return GetInstanceAI<boss_selin_fireheartAI>(creature);
+            return GetMagistersTerraceAI<boss_selin_fireheartAI>(creature);
         };
 };
 
@@ -289,7 +292,7 @@ class npc_fel_crystal : public CreatureScript
 
         CreatureAI* GetAI(Creature* creature) const override
         {
-            return GetInstanceAI<npc_fel_crystalAI>(creature);
+            return GetMagistersTerraceAI<npc_fel_crystalAI>(creature);
         };
 };
 

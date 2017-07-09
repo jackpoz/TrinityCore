@@ -16,8 +16,9 @@
  */
 
 #include "ScriptMgr.h"
-#include "ScriptedCreature.h"
+#include "MotionMaster.h"
 #include "naxxramas.h"
+#include "ScriptedCreature.h"
 
 enum Phases
 {
@@ -127,7 +128,7 @@ public:
 
             DoZoneInCombat();
 
-            if (me->getThreatManager().isThreatListEmpty())
+            if (!me->IsThreatened())
                 Reset();
             else
             {
@@ -234,7 +235,7 @@ public:
                     case EVENT_BLINK:
                         DoCastAOE(SPELL_CRIPPLE, true);
                         DoCastAOE(SPELL_BLINK);
-                        DoResetThreat();
+                        ResetThreatList();
                         justBlinked = true;
 
                         events.Repeat(Seconds(40));
@@ -334,7 +335,7 @@ public:
 
     CreatureAI* GetAI(Creature* creature) const override
     {
-        return GetInstanceAI<boss_nothAI>(creature);
+        return GetNaxxramasAI<boss_nothAI>(creature);
     }
 };
 

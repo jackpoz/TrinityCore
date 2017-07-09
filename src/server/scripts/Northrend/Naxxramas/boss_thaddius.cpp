@@ -16,12 +16,15 @@
  */
 
 #include "ScriptMgr.h"
-#include "ScriptedCreature.h"
-#include "SpellScript.h"
-#include "Player.h"
-#include "ObjectGuid.h"
+#include "GameObject.h"
+#include "InstanceScript.h"
+#include "Map.h"
 #include "naxxramas.h"
-
+#include "ObjectAccessor.h"
+#include "Player.h"
+#include "ScriptedCreature.h"
+#include "SpellInfo.h"
+#include "SpellScript.h"
 
 enum Phases
 {
@@ -164,7 +167,7 @@ public:
 
     CreatureAI* GetAI(Creature* creature) const override
     {
-        return GetInstanceAI<boss_thaddiusAI>(creature);
+        return GetNaxxramasAI<boss_thaddiusAI>(creature);
     }
 
     struct boss_thaddiusAI : public BossAI
@@ -396,7 +399,7 @@ public:
                             me->SetReactState(REACT_AGGRESSIVE);
 
                             DoZoneInCombat();
-                            if (Unit* closest = SelectTarget(SELECT_TARGET_NEAREST, 0, 500.0f))
+                            if (Unit* closest = SelectTarget(SELECT_TARGET_MINDISTANCE, 0, 500.0f))
                                 AttackStart(closest);
                             else // if there is no nearest target, then there is no target, meaning we should reset
                             {
@@ -480,7 +483,7 @@ public:
 
     CreatureAI* GetAI(Creature* creature) const override
     {
-        return GetInstanceAI<npc_stalaggAI>(creature);
+        return GetNaxxramasAI<npc_stalaggAI>(creature);
     }
 
     struct npc_stalaggAI : public ScriptedAI
@@ -561,7 +564,7 @@ public:
                         if (Creature* feugen = ObjectAccessor::GetCreature(*me, instance->GetGuidData(DATA_FEUGEN)))
                             if (feugen->GetVictim())
                             {
-                                me->AddThreat(feugen->EnsureVictim(), 0.0f);
+                                AddThreat(feugen->EnsureVictim(), 0.0f);
                                 me->SetInCombatWith(feugen->EnsureVictim());
                             }
                         break;
@@ -603,11 +606,8 @@ public:
                     thaddius->AI()->DoAction(ACTION_STALAGG_AGGRO);
 
                 if (Creature* feugen = ObjectAccessor::GetCreature(*me, instance->GetGuidData(DATA_FEUGEN)))
-                    if (!feugen->IsInCombat())
-                    {
-                        feugen->AddThreat(who, 0.0f);
-                        feugen->SetInCombatWith(who);
-                    }
+                    if (!feugen->IsEngaged())
+                        AddThreat(who, 0.0f, feugen);
             }
 
             void DamageTaken(Unit* /*who*/, uint32& damage) override
@@ -748,7 +748,7 @@ public:
 
     CreatureAI* GetAI(Creature* creature) const override
     {
-        return GetInstanceAI<npc_feugenAI>(creature);
+        return GetNaxxramasAI<npc_feugenAI>(creature);
     }
 
     struct npc_feugenAI : public ScriptedAI
@@ -830,7 +830,7 @@ public:
                         if (Creature* stalagg = ObjectAccessor::GetCreature(*me, instance->GetGuidData(DATA_STALAGG)))
                             if (stalagg->GetVictim())
                             {
-                                me->AddThreat(stalagg->EnsureVictim(), 0.0f);
+                                AddThreat(stalagg->EnsureVictim(), 0.0f);
                                 me->SetInCombatWith(stalagg->EnsureVictim());
                             }
                         staticFieldTimer = 6 * IN_MILLISECONDS;
@@ -874,10 +874,7 @@ public:
 
                 if (Creature* stalagg = ObjectAccessor::GetCreature(*me, instance->GetGuidData(DATA_STALAGG)))
                     if (!stalagg->IsInCombat())
-                    {
-                        stalagg->AddThreat(who, 0.0f);
-                        stalagg->SetInCombatWith(who);
-                    }
+                        AddThreat(who, 0.0f, stalagg);
             }
 
             void DamageTaken(Unit* /*who*/, uint32& damage) override
@@ -1019,7 +1016,7 @@ public:
 
     CreatureAI* GetAI(Creature* creature) const override
     {
-        return GetInstanceAI<npc_teslaAI>(creature);
+        return GetNaxxramasAI<npc_teslaAI>(creature);
     }
 
     struct npc_teslaAI : public ScriptedAI
@@ -1044,15 +1041,16 @@ class spell_thaddius_polarity_charge : public SpellScriptLoader
 
             bool Validate(SpellInfo const* /*spell*/) override
             {
-                return (
-                    sSpellMgr->GetSpellInfo(SPELL_POLARITY_SHIFT) &&
-                    sSpellMgr->GetSpellInfo(SPELL_POSITIVE_CHARGE_APPLY) &&
-                    sSpellMgr->GetSpellInfo(SPELL_POSITIVE_CHARGE_TICK) &&
-                    sSpellMgr->GetSpellInfo(SPELL_POSITIVE_CHARGE_AMP) &&
-                    sSpellMgr->GetSpellInfo(SPELL_NEGATIVE_CHARGE_APPLY) &&
-                    sSpellMgr->GetSpellInfo(SPELL_NEGATIVE_CHARGE_TICK) &&
-                    sSpellMgr->GetSpellInfo(SPELL_NEGATIVE_CHARGE_AMP)
-                    );
+                return ValidateSpellInfo(
+                {
+                    SPELL_POLARITY_SHIFT,
+                    SPELL_POSITIVE_CHARGE_APPLY,
+                    SPELL_POSITIVE_CHARGE_TICK,
+                    SPELL_POSITIVE_CHARGE_AMP,
+                    SPELL_NEGATIVE_CHARGE_APPLY,
+                    SPELL_NEGATIVE_CHARGE_TICK,
+                    SPELL_NEGATIVE_CHARGE_AMP
+                });
             }
 
             void HandleTargets(std::list<WorldObject*>& targetList)
@@ -1143,15 +1141,16 @@ class spell_thaddius_polarity_shift : public SpellScriptLoader
 
             bool Validate(SpellInfo const* /*spell*/) override
             {
-                return (
-                    sSpellMgr->GetSpellInfo(SPELL_POLARITY_SHIFT) &&
-                    sSpellMgr->GetSpellInfo(SPELL_POSITIVE_CHARGE_APPLY) &&
-                    sSpellMgr->GetSpellInfo(SPELL_POSITIVE_CHARGE_TICK) &&
-                    sSpellMgr->GetSpellInfo(SPELL_POSITIVE_CHARGE_AMP) &&
-                    sSpellMgr->GetSpellInfo(SPELL_NEGATIVE_CHARGE_APPLY) &&
-                    sSpellMgr->GetSpellInfo(SPELL_NEGATIVE_CHARGE_TICK) &&
-                    sSpellMgr->GetSpellInfo(SPELL_NEGATIVE_CHARGE_AMP)
-                    );
+                return ValidateSpellInfo(
+                {
+                    SPELL_POLARITY_SHIFT,
+                    SPELL_POSITIVE_CHARGE_APPLY,
+                    SPELL_POSITIVE_CHARGE_TICK,
+                    SPELL_POSITIVE_CHARGE_AMP,
+                    SPELL_NEGATIVE_CHARGE_APPLY,
+                    SPELL_NEGATIVE_CHARGE_TICK,
+                    SPELL_NEGATIVE_CHARGE_AMP
+                });
             }
 
             void HandleDummy(SpellEffIndex /*effIndex*/)
@@ -1195,7 +1194,7 @@ class spell_thaddius_magnetic_pull : public SpellScriptLoader
 
             bool Validate(SpellInfo const* /*spell*/) override
             {
-                return sSpellMgr->GetSpellInfo(SPELL_MAGNETIC_PULL) ? true : false;
+                return ValidateSpellInfo({ SPELL_MAGNETIC_PULL });
             }
 
             void HandleCast() // only feugen ever casts this according to wowhead data
@@ -1208,39 +1207,39 @@ class spell_thaddius_magnetic_pull : public SpellScriptLoader
                 if (!stalagg)
                     return;
 
-                Unit* feugenTank = feugen->GetVictim();
-                Unit* stalaggTank = stalagg->GetVictim();
+                ThreatManager& feugenThreat = feugen->GetThreatManager();
+                ThreatManager& stalaggThreat = stalagg->GetThreatManager();
+
+                Unit* feugenTank = feugenThreat.GetCurrentVictim();
+                Unit* stalaggTank = stalaggThreat.GetCurrentVictim();
 
                 if (!feugenTank || !stalaggTank)
                     return;
 
-                ThreatManager& feugenThreat = feugen->getThreatManager();
-                ThreatManager& stalaggThreat = stalagg->getThreatManager();
-
                 if (feugenTank == stalaggTank) // special behavior if the tanks are the same (taken from retail)
                 {
-                    float feugenTankThreat = feugenThreat.getThreat(feugenTank);
-                    float stalaggTankThreat = stalaggThreat.getThreat(stalaggTank);
+                    float feugenTankThreat = feugenThreat.GetThreat(feugenTank);
+                    float stalaggTankThreat = stalaggThreat.GetThreat(stalaggTank);
 
-                    feugenThreat.addThreat(feugenTank, stalaggTankThreat - feugenTankThreat);
-                    stalaggThreat.addThreat(stalaggTank, feugenTankThreat - stalaggTankThreat);
+                    feugen->GetThreatManager().AddThreat(feugenTank, stalaggTankThreat - feugenTankThreat, nullptr, true, true);
+                    stalagg->GetThreatManager().AddThreat(stalaggTank, feugenTankThreat - stalaggTankThreat, nullptr, true, true);
 
                     feugen->CastSpell(stalaggTank, SPELL_MAGNETIC_PULL_EFFECT, true);
                 }
                 else // normal case, two tanks
                 {
-                    float feugenTankThreat = feugenThreat.getThreat(feugenTank);
-                    float feugenOtherThreat = feugenThreat.getThreat(stalaggTank);
-                    float stalaggTankThreat = stalaggThreat.getThreat(stalaggTank);
-                    float stalaggOtherThreat = stalaggThreat.getThreat(feugenTank);
+                    float feugenTankThreat = feugenThreat.GetThreat(feugenTank);
+                    float feugenOtherThreat = feugenThreat.GetThreat(stalaggTank);
+                    float stalaggTankThreat = stalaggThreat.GetThreat(stalaggTank);
+                    float stalaggOtherThreat = stalaggThreat.GetThreat(feugenTank);
 
                     // set the two entries in feugen's threat table to be equal to the ones in stalagg's
-                    feugenThreat.addThreat(stalaggTank, stalaggTankThreat - feugenOtherThreat);
-                    feugenThreat.addThreat(feugenTank, stalaggOtherThreat - feugenTankThreat);
+                    stalagg->GetThreatManager().AddThreat(stalaggTank, stalaggTankThreat - feugenOtherThreat, nullptr, true, true);
+                    stalagg->GetThreatManager().AddThreat(feugenTank, stalaggOtherThreat - feugenTankThreat, nullptr, true, true);
 
                     // set the two entries in stalagg's threat table to be equal to the ones in feugen's
-                    stalaggThreat.addThreat(feugenTank, feugenTankThreat - stalaggOtherThreat);
-                    stalaggThreat.addThreat(stalaggTank, feugenOtherThreat - stalaggTankThreat);
+                    stalagg->GetThreatManager().AddThreat(feugenTank, feugenTankThreat - stalaggOtherThreat, nullptr, true, true);
+                    stalagg->GetThreatManager().AddThreat(stalaggTank, feugenOtherThreat - stalaggTankThreat, nullptr, true, true);
 
                     // pull the two tanks across
                     feugenTank->CastSpell(stalaggTank, SPELL_MAGNETIC_PULL_EFFECT, true);

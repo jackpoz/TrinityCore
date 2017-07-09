@@ -17,12 +17,13 @@
  */
 
 #include "SocialMgr.h"
-#include "WorldSession.h"
-#include "WorldPacket.h"
 #include "DatabaseEnv.h"
 #include "ObjectAccessor.h"
 #include "Player.h"
+#include "RBAC.h"
 #include "World.h"
+#include "WorldPacket.h"
+#include "WorldSession.h"
 
 PlayerSocial::PlayerSocial(): _playerGUID()
 { }
@@ -125,14 +126,13 @@ void PlayerSocial::SendSocialList(Player* player, uint32 flags)
 {
     ASSERT(player);
 
-    uint32 size = _playerSocialMap.size();
-
     uint32 count = 0;
-    WorldPacket data(SMSG_CONTACT_LIST, (4 + 4 + size * 25)); // just can guess size
+    WorldPacket data(SMSG_CONTACT_LIST, (4 + 4 + _playerSocialMap.size() * 25)); // just can guess size
     data << uint32(flags);                                    // 0x1 = Friendlist update. 0x2 = Ignorelist update. 0x4 = Mutelist update.
-    data << uint32(size);                                     // friends count
+    size_t countPos = data.wpos();
+    data << uint32(count);                                    // friends count placeholder
 
-    for (PlayerSocialMap::value_type& v : _playerSocialMap)
+    for (auto& v : _playerSocialMap)
     {
         if (!(v.second.Flags & flags))
             continue;
@@ -158,6 +158,8 @@ void PlayerSocial::SendSocialList(Player* player, uint32 flags)
         if (count >= (((flags & SOCIAL_FLAG_FRIEND) != 0) ? SOCIALMGR_FRIEND_LIMIT : SOCIALMGR_IGNORE_LIMIT))
             break;
     }
+
+    data.put<uint32>(countPos, count);
 
     player->SendDirectMessage(&data);
 }
@@ -223,7 +225,12 @@ void SocialMgr::GetFriendInfo(Player* player, ObjectGuid const& friendGUID, Frie
         else if (target->isAFK())
             friendInfo.Status = FRIEND_STATUS_AFK;
         else
+        {
             friendInfo.Status = FRIEND_STATUS_ONLINE;
+
+            if (target->GetSession()->GetRecruiterId() == player->GetSession()->GetAccountId() || target->GetSession()->GetAccountId() == player->GetSession()->GetRecruiterId())
+                friendInfo.Status = FriendStatus(uint32(friendInfo.Status) | FRIEND_STATUS_RAF);
+        }
 
         friendInfo.Area = target->GetZoneId();
         friendInfo.Level = target->getLevel();

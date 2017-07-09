@@ -16,12 +16,14 @@
  */
 
 #include "ScriptMgr.h"
-#include "ScriptedCreature.h"
 #include "black_temple.h"
-#include "Spell.h"
-#include "SpellScript.h"
-#include "SpellAuraEffects.h"
+#include "InstanceScript.h"
+#include "MotionMaster.h"
 #include "Player.h"
+#include "ScriptedCreature.h"
+#include "Spell.h"
+#include "SpellAuraEffects.h"
+#include "SpellScript.h"
 
 enum Says
 {
@@ -346,6 +348,8 @@ public:
                     Talk(SUFF_SAY_RECAP);
                     me->AttackStop();
                     me->SetReactState(REACT_PASSIVE);
+                    events.Reset();
+                    me->InterruptNonMeleeSpells(false);
                     me->GetMotionMaster()->MovePoint(RELIQUARY_DESPAWN_WAYPOINT, DespawnPoint);
                 }
             }
@@ -474,6 +478,8 @@ public:
                     Talk(DESI_SAY_RECAP);
                     me->AttackStop();
                     me->SetReactState(REACT_PASSIVE);
+                    events.Reset();
+                    me->InterruptNonMeleeSpells(false);
                     me->GetMotionMaster()->MovePoint(RELIQUARY_DESPAWN_WAYPOINT, DespawnPoint);
                 }
             }
@@ -723,9 +729,7 @@ class spell_reliquary_of_souls_aura_of_desire : public SpellScriptLoader
 
             bool Validate(SpellInfo const* /*spellInfo*/) override
             {
-                if (!sSpellMgr->GetSpellInfo(SPELL_AURA_OF_DESIRE_DAMAGE))
-                    return false;
-                return true;
+                return ValidateSpellInfo({ SPELL_AURA_OF_DESIRE_DAMAGE });
             }
 
             void OnProcSpell(AuraEffect const* aurEff, ProcEventInfo& eventInfo)
@@ -740,7 +744,7 @@ class spell_reliquary_of_souls_aura_of_desire : public SpellScriptLoader
                 caster->CastCustomSpell(SPELL_AURA_OF_DESIRE_DAMAGE, SPELLVALUE_BASE_POINT0, bp, caster, true, nullptr, aurEff);
             }
 
-            void UpdateAmount(AuraEffect const* /*effect*/)
+            void UpdateAmount(AuraEffect* /*aurEff*/)
             {
                 if (AuraEffect* effect = GetAura()->GetEffect(EFFECT_1))
                     effect->ChangeAmount(effect->GetAmount() - 5);
@@ -749,7 +753,7 @@ class spell_reliquary_of_souls_aura_of_desire : public SpellScriptLoader
             void Register() override
             {
                 OnEffectProc += AuraEffectProcFn(spell_reliquary_of_souls_aura_of_desire_AuraScript::OnProcSpell, EFFECT_0, SPELL_AURA_MOD_HEALING_PCT);
-                OnEffectPeriodic += AuraEffectPeriodicFn(spell_reliquary_of_souls_aura_of_desire_AuraScript::UpdateAmount, EFFECT_2, SPELL_AURA_PERIODIC_TRIGGER_SPELL);
+                OnEffectUpdatePeriodic += AuraEffectUpdatePeriodicFn(spell_reliquary_of_souls_aura_of_desire_AuraScript::UpdateAmount, EFFECT_2, SPELL_AURA_PERIODIC_TRIGGER_SPELL);
             }
         };
 
@@ -805,9 +809,7 @@ class spell_reliquary_of_souls_spite : public SpellScriptLoader
 
             bool Validate(SpellInfo const* /*spellInfo*/) override
             {
-                if (!sSpellMgr->GetSpellInfo(SPELL_SPITE_DAMAGE))
-                    return false;
-                return true;
+                return ValidateSpellInfo({ SPELL_SPITE_DAMAGE });
             }
 
             void OnRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)

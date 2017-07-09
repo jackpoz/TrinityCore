@@ -30,15 +30,15 @@ npc_giant_spotlight
 EndContentData */
 
 #include "ScriptMgr.h"
-#include "ScriptedCreature.h"
+#include "CellImpl.h"
+#include "GridNotifiersImpl.h"
+#include "MotionMaster.h"
+#include "ObjectAccessor.h"
+#include "Player.h"
 #include "ScriptedEscortAI.h"
 #include "ScriptedGossip.h"
-#include "Player.h"
 #include "SpellInfo.h"
-#include "GridNotifiers.h"
-#include "GridNotifiersImpl.h"
-#include "Cell.h"
-#include "CellImpl.h"
+#include "TemporarySummon.h"
 
 /*######
 ## npc_clintar_spirit
@@ -150,7 +150,7 @@ public:
             std::list<Player*> playerOnQuestList;
             Trinity::AnyPlayerInObjectRangeCheck checker(me, 5.0f);
             Trinity::PlayerListSearcher<Trinity::AnyPlayerInObjectRangeCheck> searcher(me, playerOnQuestList, checker);
-            me->VisitNearbyWorldObject(5.0f, searcher);
+            Cell::VisitWorldObjects(me, searcher, 5.0f);
             for (std::list<Player*>::const_iterator itr = playerOnQuestList.begin(); itr != playerOnQuestList.end(); ++itr)
             {
                 // Check if found player target has active quest
@@ -301,7 +301,7 @@ public:
                             case 0:
                                 if (Creature* mob = me->SummonCreature(ASPECT_RAVEN, AspectRavenSummon, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 2000))
                                 {
-                                    mob->AddThreat(me, 10000.0f);
+                                    AddThreat(me, 10000.0f, mob);
                                     mob->AI()->AttackStart(me);
                                 }
                                 EventTimer = 2000;
@@ -443,7 +443,7 @@ public:
             DoCast(SPELL_OMEN_SUMMON_SPOTLIGHT);
         }
 
-        void SpellHit(Unit* /*caster*/, const SpellInfo* spell) override
+        void SpellHit(Unit* /*caster*/, SpellInfo const* spell) override
         {
             if (spell->Id == SPELL_ELUNE_CANDLE)
             {

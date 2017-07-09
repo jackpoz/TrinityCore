@@ -15,13 +15,20 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ObjectMgr.h"
 #include "ScriptMgr.h"
-#include "ScriptedCreature.h"
-#include "SpellAuraEffects.h"
 #include "icecrown_citadel.h"
-#include "Player.h"
+#include "InstanceScript.h"
+#include "Map.h"
+#include "MotionMaster.h"
+#include "ObjectAccessor.h"
 #include "PassiveAI.h"
+#include "Player.h"
+#include "ScriptedCreature.h"
+#include "Spell.h"
+#include "SpellAuraEffects.h"
+#include "SpellInfo.h"
+#include "SpellScript.h"
+#include "TemporarySummon.h"
 
 enum Texts
 {
@@ -498,7 +505,7 @@ struct BloodPrincesBossAI : public BossAI
     {
         if (!_isEmpowered)
         {
-            me->AddThreat(attacker, float(damage));
+            AddThreat(attacker, float(damage));
             damage = 0;
         }
     }
@@ -782,7 +789,7 @@ class boss_prince_valanar_icc : public CreatureScript
 
         struct boss_prince_valanarAI : public BloodPrincesBossAI
         {
-            boss_prince_valanarAI(Creature* creature) : BloodPrincesBossAI(creature, DATA_PRINCE_TALDARAM) { }
+            boss_prince_valanarAI(Creature* creature) : BloodPrincesBossAI(creature, DATA_PRINCE_VALANAR) { }
 
             void ScheduleEvents() override
             {
@@ -1123,10 +1130,7 @@ class npc_dark_nucleus : public CreatureScript
                     if (Unit* victim = me->GetVictim())
                     {
                         if (me->GetDistance(victim) < 15.0f && !victim->HasAura(SPELL_SHADOW_RESONANCE_RESIST, me->GetGUID()))
-                        {
                             DoCast(victim, SPELL_SHADOW_RESONANCE_RESIST);
-                            me->ClearUnitState(UNIT_STATE_CASTING);
-                        }
                         else
                             MoveInLineOfSight(me->GetVictim());
                     }
@@ -1140,7 +1144,6 @@ class npc_dark_nucleus : public CreatureScript
                 }
 
                 DoCast(who, SPELL_SHADOW_RESONANCE_RESIST);
-                me->ClearUnitState(UNIT_STATE_CASTING);
             }
 
             void DamageTaken(Unit* attacker, uint32& /*damage*/) override
@@ -1148,8 +1151,8 @@ class npc_dark_nucleus : public CreatureScript
                 if (attacker == me)
                     return;
 
-                me->DeleteThreatList();
-                me->AddThreat(attacker, 500000000.0f);
+                me->GetThreatManager().ClearAllThreat();
+                AddThreat(attacker, 500000000.0f);
             }
 
             void UpdateAI(uint32 diff) override
@@ -1247,9 +1250,7 @@ class spell_taldaram_flame_ball_visual : public SpellScriptLoader
 
             bool Validate(SpellInfo const* /*spell*/) override
             {
-                if (!sSpellMgr->GetSpellInfo(SPELL_BALL_OF_FLAMES))
-                    return false;
-                return true;
+                return ValidateSpellInfo({ SPELL_BALL_OF_FLAMES });
             }
 
             void OnRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
@@ -1359,10 +1360,7 @@ class spell_valanar_kinetic_bomb : public SpellScriptLoader
 
             bool Validate(SpellInfo const* /*spell*/) override
             {
-                if (!sSpellMgr->GetSpellInfo(SPELL_KINETIC_BOMB_EXPLOSION)
-                    || !sSpellMgr->GetSpellInfo(SPELL_KINETIC_BOMB_VISUAL))
-                    return false;
-                return true;
+                return ValidateSpellInfo({ SPELL_KINETIC_BOMB_EXPLOSION, SPELL_KINETIC_BOMB_VISUAL });
             }
 
             void HandleDummyTick(AuraEffect const* /*aurEff*/)
@@ -1466,9 +1464,7 @@ class spell_blood_council_shadow_prison : public SpellScriptLoader
 
             bool Validate(SpellInfo const* /*spell*/) override
             {
-                if (!sSpellMgr->GetSpellInfo(SPELL_SHADOW_PRISON_DAMAGE))
-                    return false;
-                return true;
+                return ValidateSpellInfo({ SPELL_SHADOW_PRISON_DAMAGE });
             }
 
             void HandleDummyTick(AuraEffect const* aurEff)
