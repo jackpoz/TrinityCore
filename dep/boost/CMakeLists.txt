@@ -47,9 +47,9 @@ else()
 endif()
 
 if (STD_HAS_WORKING_WREGEX)
-  find_package(Boost ${BOOST_REQUIRED_VERSION} REQUIRED system filesystem iostreams)
+  find_package(Boost ${BOOST_REQUIRED_VERSION} REQUIRED system filesystem thread program_options iostreams)
 else()
-  find_package(Boost ${BOOST_REQUIRED_VERSION} REQUIRED system filesystem iostreams regex)
+  find_package(Boost ${BOOST_REQUIRED_VERSION} REQUIRED system filesystem thread program_options iostreams regex)
 endif()
 
 # Find if Boost was compiled in C++03 mode because it requires -DBOOST_NO_CXX11_SCOPED_ENUMS
