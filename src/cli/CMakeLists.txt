@@ -43,7 +43,7 @@ include_directories(${cli_includes})
 
 add_library(cli SHARED ${cli_sources} 
   ${CMAKE_SOURCE_DIR}/src/server/game/DataStores/DBCStores.cpp
-  ${CMAKE_SOURCE_DIR}/src/server/shared/DataStores/DBCFileLoader.cpp)
+  ${CMAKE_SOURCE_DIR}/src/common/DataStores/DBCFileLoader.cpp)
 
 target_link_libraries(cli
   common
