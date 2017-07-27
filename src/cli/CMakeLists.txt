@@ -43,7 +43,9 @@ include_directories(${cli_includes})
 
 add_library(cli SHARED ${cli_sources} 
   ${CMAKE_SOURCE_DIR}/src/server/game/DataStores/DBCStores.cpp
-  ${CMAKE_SOURCE_DIR}/src/common/DataStores/DBCFileLoader.cpp)
+  ${CMAKE_SOURCE_DIR}/src/common/DataStores/DBCFileLoader.cpp
+  ${CMAKE_SOURCE_DIR}/src/server/shared/DataStores/DBCStore.cpp
+  ${CMAKE_SOURCE_DIR}/src/server/shared/DataStores/DBCDatabaseLoader.cpp)
 
 target_link_libraries(cli
   common
@@ -51,7 +53,6 @@ target_link_libraries(cli
   g3dlib
   Recast
   Detour
-  shared
   ${BZIP2_LIBRARIES}
   ${ZLIB_LIBRARIES}
   ${CMAKE_THREAD_LIBS_INIT}

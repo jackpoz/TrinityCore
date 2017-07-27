@@ -1,5 +1,12 @@
 #include "FakeTC.h"
 
+WorldDatabaseWorkerPool WorldDatabase;
+
+bool ResultSet::NextRow()
+{
+    return false;
+}
+
 SpellMgr::SpellMgr()
 {}
 
