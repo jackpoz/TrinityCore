@@ -3397,7 +3397,7 @@ dtStatus dtNavMeshQuery::getPolyWallSegments(dtPolyRef ref, const dtQueryFilter*
 					float* seg = &segmentVerts[n*6];
 					dtVlerp(seg+0, vj,vi, tmin);
 					dtVlerp(seg+3, vj,vi, tmax);
-					if (segmentRefs)
+					if (segmentRefs) //-V547
 						segmentRefs[n] = ints[k].ref;
 					n++;
 				}

@@ -4297,7 +4297,7 @@ void Spell::ExecuteLogEffectCreateItem(uint8 effIndex, uint32 entry)
     *m_effectExecuteData[effIndex] << uint32(entry);
 }
 
-void Spell::ExecuteLogEffectDestroyItem(uint8 effIndex, uint32 entry)
+void Spell::ExecuteLogEffectDestroyItem(uint8 effIndex, uint32 entry) //-V524
 {
     InitEffectExecuteData(effIndex);
     *m_effectExecuteData[effIndex] << uint32(entry);

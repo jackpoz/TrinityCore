@@ -1290,7 +1290,7 @@ struct npc_argent_captainAI : public ScriptedAI
 
         void EnterCombat(Unit* /*target*/) override
         {
-            me->SetHomePosition(*me);
+            me->SetHomePosition(*me); //-V678
             if (IsUndead)
                 DoZoneInCombat();
         }

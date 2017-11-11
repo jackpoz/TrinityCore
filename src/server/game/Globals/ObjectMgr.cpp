@@ -1969,7 +1969,7 @@ ObjectGuid::LowType ObjectMgr::AddGameObjectData(uint32 entry, uint32 mapId, Pos
             delete go;
             return 0;
         }
-    }
+    } //-V773
 
     TC_LOG_DEBUG("maps", "AddGameObjectData: dbguid %u entry %u map %u pos %s", spawnId, entry, mapId, data.spawnPoint.ToString().c_str());
 
@@ -2022,7 +2022,7 @@ ObjectGuid::LowType ObjectMgr::AddCreatureData(uint32 entry, uint32 mapId, Posit
             delete creature;
             return 0;
         }
-    }
+    } //-V773
 
     return spawnId;
 }
@@ -3309,7 +3309,7 @@ void ObjectMgr::LoadPetLevelInfo()
         uint32 current_level = fields[1].GetUInt8();
         if (current_level > sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL))
         {
-            if (current_level > STRONG_MAX_LEVEL)        // hardcoded level maximum
+            if (current_level > STRONG_MAX_LEVEL)        // hardcoded level maximum //-V547
                 TC_LOG_ERROR("sql.sql", "Wrong (> %u) level %u in `pet_levelstats` table, ignoring.", STRONG_MAX_LEVEL, current_level);
             else
             {
@@ -3929,7 +3929,7 @@ void ObjectMgr::LoadPlayerInfo()
             uint32 current_level = fields[2].GetUInt8();
             if (current_level > sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL))
             {
-                if (current_level > STRONG_MAX_LEVEL)        // hardcoded level maximum
+                if (current_level > STRONG_MAX_LEVEL)        // hardcoded level maximum //-V547
                     TC_LOG_ERROR("sql.sql", "Wrong (> %u) level %u in `player_levelstats` table, ignoring.", STRONG_MAX_LEVEL, current_level);
                 else
                 {
@@ -4029,7 +4029,7 @@ void ObjectMgr::LoadPlayerInfo()
 
             if (current_level >= sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL))
             {
-                if (current_level > STRONG_MAX_LEVEL)        // hardcoded level maximum
+                if (current_level > STRONG_MAX_LEVEL)        // hardcoded level maximum //-V547
                     TC_LOG_ERROR("sql.sql", "Wrong (> %u) level %u in `player_xp_for_level` table, ignoring.", STRONG_MAX_LEVEL, current_level);
                 else
                 {

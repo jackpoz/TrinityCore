@@ -46,7 +46,7 @@ struct dtNode
 
 static const int DT_MAX_STATES_PER_NODE = 1 << DT_NODE_STATE_BITS;	// number of extra states per node. See dtNode::state
 
-class dtNodePool
+class dtNodePool //-V690
 {
 public:
 	dtNodePool(int maxNodes, int hashSize);
@@ -105,7 +105,7 @@ private:
 	int m_nodeCount;
 };
 
-class dtNodeQueue
+class dtNodeQueue //-V690
 {
 public:
 	dtNodeQueue(int n);

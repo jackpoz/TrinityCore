@@ -176,7 +176,7 @@ FileSystem::Dir& FileSystem::getContents(const std::string& path, bool forceUpda
         if (exists && isDirectory) {
 
             // Is this path actually a directory?
-            if (isDirectory) {
+            if (isDirectory) { //-V571
                 dir.exists = true;
                 // Update contents
 #               ifdef G3D_WINDOWS
@@ -394,7 +394,7 @@ void FileSystem::_createDirectory(const std::string& _dir) {
     std::string root, base, ext;
     Array<std::string> path;
 
-    std::string lead;
+    std::string lead; //-V808
     FilePath::parse(d, root, path, base, ext);
     debugAssert(base == "");
     debugAssert(ext == "");

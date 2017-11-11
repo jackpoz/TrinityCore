@@ -1169,7 +1169,7 @@ public:
         for (int i = 0; i < maxTinyBuffers; ++i) {
             tinyPool[i] = (uint8*)tinyHeap + (tinyBufferSize * i);
         }
-        tinyPoolSize = maxTinyBuffers;
+        tinyPoolSize = maxTinyBuffers; //-V519
 
 #if 0        ///---------------------------------- old mutex
 #       ifdef G3D_WINDOWS

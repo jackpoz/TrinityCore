@@ -980,7 +980,7 @@ public:
 
         map->AddToMap(v->ToCreature());
 
-        return true;
+        return true; //-V773
     }
 
     static bool HandleDebugSendLargePacketCommand(ChatHandler* handler, char const* /*args*/)

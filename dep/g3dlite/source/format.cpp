@@ -57,7 +57,7 @@ std::string vformat(const char *fmt, va_list argPtr) {
 
             heapBuffer = (char*)System::malloc(maxSize + 1);
             _vsnprintf(heapBuffer, maxSize, fmt, argPtr);
-            heapBuffer[maxSize] = '\0';
+            heapBuffer[maxSize] = '\0'; //-V522
         } else {
             heapBuffer = (char*)System::malloc(actualSize);
             vsprintf(heapBuffer, fmt, argPtr);            

@@ -213,7 +213,7 @@ void WorldSession::HandleGroupInviteOpcode(WorldPacket& recvData)
     invitedPlayer->SendDirectMessage(&data);
 
     SendPartyResult(PARTY_OP_INVITE, membername, ERR_PARTY_RESULT_OK);
-}
+} //-V773
 
 void WorldSession::HandleGroupAcceptOpcode(WorldPacket& recvData)
 {
@@ -1010,7 +1010,7 @@ void WorldSession::HandleRequestPartyMemberStatsOpcode(WorldPacket &recvData)
     data << uint16(pet ? pet->GetDisplayId() : 0);          // GROUP_UPDATE_FLAG_PET_MODEL_ID
 
     if (updateFlags & GROUP_UPDATE_FLAG_PET_CUR_HP)
-        data << uint32(pet->GetHealth());
+        data << uint32(pet->GetHealth()); //-V595
 
     if (updateFlags & GROUP_UPDATE_FLAG_PET_MAX_HP)
         data << uint32(pet->GetMaxHealth());

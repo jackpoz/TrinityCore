@@ -94,7 +94,7 @@ class npc_pet_mage_mirror_image : public CreatureScript
                         if ((*iter)->GetTypeId() == TYPEID_PLAYER)
                         {
                             // If this player is closer than the previous one, update it
-                            if (me->GetDistance((*iter)->GetPosition()) < me->GetDistance(nearestPlayer->GetPosition()))
+                            if (me->GetDistance((*iter)->GetPosition()) < me->GetDistance(nearestPlayer->GetPosition())) //-V522
                                 nearestPlayer = (*iter);
                         }
                     }

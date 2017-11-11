@@ -539,7 +539,7 @@ bool SpellMgr::CanSpellTriggerProcOnEvent(SpellProcEntry const& procEntry, ProcE
     }
 
     // check school mask (if set) for other trigger types
-    if (procEntry.SchoolMask && !(eventInfo.GetSchoolMask() & procEntry.SchoolMask))
+    if (procEntry.SchoolMask && !(eventInfo.GetSchoolMask() & procEntry.SchoolMask)) //-V560
         return false;
 
     // check spell family name/flags (if set) for spells

@@ -145,7 +145,7 @@ class LinkedListHead
         void decSize() { --iSize; }
 
         template<class _Ty>
-            class Iterator
+            class Iterator //-V690
         {
             public:
                 typedef std::bidirectional_iterator_tag     iterator_category;

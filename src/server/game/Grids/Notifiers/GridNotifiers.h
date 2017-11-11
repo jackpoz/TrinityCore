@@ -1019,7 +1019,7 @@ namespace Trinity
     };
 
     // Success at unit in range, range update for next check (this can be use with UnitLastSearcher to find nearest unit)
-    class NearestAttackableUnitInObjectRangeCheck
+    class NearestAttackableUnitInObjectRangeCheck //-V690
     {
         public:
             NearestAttackableUnitInObjectRangeCheck(WorldObject const* obj, Unit const* funit, float range) : i_obj(obj), i_funit(funit), i_range(range) { }
@@ -1120,7 +1120,7 @@ namespace Trinity
 
     // Creature checks
 
-    class NearestHostileUnitCheck
+    class NearestHostileUnitCheck //-V690
     {
         public:
             explicit NearestHostileUnitCheck(Creature const* creature, float dist = 0.f, bool playerOnly = false) : me(creature), i_playerOnly(playerOnly)
@@ -1150,7 +1150,7 @@ namespace Trinity
             NearestHostileUnitCheck(NearestHostileUnitCheck const&) = delete;
     };
 
-    class NearestHostileUnitInAttackDistanceCheck
+    class NearestHostileUnitInAttackDistanceCheck //-V690
     {
         public:
             explicit NearestHostileUnitInAttackDistanceCheck(Creature const* creature, float dist = 0.f) : me(creature)
@@ -1186,7 +1186,7 @@ namespace Trinity
             NearestHostileUnitInAttackDistanceCheck(NearestHostileUnitInAttackDistanceCheck const&) = delete;
     };
 
-    class NearestHostileUnitInAggroRangeCheck
+    class NearestHostileUnitInAggroRangeCheck //-V690
     {
         public:
             explicit NearestHostileUnitInAggroRangeCheck(Creature const* creature, bool useLOS = false) : _me(creature), _useLOS(useLOS) { }
@@ -1245,7 +1245,7 @@ namespace Trinity
             float i_range;
     };
 
-    class NearestAssistCreatureInCreatureRangeCheck
+    class NearestAssistCreatureInCreatureRangeCheck //-V690
     {
         public:
             NearestAssistCreatureInCreatureRangeCheck(Creature* obj, Unit* enemy, float range)
@@ -1326,7 +1326,7 @@ namespace Trinity
             bool _reqAlive;
     };
 
-    class AnyPlayerInPositionRangeCheck
+    class AnyPlayerInPositionRangeCheck //-V690
     {
     public:
         AnyPlayerInPositionRangeCheck(Position const* pos, float range, bool reqAlive = true) : _pos(pos), _range(range), _reqAlive(reqAlive) { }
@@ -1347,7 +1347,7 @@ namespace Trinity
         bool _reqAlive;
     };
 
-    class NearestPlayerInObjectRangeCheck
+    class NearestPlayerInObjectRangeCheck //-V690
     {
         public:
             NearestPlayerInObjectRangeCheck(WorldObject const* obj, float range) : i_obj(obj), i_range(range) { }

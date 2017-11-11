@@ -984,7 +984,7 @@ void Unit::CastSpell(SpellCastTargets const& targets, SpellInfo const* spellInfo
 
     spell->m_CastItem = castItem;
     spell->prepare(&targets, triggeredByAura);
-}
+} //-V773
 
 void Unit::CastSpell(Unit* victim, uint32 spellId, bool triggered, Item* castItem, AuraEffect const* triggeredByAura, ObjectGuid originalCaster)
 {
@@ -9628,7 +9628,7 @@ Unit* Creature::SelectVictim()
             do
             {
                 --aura;
-                caster = (*aura)->GetCaster();
+                caster = (*aura)->GetCaster(); //-V783
                 if (caster && CanSeeOrDetect(caster, true) && IsValidAttackTarget(caster) && caster->isInAccessiblePlaceFor(ToCreature()))
                 {
                     target = caster;

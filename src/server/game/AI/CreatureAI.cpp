@@ -92,7 +92,7 @@ void CreatureAI::DoZoneInCombat(Creature* creature /*= nullptr*/, float maxRange
 
     // Intended duplicated check, the code above this should select a victim
     // If it can't find a suitable attack target then we should error out.
-    if (!creature->HasReactState(REACT_PASSIVE) && !creature->GetVictim())
+    if (!creature->HasReactState(REACT_PASSIVE) && !creature->GetVictim()) //-V581
     {
         TC_LOG_ERROR("misc.dozoneincombat", "DoZoneInCombat called for creature that has empty threat list (creature entry = %u)", creature->GetEntry());
         return;

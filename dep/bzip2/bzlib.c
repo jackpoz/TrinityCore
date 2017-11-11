@@ -182,7 +182,7 @@ int BZ_API(BZ2_bzCompressInit)
       if (s->arr1 != NULL) BZFREE(s->arr1);
       if (s->arr2 != NULL) BZFREE(s->arr2);
       if (s->ftab != NULL) BZFREE(s->ftab);
-      if (s       != NULL) BZFREE(s);
+      if (s       != NULL) BZFREE(s); //-V547
       return BZ_MEM_ERROR;
    }
 

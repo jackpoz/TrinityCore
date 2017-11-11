@@ -810,7 +810,7 @@ namespace internal {
 // A memory buffer for trivially copyable/constructible types with the first
 // SIZE elements stored in the object itself.
 template <typename T, std::size_t SIZE, typename Allocator = std::allocator<T> >
-class MemoryBuffer : private Allocator, public Buffer<T> {
+class MemoryBuffer : private Allocator, public Buffer<T> { //-V690
  private:
   T data_[SIZE];
 
@@ -2523,7 +2523,7 @@ class SystemError : public internal::RuntimeError {
 
   typedef char Char;  // For FMT_VARIADIC_CTOR.
 
-  SystemError() {}
+  SystemError() {} //-V730
 
  public:
   /**
@@ -3429,13 +3429,13 @@ FMT_API void print_colored(Color c, CStringRef format, ArgList args);
     std::string message = format("The answer is {}", 42);
   \endrst
 */
-inline std::string format(CStringRef format_str, ArgList args) {
+inline std::string format(CStringRef format_str, ArgList args) { //-V813
   MemoryWriter w;
   w.write(format_str, args);
   return w.str();
 }
 
-inline std::wstring format(WCStringRef format_str, ArgList args) {
+inline std::wstring format(WCStringRef format_str, ArgList args) { //-V813
   WMemoryWriter w;
   w.write(format_str, args);
   return w.str();
@@ -3510,9 +3510,9 @@ class FormatInt {
   explicit FormatInt(int value) { FormatSigned(value); }
   explicit FormatInt(long value) { FormatSigned(value); }
   explicit FormatInt(LongLong value) { FormatSigned(value); }
-  explicit FormatInt(unsigned value) : str_(format_decimal(value)) {}
-  explicit FormatInt(unsigned long value) : str_(format_decimal(value)) {}
-  explicit FormatInt(ULongLong value) : str_(format_decimal(value)) {}
+  explicit FormatInt(unsigned value) : str_(format_decimal(value)) {} //-V730
+  explicit FormatInt(unsigned long value) : str_(format_decimal(value)) {} //-V730
+  explicit FormatInt(ULongLong value) : str_(format_decimal(value)) {} //-V730
 
   /** Returns the number of characters written to the output buffer. */
   std::size_t size() const {

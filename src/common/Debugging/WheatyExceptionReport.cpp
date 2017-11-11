@@ -1148,7 +1148,7 @@ bool logChildren)
     struct FINDCHILDREN : TI_FINDCHILDREN_PARAMS
     {
         ULONG   MoreChildIds[1024*2];
-        FINDCHILDREN(){Count = sizeof(MoreChildIds) / sizeof(MoreChildIds[0]);}
+        FINDCHILDREN(){Count = sizeof(MoreChildIds) / sizeof(MoreChildIds[0]);} //-V730
     } children;
 
     children.Count = dwChildrenCount;

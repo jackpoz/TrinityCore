@@ -1171,7 +1171,7 @@ SOAP_FMAC3 struct SOAP_ENV__Header * SOAP_FMAC4 soap_in_SOAP_ENV__Header(struct 
 	{
 		for (;;)
 		{	soap->error = SOAP_TAG_MISMATCH;
-			if (soap->error == SOAP_TAG_MISMATCH)
+			if (soap->error == SOAP_TAG_MISMATCH) //-V547
 				soap->error = soap_ignore_element(soap);
 			if (soap->error == SOAP_NO_TAG)
 				break;

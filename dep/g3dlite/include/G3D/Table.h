@@ -108,8 +108,8 @@ public:
     public:
         Key    key;
         Value  value;
-        Entry() {}
-        Entry(const Key& k) : key(k) {}
+        Entry() {} //-V730
+        Entry(const Key& k) : key(k) {} //-V730
         Entry(const Key& k, const Value& v) : key(k), value(v) {}
         bool operator==(const Entry &peer) const { return (key == peer.key && value == peer.value); }
         bool operator!=(const Entry &peer) const { return !operator==(peer); }
@@ -434,7 +434,7 @@ public:
         /**
          Creates the end iterator.
          */
-        Iterator() : index(0), node(NULL), m_bucket(NULL) {
+        Iterator() : index(0), node(NULL), m_bucket(NULL) { //-V730
             isDone = true;
         }
 

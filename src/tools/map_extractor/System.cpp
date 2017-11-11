@@ -359,7 +359,7 @@ bool ConvertADT(std::string const& inputPath, std::string const& outputPath, int
         return false;
 
     adt_MCIN *cells = adt.a_grid->getMCIN();
-    if (!cells)
+    if (!cells) //-V547
     {
         printf("Can't find cells in '%s'\n", inputPath.c_str());
         return false;
@@ -987,7 +987,7 @@ void ExtractDBCFiles(int locale, bool basicLocale)
         std::vector<std::string> files;
         (*i)->GetFileListTo(files);
         for (std::vector<std::string>::iterator iter = files.begin(); iter != files.end(); ++iter)
-            if (iter->rfind(".dbc") == iter->length() - strlen(".dbc"))
+            if (iter->rfind(".dbc") == iter->length() - strlen(".dbc")) //-V814
                     dbcfiles.insert(*iter);
     }
 
@@ -1014,7 +1014,7 @@ void ExtractDBCFiles(int locale, bool basicLocale)
     for (std::set<std::string>::iterator iter = dbcfiles.begin(); iter != dbcfiles.end(); ++iter)
     {
         std::string filename = path;
-        filename += (iter->c_str() + strlen("DBFilesClient\\"));
+        filename += (iter->c_str() + strlen("DBFilesClient\\")); //-V814
 
         if (boost::filesystem::exists(filename))
             continue;
@@ -1064,7 +1064,7 @@ void ExtractCameraFiles(int locale, bool basicLocale)
     for (std::string thisFile : camerafiles)
     {
         std::string filename = path;
-        filename += (thisFile.c_str() + strlen("Cameras\\"));
+        filename += (thisFile.c_str() + strlen("Cameras\\")); //-V814
 
         if (boost::filesystem::exists(filename))
             continue;

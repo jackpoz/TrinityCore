@@ -185,7 +185,7 @@ public:
         sObjectMgr->AddGameobjectToGrid(guidLow, sObjectMgr->GetGameObjectData(guidLow));
 
         handler->PSendSysMessage(LANG_GAMEOBJECT_ADD, objectId, objectInfo->name.c_str(), guidLow, player->GetPositionX(), player->GetPositionY(), player->GetPositionZ());
-        return true;
+        return true; //-V773
     }
 
     // add go, temp only
@@ -446,7 +446,7 @@ public:
         }
 
         handler->PSendSysMessage(LANG_COMMAND_TURNOBJMESSAGE, object->GetSpawnId(), object->GetGOInfo()->name.c_str(), object->GetSpawnId());
-        return true;
+        return true; //-V773
     }
 
     //move selected object
@@ -515,7 +515,7 @@ public:
         }
 
         handler->PSendSysMessage(LANG_COMMAND_MOVEOBJMESSAGE, object->GetSpawnId(), object->GetGOInfo()->name.c_str(), object->GetSpawnId());
-        return true;
+        return true; //-V773
     }
 
     //set phasemask for selected object

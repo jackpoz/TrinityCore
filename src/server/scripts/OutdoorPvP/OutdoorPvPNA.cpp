@@ -589,13 +589,13 @@ int32 OPvPCapturePointNA::HandleOpenGo(Player* player, GameObject* go)
                 break;
         }
 
-        if (del > -1)
+        if (del > -1) //-V547
             DelObject(del);
 
         if (del2 > -1)
             DelObject(del2);
 
-        if (add > -1)
+        if (add > -1) //-V547
             AddObject(add, gos[add].entry, gos[add].map, gos[add].pos, gos[add].rot);
 
         if (add2 > -1)

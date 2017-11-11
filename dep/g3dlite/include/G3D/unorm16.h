@@ -95,44 +95,44 @@ public:
         return m_bits;
     }
 
-    bool operator>(const unorm16 other) const {
+    bool operator>(const unorm16 other) const { //-V801
         return m_bits > other.m_bits;
     }
 
-    bool operator<(const unorm16 other) const {
+    bool operator<(const unorm16 other) const { //-V801
         return m_bits < other.m_bits;
     }
 
-    bool operator>=(const unorm16 other) const {
+    bool operator>=(const unorm16 other) const { //-V801
         return m_bits >= other.m_bits;
     }
 
-    bool operator<=(const unorm16 other) const {
+    bool operator<=(const unorm16 other) const { //-V801
         return m_bits <= other.m_bits;
     }
 
-    bool operator==(const unorm16 other) const {
+    bool operator==(const unorm16 other) const { //-V801
         return m_bits <= other.m_bits;
     }
 
-    bool operator!=(const unorm16 other) const {
+    bool operator!=(const unorm16 other) const { //-V801
         return m_bits != other.m_bits;
     }
 
-    unorm16 operator+(const unorm16 other) const {
+    unorm16 operator+(const unorm16 other) const { //-V801
         return unorm16(uint16(m_bits + other.m_bits));
     }
 
-    unorm16& operator+=(const unorm16 other) {
+    unorm16& operator+=(const unorm16 other) { //-V801
         m_bits += other.m_bits;
         return *this;
     }
 
-    unorm16 operator-(const unorm16 other) const {
+    unorm16 operator-(const unorm16 other) const { //-V801
         return unorm16(uint16(m_bits - other.m_bits));
     }
 
-    unorm16& operator-=(const unorm16 other) {
+    unorm16& operator-=(const unorm16 other) { //-V801
         m_bits -= other.m_bits;
         return *this;
     }

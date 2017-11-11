@@ -19,7 +19,7 @@ Random& Random::common() {
 }
 
 
-Random::Random(void* x) : state(NULL), m_threadsafe(false) {
+Random::Random(void* x) : state(NULL), m_threadsafe(false) { //-V730
     (void)x;
 }
 
@@ -145,7 +145,7 @@ float Random::gaussian(float mean, float stdev) {
     // Loop until w is less than 1 so that log(w) is negative
     do {
         x1 = uniform(-1.0, 1.0);
-        x2 = uniform(-1.0, 1.0);
+        x2 = uniform(-1.0, 1.0); //-V656
 
         w = float(square(x1) + square(x2));
     } while (w > 1.0f);

@@ -381,7 +381,7 @@ public:
         }
 
         sObjectMgr->AddCreatureToGrid(db_guid, sObjectMgr->GetCreatureData(db_guid));
-        return true;
+        return true; //-V773
     }
 
     //add item in vendorlist

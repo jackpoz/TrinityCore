@@ -683,7 +683,7 @@ void WorldSession::HandleUnstablePetCallback(uint32 petId, PreparedQueryResult r
     }
 
     SendStableResult(STABLE_SUCCESS_UNSTABLE);
-}
+} //-V773
 
 void WorldSession::HandleBuyStableSlot(WorldPacket& recvData)
 {
@@ -812,7 +812,7 @@ void WorldSession::HandleStableSwapPetCallback(uint32 petId, PreparedQueryResult
     }
     else
         SendStableResult(STABLE_SUCCESS_UNSTABLE);
-}
+} //-V773
 
 void WorldSession::HandleRepairItemOpcode(WorldPacket& recvData)
 {

@@ -172,7 +172,7 @@ uint32 LootStore::LoadLootTable()
 
         // Looking for the template of the entry
                                                          // often entries are put together
-        if (m_LootTemplates.empty() || tab->first != entry)
+        if (m_LootTemplates.empty() || tab->first != entry) //-V614
         {
             // Searching the template (in case template Id changed)
             tab = m_LootTemplates.find(entry);

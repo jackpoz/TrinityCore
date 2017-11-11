@@ -488,7 +488,7 @@ struct huffman_tree_item_s *libmpq__huffman_call_1500E740(struct huffman_tree_s 
 	p_prev = pp_item[1];
 
 	/* check if previous pointer is valid. */
-	if (p_prev <= 0) {
+	if (p_prev <= 0) { //-V503
 
 		/* fill values. */
 		p_prev          = PTR_NOT(p_prev);
@@ -1054,7 +1054,7 @@ int32_t libmpq__do_decompress_huffman(struct huffman_tree_s *ht, struct huffman_
 
 			/* fill values. */
 			n8bits                            = libmpq__huffman_get_8bit(is);
-			p_item1                           = (ht->last <= 0) ? NULL : ht->last;
+			p_item1                           = (ht->last <= 0) ? NULL : ht->last; //-V503
 			p_item2                           = libmpq__huffman_call_1500E740(ht);
 			p_item2->parent                   = p_item1;
 			p_item2->dcmp_byte                = p_item1->dcmp_byte;

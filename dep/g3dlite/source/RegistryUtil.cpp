@@ -270,7 +270,7 @@ static HKEY getRootKeyFromString(const char* str, size_t length) {
     debugAssert(str);
 
     if (str) {
-        if ( strncmp(str, "HKEY_CLASSES_ROOT", length) == 0 ) {
+        if ( strncmp(str, "HKEY_CLASSES_ROOT", length) == 0 ) { //-V517
             return HKEY_CLASSES_ROOT;
         } else if  ( strncmp(str, "HKEY_CURRENT_CONFIG", length) == 0 ) {
             return HKEY_CURRENT_CONFIG;

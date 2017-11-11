@@ -1522,7 +1522,7 @@ public:
 
                         // Glyph of the Ghoul
                         if (AuraEffect const* aurEff = owner->GetAuraEffect(SPELL_DEATH_KNIGHT_GLYPH_OF_GHOUL, 0))
-                            mod += aurEff->GetAmount()/100;
+                            mod += aurEff->GetAmount()/100; //-V636
 
                         float ownerBonus = float(owner->GetStat(STAT_STAMINA)) * mod;
                         amount += ownerBonus;

@@ -341,7 +341,7 @@ bool fillArchiveNameVector(std::vector<std::string>& pArchiveNames)
 
     // now, scan for the patch levels in the core dir
     printf("Scanning patch levels from data directory.\n");
-    sprintf(path, "%spatch", input_path);
+    sprintf(path, "%spatch", input_path); //-V512
     if (!scan_patches(path, pArchiveNames))
         return(false);
 

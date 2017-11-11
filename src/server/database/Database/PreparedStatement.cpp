@@ -367,7 +367,7 @@ void MySQLPreparedStatement::setBinary(const uint8 index, const std::vector<uint
     param->buffer_length = len;
     param->is_null_value = 0;
     delete param->length;
-    param->length = new unsigned long(len);
+    param->length = new unsigned long(len); //-V508
     if (isString)
     {
         *param->length -= 1;

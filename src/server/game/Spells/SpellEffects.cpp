@@ -2508,7 +2508,7 @@ void Spell::EffectAddFarsight(SpellEffIndex effIndex)
 
     dynObj->SetDuration(duration);
     dynObj->SetCasterViewpoint();
-}
+} //-V773
 
 void Spell::EffectUntrainTalents(SpellEffIndex /*effIndex*/)
 {

@@ -1694,7 +1694,7 @@ soap_get(struct soap *soap)
           if (c == '>')
           { soap->cdata = 0;
             c = soap_get1(soap);
-            c = soap_get1(soap);
+            c = soap_get1(soap); //-V519
           }
           else
           { soap_unget(soap, ']');
@@ -5727,10 +5727,10 @@ soap_bind(struct soap *soap, const char *host, int port, int backlog)
 #else
 #ifndef WITH_LEAN
   if ((soap->omode & SOAP_IO_UDP))
-    soap->master = (int)socket(AF_INET, SOCK_DGRAM, 0);
+    soap->master = (int)socket(AF_INET, SOCK_DGRAM, 0); //-V220
   else
 #endif
-    soap->master = (int)socket(AF_INET, SOCK_STREAM, 0);
+    soap->master = (int)socket(AF_INET, SOCK_STREAM, 0); //-V220
 #endif
   soap->errmode = 0;
   if (!soap_valid_socket(soap->master))
@@ -5941,7 +5941,7 @@ soap_accept(struct soap *soap)
         { soap_set_receiver_error(soap, "Timeout", "accept failed in soap_accept()", SOAP_TCP_ERROR);
           return SOAP_INVALID_SOCKET;
         }
-        if (r < 0)
+        if (r < 0) //-V547
         { r = soap->errnum;
           if (r != SOAP_EINTR)
           { soap_closesock(soap);
@@ -7234,7 +7234,7 @@ soap_encode_url(const char *s, char *t, size_t len)
       *t++ = c;
     else if (n > 2)
     { *t++ = '%';
-      *t++ = (c >> 4) + (c > 159 ? '7' : '0');
+      *t++ = (c >> 4) + (c > 159 ? '7' : '0'); //-V547
       c &= 0xF;
       *t++ = c + (c > 9 ? '7' : '0');
       n -= 2;
@@ -8606,7 +8606,7 @@ soap_embedded_id(struct soap *soap, int id, const void *p, int t)
   DBGLOG(TEST, SOAP_MESSAGE(fdebug, "Embedded_id %p type=%d id=%d\n", p, t, id));
   if (id < -1)
     return soap_embed(soap, p, NULL, 0, t);
-  if (id < 0)
+  if (id < 0) //-V547
   { id = soap_pointer_lookup(soap, p, t, &pp);
     if (soap->version == 1 && soap->part != SOAP_IN_HEADER)
     { if (id)
@@ -10261,7 +10261,7 @@ soap_copy_stream(struct soap *copy, struct soap *soap)
     for (nq = soap->nlist; nq; nq = nq->next)
     { struct soap_nlist *nr = np;
       size_t n = sizeof(struct soap_nlist) + strlen(nq->id);
-      np = (struct soap_nlist*)SOAP_MALLOC(copy, n);
+      np = (struct soap_nlist*)SOAP_MALLOC(copy, n); //-V773
       if (!np)
       { np = nr;
         break;
@@ -10300,9 +10300,9 @@ soap_copy_stream(struct soap *copy, struct soap *soap)
   for (tq = soap->attributes; tq; tq = tq->next)
   { struct soap_attribute *tr = tp;
     size_t n = sizeof(struct soap_attribute) + strlen(tq->name);
-    tp = (struct soap_attribute*)SOAP_MALLOC(copy, n);
+    tp = (struct soap_attribute*)SOAP_MALLOC(copy, n); //-V773
     soap_memcpy((void*)tp, n, (const void*)tq, n);
-    if (tp->size)
+    if (tp->size) //-V522
     { tp->value = (char*)SOAP_MALLOC(copy, tp->size);
       if (tp->value)
         soap_memcpy((void*)tp->value, tp->size, (const void*)tq->value, tp->size);
@@ -10962,7 +10962,7 @@ soap_push_ns(struct soap *soap, const char *id, const char *ns, short utilized, 
     return NULL;
   if (!utilized)
   { for (np = soap->nlist; np; np = np->next)
-    { if (!strcmp(np->id, id) && (!np->ns || !strcmp(np->ns, ns)))
+    { if (!strcmp(np->id, id) && (!np->ns || !strcmp(np->ns, ns))) //-V595
         break;
     }
     if (np)
@@ -12881,7 +12881,7 @@ soap_peek_element(struct soap *soap)
         else if (!soap_match_tag(soap, tp->name, "SOAP-ENC:position"))
           soap->position = soap_getposition(tp->value, soap->positions);
         else if (!soap_match_tag(soap, tp->name, "SOAP-ENC:root"))
-          soap->root = ((!strcmp(tp->value, "1") || !strcmp(tp->value, "true")));
+          soap->root = ((!strcmp(tp->value, "1") || !strcmp(tp->value, "true"))); //-V592
         else if (!soap_match_tag(soap, tp->name, "SOAP-ENV:mustUnderstand")
               && (!strcmp(tp->value, "1") || !strcmp(tp->value, "true")))
           soap->mustUnderstand = 1;
@@ -15907,7 +15907,7 @@ soap_wchar2s(struct soap *soap, const wchar_t *s)
           if (!((c >= 0x80 && c <= 0xD7FF) || (c >= 0xE000 && c <= 0xFFFD) || (c >= 0x10000 && c <= 0x10FFFF)))
             c = SOAP_UNKNOWN_UNICODE_CHAR;
 #endif
-          if (c < 0x010000)
+          if (c < 0x010000) //-V547
             *t++ = (char)(0xE0 | ((c >> 12) & 0x0F));
           else
           { if (c < 0x200000)
@@ -18635,7 +18635,7 @@ soap_connect_command(struct soap *soap, int http_command, const char *endpoints,
       char *endpoint = (char*)SOAP_MALLOC(soap, l + 1);
       for (;;)
       { (void)soap_strncpy(endpoint, l + 1, endpoints, s - endpoints);
-        endpoint[s - endpoints] = '\0';
+        endpoint[s - endpoints] = '\0'; //-V522
         if (soap_try_connect_command(soap, http_command, endpoint, action) != SOAP_TCP_ERROR)
           break;
         if (!*s)

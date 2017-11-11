@@ -26,7 +26,7 @@ Capsule::Capsule(class BinaryInput& b) {
 }
 
 
-Capsule::Capsule() {
+Capsule::Capsule() { //-V730
 }
 
 

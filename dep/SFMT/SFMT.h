@@ -159,7 +159,7 @@ class SFMTRand {                              // Encapsulate random number gener
     friend class boost::thread_specific_ptr<SFMTRand>;
 
 public:
-    SFMTRand()
+    SFMTRand() //-V730
     {
         LastInterval = 0;
         RandomInit((int)(time(0)));
@@ -173,7 +173,7 @@ public:
         uint32_t statesize = SFMT_N*4;      // Size of state vector
 
         // Fill state vector with random numbers from seed
-        uint32_t* s = (uint32_t*)&state;
+        uint32_t* s = (uint32_t*)&state; //-V114
         s[0] = y;
         const uint32_t factor = 1812433253U;// Multiplication factor
 

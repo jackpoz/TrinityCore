@@ -688,7 +688,7 @@ public:
             WorldDatabase.Execute(stmt);
 
             handler->PSendSysMessage(LANG_WAYPOINT_CHANGED);
-            return true;
+            return true; //-V773
         }                                                       // move
 
         const char *text = arg_str;
@@ -904,7 +904,7 @@ public:
                     wpCreature->SetObjectScale(0.5f);
                     wpCreature->SetLevel(std::min<uint32>(point, STRONG_MAX_LEVEL));
                 }
-            }
+            } //-V773
             while (result->NextRow());
 
             handler->SendSysMessage("|cff00ff00Showing the current creature's path.|r");
@@ -958,7 +958,7 @@ public:
                 creature->SetObjectScale(0.5f);
             }
 
-            return true;
+            return true; //-V773
         }
 
         if (show == "last")
@@ -1007,7 +1007,7 @@ public:
                 creature->SetObjectScale(0.5f);
             }
 
-            return true;
+            return true; //-V773
         }
 
         if (show == "off")

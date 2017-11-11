@@ -26,7 +26,7 @@ Cylinder::Cylinder(class BinaryInput& b) {
 }
 
 
-Cylinder::Cylinder() {
+Cylinder::Cylinder() { //-V730
 }
 
 

@@ -358,7 +358,7 @@ public:
 
        num = other.num;
        if (other.data && (num > 0)) {
-           System::memcpy(data, other.data, sizeof(T) * num);
+           System::memcpy(data, other.data, sizeof(T) * num); //-V780
        }
    }
 
@@ -372,12 +372,12 @@ public:
            alwaysAssertM(other.data, "non-zero array with no allocated space");
            T* old = data;
            data = (T*)m_memoryManager->alloc(sizeof(T) * num);
-           System::memcpy(data, old, sizeof(T) * oldSize);
+           System::memcpy(data, old, sizeof(T) * oldSize); //-V780
            m_memoryManager->free(old);
            numAllocated = num;
        }
        if (other.data) {
-           System::memcpy((data + oldSize), other.data, sizeof(T) * other.num);
+           System::memcpy((data + oldSize), other.data, sizeof(T) * other.num); //-V780
        }
    }
 
@@ -506,7 +506,7 @@ public:
         // Once allocated, always maintain MIN_ELEMENTS elements or 32 bytes, whichever is higher.
         const size_t minSize = G3D::max(MIN_ELEMENTS, (size_t)(MIN_BYTES / sizeof(T)));
 
-        if ((MIN_ELEMENTS == 0) && (MIN_BYTES == 0) && (n == 0) && shrinkIfNecessary) {
+        if ((MIN_ELEMENTS == 0) && (MIN_BYTES == 0) && (n == 0) && shrinkIfNecessary) { //-V560
             // Deallocate the array completely
             numAllocated = 0;
             m_memoryManager->free(data);

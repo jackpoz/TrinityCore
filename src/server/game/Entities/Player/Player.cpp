@@ -2096,7 +2096,7 @@ void Player::Regenerate(Powers power)
 
         // Butchery requires combat for this effect
         if (power != POWER_RUNIC_POWER || IsInCombat())
-            addvalue += GetTotalAuraModifierByMiscValue(SPELL_AURA_MOD_POWER_REGEN, power) * ((power != POWER_ENERGY) ? m_regenTimerCount : m_regenTimer) / (5 * IN_MILLISECONDS);
+            addvalue += GetTotalAuraModifierByMiscValue(SPELL_AURA_MOD_POWER_REGEN, power) * ((power != POWER_ENERGY) ? m_regenTimerCount : m_regenTimer) / (5 * IN_MILLISECONDS); //-V636
     }
 
     if (addvalue < 0.0f)
@@ -11916,7 +11916,7 @@ Item* Player::_StoreItem(uint16 pos, Item* pItem, uint32 count, bool clone, bool
         Bag* pBag = (bag == INVENTORY_SLOT_BAG_0) ? nullptr : GetBagByPos(bag);
         if (!pBag)
         {
-            m_items[slot] = pItem;
+            m_items[slot] = pItem; //-V781
             SetGuidValue(PLAYER_FIELD_INV_SLOT_HEAD + (slot * 2), pItem->GetGUID());
             pItem->SetGuidValue(ITEM_FIELD_CONTAINED, GetGUID());
             pItem->SetGuidValue(ITEM_FIELD_OWNER, GetGUID());
@@ -18259,7 +18259,7 @@ void Player::LoadPet()
         Pet* pet = new Pet(this);
         if (!pet->LoadPetFromDB(this, 0, 0, true))
             delete pet;
-    }
+    } //-V773
 }
 
 void Player::_LoadQuestStatus(PreparedQueryResult result)
@@ -25221,7 +25221,7 @@ void Player::ResummonPetTemporaryUnSummonedIfAny()
         delete NewPet;
 
     m_temporaryUnsummonedPetNumber = 0;
-}
+} //-V773
 
 bool Player::IsPetNeedBeTemporaryUnsummoned() const
 {
@@ -26458,7 +26458,7 @@ Pet* Player::SummonPet(uint32 entry, float x, float y, float z, float ang, PetTy
         if (duration > 0)
             pet->SetDuration(duration);
 
-        return nullptr;
+        return nullptr; //-V773
     }
 
     // petentry == 0 for hunter "call pet" (current pet summoned if any)

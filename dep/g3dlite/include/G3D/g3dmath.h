@@ -436,7 +436,7 @@ inline bool all(float x) {
  v / v (for DirectX/Cg support)
  */
 inline float normalize(float v) {
-    return v / v;
+    return v / v; //-V501
 }
 
 /**

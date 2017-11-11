@@ -86,7 +86,7 @@ static void createErrorMessage(
         // The decoded message from FormatMessage
         LPTSTR formatMsg = NULL;
 
-        if (NULL == formatMsg) {
+        if (NULL == formatMsg) { //-V547
             FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
                           FORMAT_MESSAGE_IGNORE_INSERTS |
                           FORMAT_MESSAGE_FROM_SYSTEM,

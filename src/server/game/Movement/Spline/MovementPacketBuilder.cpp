@@ -102,7 +102,7 @@ namespace Movement
         G3D::Vector3 const* real_path = &spline.getPoint(1);
 
         data << last_idx;
-        data << real_path[last_idx];   // destination
+        data << real_path[last_idx];   // destination //-V781
         if (last_idx > 1)
         {
             G3D::Vector3 middle = (real_path[0] + real_path[last_idx]) / 2.f;

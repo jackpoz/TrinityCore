@@ -267,7 +267,7 @@ void createDirectory(
     std::string root, base, ext;
     Array<std::string> path;
 
-    std::string lead;
+    std::string lead; //-V808
     parseFilename(d, root, path, base, ext);
     debugAssert(base == "");
     debugAssert(ext == "");

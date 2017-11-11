@@ -243,7 +243,7 @@ public:
 
             if (count > resultCount)
                 count -= resultCount;
-            else if (count)
+            else if (count) //-V547
                 count = 0;
         }
 

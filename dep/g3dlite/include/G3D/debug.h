@@ -39,8 +39,8 @@ inline bool isValidHeapPointer(const void* x) {
     #ifdef _MSC_VER
         return 
             (x != NULL) &&
-            (x != (void*)0xcccccccc) && (x != (void*)0xdeadbeef) && (x != (void*)0xfeeefeee) &&
-            (x != (void*)0xcdcdcdcd) && (x != (void*)0xabababab) && (x != (void*)0xfdfdfdfd);
+            (x != (void*)0xcccccccc) && (x != (void*)0xdeadbeef) && (x != (void*)0xfeeefeee) && //-V204
+            (x != (void*)0xcdcdcdcd) && (x != (void*)0xabababab) && (x != (void*)0xfdfdfdfd); //-V204
     #else
         return x != NULL;
     #endif
@@ -54,8 +54,8 @@ inline bool isValidHeapPointer(const void* x) {
 inline bool isValidPointer(const void* x) {
     #ifdef _MSC_VER
         return (x != NULL) &&
-            (x != (void*)0xcccccccc) && (x != (void*)0xdeadbeef) && (x != (void*)0xfeeefeee) &&
-            (x != (void*)0xcdcdcdcd) && (x != (void*)0xabababab) && (x != (void*)0xfdfdfdfd);
+            (x != (void*)0xcccccccc) && (x != (void*)0xdeadbeef) && (x != (void*)0xfeeefeee) && //-V204
+            (x != (void*)0xcdcdcdcd) && (x != (void*)0xabababab) && (x != (void*)0xfdfdfdfd); //-V204
     #else
         return x != NULL;
     #endif

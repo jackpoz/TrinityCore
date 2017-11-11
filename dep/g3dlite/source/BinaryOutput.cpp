@@ -179,7 +179,7 @@ void BinaryOutput::reserveBytesWhenOutOfMemory(size_t bytes) {
         m_pos -= writeBytes;
 
         debugAssert(m_bufferLen < m_maxBufferLen);
-        debugAssert(m_bufferLen >= 0);
+        debugAssert(m_bufferLen >= 0); //-V547
         debugAssert(m_pos >= 0);
         debugAssert(m_pos <= (int64)m_bufferLen);
 
@@ -198,7 +198,7 @@ void BinaryOutput::reserveBytesWhenOutOfMemory(size_t bytes) {
 }
 
 
-BinaryOutput::BinaryOutput() {
+BinaryOutput::BinaryOutput() { //-V730
     m_alreadyWritten = 0;
     m_swapBytes = false;
     m_pos       = 0;
@@ -295,7 +295,7 @@ void BinaryOutput::compress(int level) {
     {
         const uint8* convert = (const uint8*)&srcSize;
         if (m_swapBytes) {
-            m_buffer[0] = convert[3];
+            m_buffer[0] = convert[3]; //-V522
             m_buffer[1] = convert[2];
             m_buffer[2] = convert[1];
             m_buffer[3] = convert[0];

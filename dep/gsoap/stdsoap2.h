@@ -1490,6 +1490,7 @@ extern const char soap_base64o[], soap_base64i[];
 
 /* copy memory (returns SOAP_ERANGE on overrun, zero if OK) */
 #if _MSC_VER >= 1400
+//-V:soap_memcpy:501
 # define soap_memcpy(buf, len, src, num) ((buf) && (size_t)(len) >= (size_t)(num) ? memcpy_s((buf), (len), (src), (num)) : SOAP_ERANGE)
 #else
 # define soap_memcpy(buf, len, src, num) ((buf) && (size_t)(len) >= (size_t)(num) ? !memcpy((buf), (src), (num)) : SOAP_ERANGE)

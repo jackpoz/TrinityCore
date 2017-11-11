@@ -40,7 +40,7 @@ private:
 public:
 
     /** Initial value is undefined. */
-    AtomicInt32() {}
+    AtomicInt32() {} //-V730
 
     /** Atomic set */
     explicit AtomicInt32(const int32 x) {

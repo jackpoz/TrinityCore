@@ -96,7 +96,7 @@ private:
 
 public:
     
-    LineSegment2D() {}
+    LineSegment2D() {} //-V730
 
     static LineSegment2D fromTwoPoints(const Point2& p0, const Vector2& p1);
 

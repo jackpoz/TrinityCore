@@ -1220,7 +1220,7 @@ void WorldSession::HandleFarSightOpcode(WorldPacket& recvData)
     else
     {
         TC_LOG_DEBUG("network", "Player %u set vision to self", _player->GetGUID().GetCounter());
-        _player->SetSeer(_player);
+        _player->SetSeer(_player); //-V678
     }
 
     GetPlayer()->UpdateVisibilityForPlayer();
