@@ -100,7 +100,7 @@ bool Weather::ReGenerate()
 
     static char const* seasonName[WEATHER_SEASONS] = { "spring", "summer", "fall", "winter" };
 
-    TC_LOG_INFO("misc", "Generating a change in %s weather for zone %u.", seasonName[season], m_zone);
+    TC_LOG_INFO("misc", "Generating a change in %s weather for zone %u.", seasonName[season], m_zone); //-V557
 
     if ((u < 60) && (m_grade < 0.33333334f))                // Get fair
     {

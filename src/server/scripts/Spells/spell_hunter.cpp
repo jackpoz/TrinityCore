@@ -897,9 +897,9 @@ class spell_hun_pet_carrion_feeder : public SpellScriptLoader
                 Trinity::AnyDeadUnitSpellTargetInRangeCheck check(caster, max_range, GetSpellInfo(), TARGET_CHECK_ENEMY);
                 Trinity::WorldObjectSearcher<Trinity::AnyDeadUnitSpellTargetInRangeCheck> searcher(caster, result, check);
                 Cell::VisitWorldObjects(caster, searcher, max_range);
-                if (!result)
+                if (!result) //-V547
                     Cell::VisitGridObjects(caster, searcher, max_range);
-                if (!result)
+                if (!result) //-V547
                     return SPELL_FAILED_NO_EDIBLE_CORPSES;
                 return SPELL_CAST_OK;
             }

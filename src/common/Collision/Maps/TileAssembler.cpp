@@ -126,7 +126,7 @@ namespace VMAP
             }
 
             //general info
-            if (success && fwrite(VMAP_MAGIC, 1, 8, mapfile) != 8) success = false;
+            if (success && fwrite(VMAP_MAGIC, 1, 8, mapfile) != 8) success = false; //-V560
             uint32 globalTileID = StaticMapTree::packTileID(65, 65);
             pair<TileMap::iterator, TileMap::iterator> globalRange = map_iter->second->TileEntries.equal_range(globalTileID);
             char isTiled = globalRange.first == globalRange.second; // only maps without terrain (tiles) have global WMO

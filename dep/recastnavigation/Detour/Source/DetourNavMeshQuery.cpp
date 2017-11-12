@@ -165,7 +165,7 @@ dtNavMeshQuery::~dtNavMeshQuery()
 /// This function can be used multiple times.
 dtStatus dtNavMeshQuery::init(const dtNavMesh* nav, const int maxNodes)
 {
-	if (maxNodes > DT_NULL_IDX || maxNodes > (1 << DT_NODE_PARENT_BITS) - 1)
+	if (maxNodes > DT_NULL_IDX || maxNodes > (1 << DT_NODE_PARENT_BITS) - 1) //-V560
 		return DT_FAILURE | DT_INVALID_PARAM;
 
 	m_nav = nav;
