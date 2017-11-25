@@ -1400,12 +1400,9 @@ void Spell::SelectImplicitTargetDestTargets(SpellEffIndex effIndex, SpellImplici
         default:
         {
             float angle = targetType.CalcDirectionAngle();
-            float objSize = target->GetCombatReach();
-            float dist = m_spellInfo->Effects[effIndex].CalcRadius(m_caster);
-            if (dist < objSize)
-                dist = objSize;
-            else if (targetType.GetTarget() == TARGET_DEST_TARGET_RANDOM)
-                dist = objSize + (dist - objSize) * float(rand_norm());
+            float dist = m_spellInfo->Effects[effIndex].CalcRadius(nullptr);
+            if (targetType.GetTarget() == TARGET_DEST_TARGET_RANDOM)
+                dist *= float(rand_norm());
 
             Position pos = dest._position;
             target->MovePositionToFirstCollision(pos, dist, angle);
@@ -2552,7 +2549,8 @@ SpellMissInfo Spell::DoSpellHitOnUnit(Unit* unit, uint32 effectMask, bool scaleA
             // for delayed spells ignore negative spells (after duel end) for friendly targets
             /// @todo this cause soul transfer bugged
             // 63881 - Malady of the Mind jump spell (Yogg-Saron)
-            if (m_spellInfo->Speed > 0.0f && unit->GetTypeId() == TYPEID_PLAYER && !m_spellInfo->IsPositive() && m_spellInfo->Id != 63881)
+            // 45034 - Curse of Boundless Agony jump spell (Kalecgos)
+            if (m_spellInfo->Speed > 0.0f && unit->GetTypeId() == TYPEID_PLAYER && !m_spellInfo->IsPositive() && m_spellInfo->Id != 63881 && m_spellInfo->Id != 45034)
                 return SPELL_MISS_EVADE;
 
             // assisting case, healing and resurrection
@@ -7882,7 +7880,7 @@ bool WorldObjectSpellAreaTargetCheck::operator()(WorldObject* target)
         if (!isInsideCylinder)
             return false;
     }
-    
+
     return WorldObjectSpellTargetCheck::operator ()(target);
 }
 

@@ -3256,11 +3256,6 @@ void SpellMgr::LoadSpellInfoCorrections()
         spellInfo->Effects[EFFECT_0].SpellClassMask[0] |= 0x800;
     });
 
-    // The Eye of Acherus (no spawn in phase 2 in db)
-    ApplySpellFix({ 51852 }, [](SpellInfo* spellInfo)
-    {
-        spellInfo->Effects[EFFECT_0].MiscValue |= 1;
-    });
 
     // Crafty's Ultra-Advanced Proto-Typical Shortening Blaster
     ApplySpellFix({ 51912 }, [](SpellInfo* spellInfo)
@@ -3598,7 +3593,7 @@ void SpellMgr::LoadSpellInfoCorrections()
         47134  // Quest Complete
     }, [](SpellInfo* spellInfo)
     {
-        //! HACK: This spell break quest complete for alliance and on retail not used °_O
+        //! HACK: This spell break quest complete for alliance and on retail not used
         spellInfo->Effects[EFFECT_0].Effect = 0;
     });
 
@@ -3898,6 +3893,12 @@ void SpellMgr::LoadSpellInfoCorrections()
         spellInfo->Effects[EFFECT_0].RadiusEntry = sSpellRadiusStore.LookupEntry(EFFECT_RADIUS_100_YARDS); // 100yd
     });
 
+    // Coldflame (Lord Marrowgar)
+    ApplySpellFix({ 69146, 70823, 70824, 70825 }, [](SpellInfo* spellInfo)
+    {
+        spellInfo->AttributesEx4 &= ~SPELL_ATTR4_IGNORE_RESISTANCES;
+    });
+
     // Shadow's Fate
     ApplySpellFix({ 71169 }, [](SpellInfo* spellInfo)
     {
@@ -4127,13 +4128,13 @@ void SpellMgr::LoadSpellInfoCorrections()
     // Summon Shadow Trap
     ApplySpellFix({ 73540 }, [](SpellInfo* spellInfo)
     {
-        spellInfo->DurationEntry = sSpellDurationStore.LookupEntry(23); // 90 seconds
+        spellInfo->DurationEntry = sSpellDurationStore.LookupEntry(3); // 60 seconds
     });
 
     // Shadow Trap (visual)
     ApplySpellFix({ 73530 }, [](SpellInfo* spellInfo)
     {
-        spellInfo->DurationEntry = sSpellDurationStore.LookupEntry(28); // 5 seconds
+        spellInfo->DurationEntry = sSpellDurationStore.LookupEntry(27); // 3 seconds
     });
 
     // Shadow Trap
@@ -4457,6 +4458,18 @@ void SpellMgr::LoadSpellInfoCorrections()
     }, [](SpellInfo* spellInfo)
     {
         spellInfo->ProcFlags = 0;
+    });
+
+    // Shadowstep
+    ApplySpellFix({ 36563 }, [](SpellInfo* spellInfo)
+    {
+        spellInfo->Effects[EFFECT_0].RadiusEntry = sSpellRadiusStore.LookupEntry(EFFECT_RADIUS_4_YARDS); // 4yd
+    });
+
+    // Feral Charge - Cat
+    ApplySpellFix({ 49376 }, [](SpellInfo* spellInfo)
+    {
+        spellInfo->Effects[EFFECT_1].RadiusEntry = sSpellRadiusStore.LookupEntry(EFFECT_RADIUS_3_YARDS); // 3yd
     });
 
     for (uint32 i = 0; i < GetSpellInfoStoreSize(); ++i)
