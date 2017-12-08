@@ -941,7 +941,7 @@ public:
            Node* node = m_bucket[i];
            while (node != NULL) {
                delete node->entry.key;
-               node->entry.key = NULL;
+               node->entry.key = NULL; //-V601
                node = node->next;
            }
        }
@@ -961,7 +961,7 @@ public:
            Node* node = m_bucket[i];
            while (node != NULL) {
                delete node->entry.value;
-               node->entry.value = NULL;
+               node->entry.value = NULL; //-V601
                node = node->next;
            }
        }

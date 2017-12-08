@@ -229,7 +229,7 @@ void WINAPI ServiceMain(DWORD argc, char *argv[])
         ////////////////////////
 
         m_ServiceStatus = 1;
-        argc = 1;
+        argc = 1; //-V763
         main(argc, argv);
 
         // service was stopped

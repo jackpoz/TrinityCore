@@ -498,7 +498,7 @@ MARK_LOG();
 MARK_LOG();
 logPrintf("%s\n", msg.c_str());
         throw FileNotFound(full, msg);
-        alwaysAssertM(false, msg);
+        alwaysAssertM(false, msg); //-V779
     }
 MARK_LOG();
 
@@ -1167,7 +1167,7 @@ public:
         // pre-allocated buffer.
         tinyHeap = ::malloc(maxTinyBuffers * tinyBufferSize);
         for (int i = 0; i < maxTinyBuffers; ++i) {
-            tinyPool[i] = (uint8*)tinyHeap + (tinyBufferSize * i);
+            tinyPool[i] = (uint8*)tinyHeap + (tinyBufferSize * i); //-V769
         }
         tinyPoolSize = maxTinyBuffers; //-V519
 
@@ -1208,7 +1208,7 @@ public:
                 // Free the old pointer and malloc
                 
                 UserPtr newPtr = malloc(bytes);
-                System::memcpy(newPtr, ptr, tinyBufferSize);
+                System::memcpy(newPtr, ptr, tinyBufferSize); //-V575
                 tinyFree(ptr);
                 return newPtr;
 
@@ -1225,7 +1225,7 @@ public:
 
             // Need to reallocate and move
             UserPtr newPtr = malloc(bytes);
-            System::memcpy(newPtr, ptr, userSize);
+            System::memcpy(newPtr, ptr, userSize); //-V575
             free(ptr);
             return newPtr;
         }
@@ -1453,7 +1453,7 @@ void* System::calloc(size_t n, size_t x) {
     void* b = System::malloc(n * x);
     debugAssertM(b != NULL, "System::malloc returned NULL");
     debugAssertM(isValidHeapPointer(b), "System::malloc returned an invalid pointer");
-    System::memset(b, 0, n * x);
+    System::memset(b, 0, n * x); //-V575
     return b;
 #else
     return ::calloc(n, x);

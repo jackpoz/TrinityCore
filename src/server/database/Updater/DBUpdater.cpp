@@ -271,7 +271,7 @@ bool DBUpdater<T>::Populate(DatabaseWorkerPool<T>& pool)
     Path const base(p);
     if (!exists(base))
     {
-        switch (DBUpdater<T>::GetBaseLocationType())
+        switch (DBUpdater<T>::GetBaseLocationType()) //-V785
         {
             case LOCATION_REPOSITORY:
             {

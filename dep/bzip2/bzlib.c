@@ -852,7 +852,7 @@ int BZ_API(BZ2_bzDecompress) ( bz_stream *strm )
       }
    }
 
-   AssertH ( 0, 6001 );
+   AssertH ( 0, 6001 ); //-V779
 
    return 0;  /*NOTREACHED*/
 }

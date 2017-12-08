@@ -166,7 +166,7 @@ bool RegistryUtil::readString(const std::string& key, const std::string& value, 
 
         if (result == ERROR_SUCCESS) {
             char* tmpStr = static_cast<char*>(System::malloc(dataSize));
-            System::memset(tmpStr, 0, dataSize);
+            System::memset(tmpStr, 0, dataSize); //-V575
 
             result = RegQueryValueExA(openKey, value.c_str(), NULL, NULL, reinterpret_cast<LPBYTE>(tmpStr), reinterpret_cast<LPDWORD>(&dataSize));
             debugAssertM(result == ERROR_SUCCESS, "Could not read registry key value.");
