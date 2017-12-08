@@ -2680,14 +2680,18 @@ void Map::GetFullTerrainStatusForPosition(float x, float y, float z, PositionFul
     if (vmapData.areaInfo)
         data.areaInfo = boost::in_place(vmapData.areaInfo->adtId, vmapData.areaInfo->rootId, vmapData.areaInfo->groupId, vmapData.areaInfo->mogpFlags);
 
+    float mapHeight = VMAP_INVALID_HEIGHT;
     GridMap* gmap = const_cast<Map*>(this)->GetGrid(x, y);
-    float mapHeight = gmap->getHeight(x, y);
+    if (gmap)
+        mapHeight = gmap->getHeight(x, y);
 
     // area lookup
     AreaTableEntry const* areaEntry = nullptr;
     if (vmapData.areaInfo && (z + 2.0f <= mapHeight || mapHeight <= vmapData.floorZ))
         if (WMOAreaTableEntry const* wmoEntry = GetWMOAreaTableEntryByTripple(vmapData.areaInfo->rootId, vmapData.areaInfo->adtId, vmapData.areaInfo->groupId))
             areaEntry = sAreaTableStore.LookupEntry(wmoEntry->areaId);
+
+    data.areaId = 0;
 
     if (areaEntry)
     {
@@ -2697,7 +2701,8 @@ void Map::GetFullTerrainStatusForPosition(float x, float y, float z, PositionFul
     else
     {
         data.floorZ = mapHeight;
-        data.areaId = gmap->getArea(x, y);
+        if (gmap)
+            data.areaId = gmap->getArea(x, y);
 
         if (!data.areaId)
             data.areaId = i_mapEntry->linked_zone;
@@ -2972,7 +2977,9 @@ bool Map::CheckRespawn(RespawnInfo* info)
     {
         time_t now = time(NULL);
         time_t respawnTime;
-        if (sObjectMgr->GetLinkedRespawnGuid(thisGUID) == thisGUID) // never respawn, save "something" in DB
+        if (linkedTime == std::numeric_limits<time_t>::max())
+            respawnTime = linkedTime;
+        else if (sObjectMgr->GetLinkedRespawnGuid(thisGUID) == thisGUID) // never respawn, save "something" in DB
             respawnTime = now + WEEK;
         else // set us to check again shortly after linked unit
             respawnTime = std::max<time_t>(now, linkedTime) + urand(5, 15);
@@ -3257,7 +3264,7 @@ bool Map::SpawnGroupSpawn(uint32 groupId, bool ignoreRespawn, bool force, std::v
         TC_LOG_ERROR("maps", "Tried to spawn non-existing (or system) spawn group %u on map %u. Blocked.", groupId, GetId());
         return false;
     }
-    
+
     for (auto& pair : sObjectMgr->GetSpawnDataForGroup(groupId))
     {
         SpawnData const* data = pair.second;

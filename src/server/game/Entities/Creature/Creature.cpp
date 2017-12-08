@@ -513,6 +513,8 @@ bool Creature::InitEntry(uint32 entry, CreatureData const* data /*= nullptr*/)
 
     SetFloatValue(UNIT_FIELD_HOVERHEIGHT, cinfo->HoverHeight);
 
+    SetCanDualWield(cinfo->flags_extra & CREATURE_FLAG_EXTRA_USE_OFFHAND_ATTACK);
+
     // checked at loading
     m_defaultMovementType = MovementGeneratorType(data ? data->movementType : cinfo->MovementType);
     if (!m_respawnradius && m_defaultMovementType == RANDOM_MOTION_TYPE)
@@ -556,6 +558,8 @@ bool Creature::UpdateEntry(uint32 entry, CreatureData const* data /*= nullptr*/,
     SetUInt32Value(UNIT_FIELD_FLAGS_2, cInfo->unit_flags2);
 
     SetUInt32Value(UNIT_DYNAMIC_FLAGS, dynamicflags);
+
+    SetCanDualWield(cInfo->flags_extra & CREATURE_FLAG_EXTRA_USE_OFFHAND_ATTACK);
 
     SetAttackTime(BASE_ATTACK,   cInfo->BaseAttackTime);
     SetAttackTime(OFF_ATTACK,    cInfo->BaseAttackTime);
@@ -2098,101 +2102,6 @@ bool Creature::isWorldBoss() const
     return (GetCreatureTemplate()->type_flags & CREATURE_TYPE_FLAG_BOSS_MOB) != 0;
 }
 
-SpellInfo const* Creature::reachWithSpellAttack(Unit* victim)
-{
-    if (!victim)
-        return nullptr;
-
-    for (uint32 i=0; i < MAX_CREATURE_SPELLS; ++i)
-    {
-        if (!m_spells[i])
-            continue;
-        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(m_spells[i]);
-        if (!spellInfo)
-        {
-            TC_LOG_ERROR("entities.unit", "WORLD: unknown spell id %i", m_spells[i]);
-            continue;
-        }
-
-        bool bcontinue = true;
-        for (uint32 j = 0; j < MAX_SPELL_EFFECTS; j++)
-        {
-            if ((spellInfo->Effects[j].Effect == SPELL_EFFECT_SCHOOL_DAMAGE)       ||
-                (spellInfo->Effects[j].Effect == SPELL_EFFECT_INSTAKILL)            ||
-                (spellInfo->Effects[j].Effect == SPELL_EFFECT_ENVIRONMENTAL_DAMAGE) ||
-                (spellInfo->Effects[j].Effect == SPELL_EFFECT_HEALTH_LEECH)
-                )
-            {
-                bcontinue = false;
-                break;
-            }
-        }
-        if (bcontinue)
-            continue;
-
-        if (spellInfo->ManaCost > GetPower(POWER_MANA))
-            continue;
-        float range = spellInfo->GetMaxRange(false);
-        float minrange = spellInfo->GetMinRange(false);
-        float dist = GetDistance(victim);
-        if (dist > range || dist < minrange)
-            continue;
-        if (spellInfo->PreventionType == SPELL_PREVENTION_TYPE_SILENCE && HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SILENCED))
-            continue;
-        if (spellInfo->PreventionType == SPELL_PREVENTION_TYPE_PACIFY && HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PACIFIED))
-            continue;
-        return spellInfo;
-    }
-    return nullptr;
-}
-
-SpellInfo const* Creature::reachWithSpellCure(Unit* victim)
-{
-    if (!victim)
-        return nullptr;
-
-    for (uint32 i=0; i < MAX_CREATURE_SPELLS; ++i)
-    {
-        if (!m_spells[i])
-            continue;
-        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(m_spells[i]);
-        if (!spellInfo)
-        {
-            TC_LOG_ERROR("entities.unit", "WORLD: unknown spell id %i", m_spells[i]);
-            continue;
-        }
-
-        bool bcontinue = true;
-        for (uint32 j = 0; j < MAX_SPELL_EFFECTS; j++)
-        {
-            if ((spellInfo->Effects[j].Effect == SPELL_EFFECT_HEAL))
-            {
-                bcontinue = false;
-                break;
-            }
-        }
-        if (bcontinue)
-            continue;
-
-        if (spellInfo->ManaCost > GetPower(POWER_MANA))
-            continue;
-
-        float range = spellInfo->GetMaxRange(true);
-        float minrange = spellInfo->GetMinRange(true);
-        float dist = GetDistance(victim);
-        //if (!isInFront(victim, range) && spellInfo->AttributesEx)
-        //    continue;
-        if (dist > range || dist < minrange)
-            continue;
-        if (spellInfo->PreventionType == SPELL_PREVENTION_TYPE_SILENCE && HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SILENCED))
-            continue;
-        if (spellInfo->PreventionType == SPELL_PREVENTION_TYPE_PACIFY && HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PACIFIED))
-            continue;
-        return spellInfo;
-    }
-    return nullptr;
-}
-
 // select nearest hostile unit within the given distance (regardless of threat list).
 Unit* Creature::SelectNearestTarget(float dist, bool playerOnly /* = false */) const
 {
@@ -2372,7 +2281,7 @@ void Creature::SaveRespawnTime(uint32 forceDelay, bool savetodb)
         return;
     }
 
-    uint32 thisRespawnTime = forceDelay ? time(NULL) + forceDelay : m_respawnTime;
+    time_t thisRespawnTime = forceDelay ? time(NULL) + forceDelay : m_respawnTime;
     GetMap()->SaveRespawnTime(SPAWN_TYPE_CREATURE, m_spawnId, GetEntry(), thisRespawnTime, GetMap()->GetZoneId(GetHomePosition()), Trinity::ComputeGridCoord(GetHomePosition().GetPositionX(), GetHomePosition().GetPositionY()).GetId(), savetodb && m_creatureData && m_creatureData->dbData);
 }
 
@@ -2768,7 +2677,7 @@ uint32 Creature::GetPetAutoSpellOnPos(uint8 pos) const
 
 float Creature::GetPetChaseDistance() const
 {
-    float range = MELEE_RANGE;
+    float range = 0.f;
 
     for (uint8 i = 0; i < GetPetAutoSpellSize(); ++i)
     {
@@ -2778,10 +2687,8 @@ float Creature::GetPetChaseDistance() const
 
         if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellID))
         {
-            if (spellInfo->GetRecoveryTime() == 0 &&  // No cooldown
-                    spellInfo->RangeEntry->ID != 1 /*Self*/ && spellInfo->RangeEntry->ID != 2 /*Combat Range*/ &&
-                        spellInfo->GetMinRange() > range)
-                range = spellInfo->GetMinRange();
+            if (spellInfo->GetRecoveryTime() == 0 && spellInfo->RangeEntry->ID != 1 /*Self*/ && spellInfo->RangeEntry->ID != 2 /*Combat Range*/ && spellInfo->GetMaxRange() > range)
+                range = spellInfo->GetMaxRange();
         }
     }
 

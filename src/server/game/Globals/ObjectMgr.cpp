@@ -808,6 +808,12 @@ void ObjectMgr::CheckCreatureTemplate(CreatureTemplate const* cInfo)
         ok = true;
     }
 
+    if (cInfo->AIName == "TotemAI")
+    {
+        TC_LOG_ERROR("sql.sql", "Creature (Entry: %u) has not-allowed `AIName` '%s' set, removing", cInfo->Entry, cInfo->AIName.c_str());
+        const_cast<CreatureTemplate*>(cInfo)->AIName.clear();
+    }
+
     if (!cInfo->AIName.empty() && !sCreatureAIRegistry->HasItem(cInfo->AIName))
     {
         TC_LOG_ERROR("sql.sql", "Creature (Entry: %u) has non-registered `AIName` '%s' set, removing", cInfo->Entry, cInfo->AIName.c_str());
@@ -5992,7 +5998,7 @@ QuestGreeting const* ObjectMgr::GetQuestGreeting(ObjectGuid guid) const
     if (questItr == itr->second.end())
         return nullptr;
 
-    return questItr->second;
+    return &questItr->second;
 }
 
 void ObjectMgr::LoadQuestGreetings()
@@ -6020,7 +6026,7 @@ void ObjectMgr::LoadQuestGreetings()
         uint32 id                   = fields[0].GetUInt32();
         uint8 type                  = fields[1].GetUInt8();
         // overwrite
-        switch (type) 
+        switch (type)
         {
             case 0: // Creature
                 type = TYPEID_UNIT;
@@ -6054,7 +6060,7 @@ void ObjectMgr::LoadQuestGreetings()
         uint32 greetEmoteDelay      = fields[3].GetUInt32();
         std::string greeting        = fields[4].GetString();
 
-        _questGreetingStore[type][id] = new QuestGreeting(greetEmoteType, greetEmoteDelay, greeting);
+        _questGreetingStore[type][id] = QuestGreeting(greetEmoteType, greetEmoteDelay, greeting);
 
         ++count;
     }
@@ -7734,7 +7740,7 @@ void ObjectMgr::LoadQuestPOI()
             _questPOIStore.at(questId).POIData.QuestPOIBlobDataStats.push_back(POI);
         }
         else
-            TC_LOG_ERROR("server.loading", "Table quest_poi references unknown quest points for quest %u POI id %u", questId, id);
+            TC_LOG_ERROR("sql.sql", "Table quest_poi references unknown quest points for quest %u POI id %u", questId, id);
 
         ++count;
     } while (result->NextRow());
