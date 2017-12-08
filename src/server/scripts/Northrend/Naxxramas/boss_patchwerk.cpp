@@ -138,7 +138,7 @@ public:
                         {
                             if ((*it)->GetVictim() != currentVictim)
                                 (secondThreat ? thirdThreat : secondThreat) = *it;
-                            if (!thirdThreat && Is25ManRaid() && (++it != end && (*it)->IsAvailable()))
+                            if (!thirdThreat && Is25ManRaid() && (++it != end && (*it)->IsAvailable())) //-V560
                                 thirdThreat = *it;
                         }
 
