@@ -438,7 +438,7 @@ void WorldUpdateLoop()
         if (m_ServiceStatus == 0)
             World::StopNow(SHUTDOWN_EXIT_CODE);
 
-        while (m_ServiceStatus == 2)
+        while (m_ServiceStatus == 2) //-V712
             Sleep(1000);
 #endif
     }

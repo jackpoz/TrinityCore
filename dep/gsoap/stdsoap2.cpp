@@ -15837,7 +15837,7 @@ soap_wcollapse(struct soap *soap, wchar_t *s, int flag, int insitu)
   while (t[n])
     n++;
   if (insitu && s < t)
-    soap_memmove(s, n + 1, t, n + 1);
+    soap_memmove(s, n + 1, t, n + 1); //-V501
   else
     s = t;
   if (n > 0)
