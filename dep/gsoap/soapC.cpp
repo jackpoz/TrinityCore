@@ -704,7 +704,7 @@ SOAP_FMAC3 struct SOAP_ENV__Fault * SOAP_FMAC4 soap_in_SOAP_ENV__Fault(struct so
 	{
 		for (;;)
 		{	soap->error = SOAP_TAG_MISMATCH;
-			if (soap_flag_faultcode && (soap->error == SOAP_TAG_MISMATCH || soap->error == SOAP_NO_TAG))
+			if (soap_flag_faultcode && (soap->error == SOAP_TAG_MISMATCH || soap->error == SOAP_NO_TAG)) //-V560
 			{	if (soap_in__QName(soap, "faultcode", (char**)&a->faultcode, "xsd:QName"))
 				{	soap_flag_faultcode--;
 					continue;
@@ -854,7 +854,7 @@ SOAP_FMAC3 struct SOAP_ENV__Reason * SOAP_FMAC4 soap_in_SOAP_ENV__Reason(struct 
 	{
 		for (;;)
 		{	soap->error = SOAP_TAG_MISMATCH;
-			if (soap_flag_SOAP_ENV__Text && (soap->error == SOAP_TAG_MISMATCH || soap->error == SOAP_NO_TAG))
+			if (soap_flag_SOAP_ENV__Text && (soap->error == SOAP_TAG_MISMATCH || soap->error == SOAP_NO_TAG)) //-V560
 			{	if (soap_in_string(soap, "SOAP-ENV:Text", (char**)&a->SOAP_ENV__Text, "xsd:string"))
 				{	soap_flag_SOAP_ENV__Text--;
 					continue;
@@ -958,7 +958,7 @@ SOAP_FMAC3 struct SOAP_ENV__Detail * SOAP_FMAC4 soap_in_SOAP_ENV__Detail(struct 
 	{
 		for (;;)
 		{	soap->error = SOAP_TAG_MISMATCH;
-			if (soap_flag_fault && soap->error == SOAP_TAG_MISMATCH)
+			if (soap_flag_fault && soap->error == SOAP_TAG_MISMATCH) //-V560
 			{	if ((a->fault = soap_getelement(soap, &a->__type)))
 				{	soap_flag_fault = 0;
 					continue;
@@ -1070,7 +1070,7 @@ SOAP_FMAC3 struct SOAP_ENV__Code * SOAP_FMAC4 soap_in_SOAP_ENV__Code(struct soap
 	{
 		for (;;)
 		{	soap->error = SOAP_TAG_MISMATCH;
-			if (soap_flag_SOAP_ENV__Value && (soap->error == SOAP_TAG_MISMATCH || soap->error == SOAP_NO_TAG))
+			if (soap_flag_SOAP_ENV__Value && (soap->error == SOAP_TAG_MISMATCH || soap->error == SOAP_NO_TAG)) //-V560
 			{	if (soap_in__QName(soap, "SOAP-ENV:Value", (char**)&a->SOAP_ENV__Value, "xsd:QName"))
 				{	soap_flag_SOAP_ENV__Value--;
 					continue;
@@ -1263,7 +1263,7 @@ SOAP_FMAC3 struct ns1__executeCommand * SOAP_FMAC4 soap_in_ns1__executeCommand(s
 	{
 		for (;;)
 		{	soap->error = SOAP_TAG_MISMATCH;
-			if (soap_flag_command && (soap->error == SOAP_TAG_MISMATCH || soap->error == SOAP_NO_TAG))
+			if (soap_flag_command && (soap->error == SOAP_TAG_MISMATCH || soap->error == SOAP_NO_TAG)) //-V560
 			{	if (soap_in_string(soap, "command", (char**)&a->command, "xsd:string"))
 				{	soap_flag_command--;
 					continue;
@@ -1359,7 +1359,7 @@ SOAP_FMAC3 struct ns1__executeCommandResponse * SOAP_FMAC4 soap_in_ns1__executeC
 	{
 		for (;;)
 		{	soap->error = SOAP_TAG_MISMATCH;
-			if (soap_flag_result && soap->error == SOAP_TAG_MISMATCH)
+			if (soap_flag_result && soap->error == SOAP_TAG_MISMATCH) //-V560
 			{	if (soap_in_PointerTostring(soap, "result", &a->result, "xsd:string"))
 				{	soap_flag_result--;
 					continue;

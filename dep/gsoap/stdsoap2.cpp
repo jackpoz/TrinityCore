@@ -6022,7 +6022,7 @@ soap_accept(struct soap *soap)
 #endif
 #endif
 #endif
-      soap->keep_alive = -(((soap->imode | soap->omode) & SOAP_IO_KEEPALIVE) != 0);
+      soap->keep_alive = -(((soap->imode | soap->omode) & SOAP_IO_KEEPALIVE) != 0); //-V732
       if (soap->send_timeout || soap->recv_timeout)
         SOAP_SOCKNONBLOCK(soap->socket)
       else
@@ -6837,7 +6837,7 @@ http_post(struct soap *soap, const char *endpoint, const char *host, int port, c
     return soap->error = SOAP_EOM;
   if (soap->status == SOAP_CONNECT)
     (SOAP_SNPRINTF(soap->tmpbuf, sizeof(soap->tmpbuf), l), "%s %s:%d HTTP/%s", s, soap->host, soap->port, soap->http_version);
-  else if (soap->proxy_host && endpoint)
+  else if (soap->proxy_host && endpoint) //-V560
     (SOAP_SNPRINTF(soap->tmpbuf, sizeof(soap->tmpbuf), l), "%s %s HTTP/%s", s, endpoint, soap->http_version);
   else
     (SOAP_SNPRINTF(soap->tmpbuf, sizeof(soap->tmpbuf), l), "%s /%s HTTP/%s", s, (*path == '/' ? path + 1 : path), soap->http_version);
@@ -7230,7 +7230,7 @@ soap_encode_url(const char *s, char *t, size_t len)
 { int c;
   size_t n = len;
   while ((c = *s++) && --n > 0)
-  { if (c > ' ' && c < 128 && !strchr("()<>@,;:\\\"/[]?={}#!$&'*+", c))
+  { if (c > ' ' && c < 128 && !strchr("()<>@,;:\\\"/[]?={}#!$&'*+", c)) //-V560
       *t++ = c;
     else if (n > 2)
     { *t++ = '%';
@@ -12371,7 +12371,7 @@ soap_getattrval(struct soap *soap, char *s, size_t *n, soap_wchar d)
           *t++ = (char)(0x80 | ((c >> 6) & 0x3F));
         }
         *t++ = (char)(0x80 | (c & 0x3F));
-        m = t - buf - 1;
+        m = t - buf - 1; //-V782
         if (i + m >= k)
         { soap_unget(soap, c | 0x80000000);
           *n = i;
@@ -12588,7 +12588,7 @@ soap_peek_element(struct soap *soap)
   } while (soap_coblank(c));
   s = soap->tag;
   i = sizeof(soap->tag);
-  while (c != '>' && c != '/' && c > 32 && (int)c != EOF)
+  while (c != '>' && c != '/' && c > 32 && (int)c != EOF) //-V560
   { if (--i > 0)
       *s++ = (char)c;
     c = soap_get1(soap);
@@ -12640,7 +12640,7 @@ soap_peek_element(struct soap *soap)
   while ((int)c != EOF && c != '>' && c != '/')
   { s = soap->tmpbuf;
     i = sizeof(soap->tmpbuf);
-    while (c != '=' && c != '>' && c != '/' && c > 32 && (int)c != EOF)
+    while (c != '=' && c != '>' && c != '/' && c > 32 && (int)c != EOF) //-V560
     { if (--i > 0)
         *s++ = (char)c;
       c = soap_get1(soap);
@@ -13078,7 +13078,7 @@ soap_string_out(struct soap *soap, const char *s, int flag)
       if (soap->mode & SOAP_C_MBSTRING)
       { wchar_t wc;
         int m = mbtowc(&wc, t - 1, MB_CUR_MAX);
-        if (m > 0 && !((soap_wchar)wc == c && m == 1 && c < 0x80))
+        if (m > 0 && !((soap_wchar)wc == c && m == 1 && c < 0x80)) //-V560
         { if (soap_send_raw(soap, s, t - s - 1) || soap_pututf8(soap, (unsigned long)wc))
             return soap->error;
           s = t += m - 1;
@@ -13200,7 +13200,7 @@ soap_string_in(struct soap *soap, int flag, long minlen, long maxlen, const char
           { soap_unget(soap, c);
             c = soap_getutf8(soap);
           }
-          if ((c & 0x7FFFFFFF) >= 0x80 && (flag <= 0 || (soap->mode & SOAP_C_UTFSTRING)))
+          if ((c & 0x7FFFFFFF) >= 0x80 && (flag <= 0 || (soap->mode & SOAP_C_UTFSTRING))) //-V560
           { c &= 0x7FFFFFFF;
             t = buf;
             if (c < 0x0800)
@@ -13230,7 +13230,7 @@ soap_string_in(struct soap *soap, int flag, long minlen, long maxlen, const char
               *t++ = (char)(0x80 | ((c >> 6) & 0x3F));
             }
             *t++ = (char)(0x80 | (c & 0x3F));
-            m = (int)(t - buf) - 1;
+            m = (int)(t - buf) - 1; //-V782
             t = buf;
             *s++ = *t++;
             continue;
@@ -13302,7 +13302,7 @@ soap_string_in(struct soap *soap, int flag, long minlen, long maxlen, const char
           m = 1;
           break;
         case SOAP_LT:
-          if (flag == 3 || (f && n == 0))
+          if (flag == 3 || (f && n == 0)) //-V560
             goto end;
           n++;
           *s++ = '<';
@@ -13364,7 +13364,7 @@ soap_string_in(struct soap *soap, int flag, long minlen, long maxlen, const char
           }
           else if (c == '?')
             state = 3;
-          else if (flag == 3 || (f && n == 0))
+          else if (flag == 3 || (f && n == 0)) //-V560
           { soap_revget1(soap);
             c = '<';
             goto end;
@@ -13480,7 +13480,7 @@ soap_string_in(struct soap *soap, int flag, long minlen, long maxlen, const char
               *t++ = (char)(0x80 | ((c >> 6) & 0x3F));
             }
             *t++ = (char)(0x80 | (c & 0x3F));
-            m = (int)(t - buf) - 1;
+            m = (int)(t - buf) - 1; //-V782
             t = buf;
             *s++ = *t++;
             l++;
@@ -15298,7 +15298,7 @@ soap_collapse(struct soap *soap, char *s, int flag, int insitu)
     continue;
   n = strlen(t);
   if (insitu && s < t)
-    soap_memmove(s, n + 1, t, n + 1);
+    soap_memmove(s, n + 1, t, n + 1); //-V501
   else
     s = t;
   if (n > 0)
@@ -15818,7 +15818,7 @@ soap_wcollapse(struct soap *soap, wchar_t *s, int flag, int insitu)
   wchar_t *t;
   size_t n;
   if (flag == 4)
-  { for (t = s; *t && (!soap_coblank((soap_wchar)*t) || *t == 32); t++)
+  { for (t = s; *t && (!soap_coblank((soap_wchar)*t) || *t == 32); t++) //-V560
       continue;
     if (*t)
     { /* replace blanks and control char by space */
@@ -15831,7 +15831,7 @@ soap_wcollapse(struct soap *soap, wchar_t *s, int flag, int insitu)
     return s;
   }
   /* collapse white space */
-  for (t = s; *t && soap_coblank((soap_wchar)*t); t++)
+  for (t = s; *t && soap_coblank((soap_wchar)*t); t++) //-V560
     continue;
   n = 0;
   while (t[n])
@@ -15842,7 +15842,7 @@ soap_wcollapse(struct soap *soap, wchar_t *s, int flag, int insitu)
     s = t;
   if (n > 0)
   { if (!soap_coblank((soap_wchar)s[n-1]))
-    { for (t = s; (*t && !soap_coblank((soap_wchar)*t)) || (*t == 32 && (!t[1] || !soap_coblank((soap_wchar)t[1]))); t++)
+    { for (t = s; (*t && !soap_coblank((soap_wchar)*t)) || (*t == 32 && (!t[1] || !soap_coblank((soap_wchar)t[1]))); t++) //-V560
         continue;
       if (!*t)
         return s;
@@ -15853,7 +15853,7 @@ soap_wcollapse(struct soap *soap, wchar_t *s, int flag, int insitu)
     { if (soap_coblank((soap_wchar)*t))
       { wchar_t *r;
         *t = L' ';
-        for (r = t + 1; *r && soap_coblank((soap_wchar)*r); r++)
+        for (r = t + 1; *r && soap_coblank((soap_wchar)*r); r++) //-V560
           continue;
         if (r > t + 1)
           soap_memmove(t + 1, sizeof(wchar_t) * (n - (t-s)), r, sizeof(wchar_t) * (n - (r-s) + 1));
@@ -15882,7 +15882,7 @@ soap_wchar2s(struct soap *soap, const wchar_t *s)
   if (!s)
     return NULL;
   while ((c = *q++))
-  { if (c > 0 && c < 0x80)
+  { if (c > 0 && c < 0x80) //-V560
       n++;
     else
 #ifdef WITH_REPLACE_ILLEGAL_UTF8
@@ -15895,7 +15895,7 @@ soap_wchar2s(struct soap *soap, const wchar_t *s)
   if (r)
   { /* Convert wchar to UTF8 (chars above U+10FFFF are silently converted, but should not be used) */
     while ((c = *s++))
-    { if (c > 0 && c < 0x80)
+    { if (c > 0 && c < 0x80) //-V560
         *t++ = (char)c;
       else
       {
@@ -18699,7 +18699,7 @@ soap_try_connect_command(struct soap *soap, int http_command, const char *endpoi
             return soap->error;
           return soap->error = SOAP_TCP_ERROR;
         }
-        soap->keep_alive = -((soap->omode & SOAP_IO_KEEPALIVE) != 0);
+        soap->keep_alive = -((soap->omode & SOAP_IO_KEEPALIVE) != 0); //-V732
       }
     }
   }
@@ -18882,7 +18882,7 @@ soap_base642s(struct soap *soap, const char *s, char *t, size_t l, int *n)
     return SOAP_NON_NULL;
   }
   if (!t)
-  { l = (strlen(s) + 3) / 4 * 3 + 1;    /* space for raw binary and \0 */
+  { l = (strlen(s) + 3) / 4 * 3 + 1;    /* space for raw binary and \0 */ //-V763
     t = (char*)soap_malloc(soap, l);
   }
   if (!t)
@@ -18988,7 +18988,7 @@ soap_hex2s(struct soap *soap, const char *s, char *t, size_t l, int *n)
     return SOAP_NON_NULL;
   }
   if (!t)
-  { l = strlen(s) / 2 + 1;      /* make sure enough space for \0 */
+  { l = strlen(s) / 2 + 1;      /* make sure enough space for \0 */ //-V763
     t = (char*)soap_malloc(soap, l);
   }
   if (!t)
