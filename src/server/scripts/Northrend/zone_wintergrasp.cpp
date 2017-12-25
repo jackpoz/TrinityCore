@@ -22,11 +22,13 @@
 #include "DBCStores.h"
 #include "GameObject.h"
 #include "GameObjectAI.h"
+#include "GameTime.h"
 #include "ObjectMgr.h"
 #include "Player.h"
 #include "ScriptedCreature.h"
 #include "ScriptedGossip.h"
 #include "ScriptSystem.h"
+#include "SpellAuras.h"
 #include "SpellScript.h"
 #include "Vehicle.h"
 #include "WorldSession.h"
@@ -308,7 +310,7 @@ class npc_wg_queue : public CreatureScript
                 else
                 {
                     uint32 timer = wintergrasp->GetTimer() / 1000;
-                    player->SendUpdateWorldState(4354, time(nullptr) + timer);
+                    player->SendUpdateWorldState(4354, GameTime::GetGameTime() + timer);
                     if (timer < 15 * MINUTE)
                     {
                         AddGossipItemFor(player, GOSSIP_ICON_CHAT, player->GetSession()->GetTrinityString(WG_NPCQUEUE_TEXTOPTION_JOIN), GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF);
@@ -579,6 +581,23 @@ class spell_wintergrasp_defender_teleport_trigger : public SpellScriptLoader
         }
 };
 
+// 58549 Tenacity
+// 59911 Tenacity
+class spell_wintergrasp_tenacity_refresh : public AuraScript
+{
+    PrepareAuraScript(spell_wintergrasp_tenacity_refresh);
+
+    void Refresh(AuraEffect* /*aurEff*/)
+    {
+        GetAura()->RefreshDuration();
+    }
+
+    void Register() override
+    {
+        OnEffectUpdatePeriodic += AuraEffectUpdatePeriodicFn(spell_wintergrasp_tenacity_refresh::Refresh, EFFECT_2, SPELL_AURA_PERIODIC_DUMMY);
+    }
+};
+
 class condition_is_wintergrasp_horde : public ConditionScript
 {
     public:
@@ -619,6 +638,7 @@ void AddSC_wintergrasp()
     new achievement_wg_didnt_stand_a_chance();
     new spell_wintergrasp_defender_teleport();
     new spell_wintergrasp_defender_teleport_trigger();
+    RegisterAuraScript(spell_wintergrasp_tenacity_refresh);
     new condition_is_wintergrasp_horde();
     new condition_is_wintergrasp_alliance();
 }

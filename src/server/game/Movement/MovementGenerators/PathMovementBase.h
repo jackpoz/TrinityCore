@@ -1,6 +1,5 @@
 /*
  * Copyright (C) 2008-2017 TrinityCore <http://www.trinitycore.org/>
- * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -16,4 +15,23 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ScriptPCH.h"
+#ifndef PathMovementBase_h__
+#define PathMovementBase_h__
+
+#include "Define.h"
+
+template<class Entity, class BasePath>
+class PathMovementBase
+{
+public:
+    PathMovementBase() : _path(), _currentNode(0) { }
+    virtual ~PathMovementBase() { };
+
+    uint32 GetCurrentNode() const { return _currentNode; }
+
+protected:
+    BasePath _path;
+    uint32 _currentNode;
+};
+
+#endif // PathMovementBase_h__
