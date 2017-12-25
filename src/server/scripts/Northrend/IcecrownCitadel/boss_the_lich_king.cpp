@@ -1695,7 +1695,7 @@ class npc_strangulate_vehicle : public CreatureScript
                                 if (Unit* summoner = summ->GetSummoner())
                                 {
                                     summoner->CastSpell(nullptr, SPELL_HARVEST_SOUL_VISUAL, true);
-                                    summoner->ExitVehicle(summoner);
+                                    summoner->ExitVehicle(summoner); //-V678
                                     if (!IsHeroic())
                                         summoner->CastSpell(summoner, SPELL_HARVEST_SOUL_TELEPORT, true);
                                     else

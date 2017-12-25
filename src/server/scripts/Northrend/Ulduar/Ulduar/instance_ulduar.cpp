@@ -732,7 +732,7 @@ class instance_ulduar : public InstanceMapScript
 
                                         if (Item* item = player->GetItemByPos(INVENTORY_SLOT_BAG_0, slot))
                                         {
-                                            if (slot >= EQUIPMENT_SLOT_MAINHAND && slot <= EQUIPMENT_SLOT_RANGED)
+                                            if (slot >= EQUIPMENT_SLOT_MAINHAND && slot <= EQUIPMENT_SLOT_RANGED) //-V560
                                             {
                                                 if (item->GetTemplate()->ItemLevel > _maxWeaponItemLevel)
                                                     _maxWeaponItemLevel = item->GetTemplate()->ItemLevel;

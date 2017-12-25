@@ -529,7 +529,7 @@ void parseFilename(
             base = f;
             f    = "";
 
-        } else if ((i != std::string::npos) && (i < f.size() - 1)) {
+        } else if ((i != std::string::npos) && (i < f.size() - 1)) { //-V560
             
             base = f.substr(i + 1, f.size() - i - 1);
             f    = f.substr(0, i);
