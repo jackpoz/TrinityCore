@@ -289,7 +289,7 @@ Creature* BattlegroundAV::AddAVCreature(uint16 cinfoid, uint16 type)
     if (type >= AV_CPLACE_MAX) //static
     {
         type -= AV_CPLACE_MAX;
-        cinfoid = uint16(BG_AV_StaticCreaturePos[type][4]);
+        cinfoid = uint16(BG_AV_StaticCreaturePos[type][4]); //-V763
         creature = AddCreature(BG_AV_StaticCreatureInfo[cinfoid],
                                type + AV_CPLACE_MAX,
                                BG_AV_StaticCreaturePos[type][0],

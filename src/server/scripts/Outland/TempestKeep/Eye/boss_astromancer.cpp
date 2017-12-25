@@ -336,7 +336,7 @@ class boss_high_astromancer_solarian : public CreatureScript
                     if (Phase2_Timer <= diff)
                     {
                         Phase = 3;
-                        for (int i=0; i <= 2; ++i)
+                        for (int i=0; i <= 2; ++i) //-V756
                             for (int j=1; j <= 4; j++)
                                 SummonMinion(NPC_SOLARIUM_AGENT, Portals[i][0], Portals[i][1], Portals[i][2]);
 
