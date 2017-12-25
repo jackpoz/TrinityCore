@@ -663,7 +663,7 @@ typedef std::pair<ExclusiveQuestGroups::const_iterator, ExclusiveQuestGroups::co
 
 struct PetLevelInfo
 {
-    PetLevelInfo() : health(0), mana(0), armor(0)
+    PetLevelInfo() : health(0), mana(0), armor(0) //-V730
     {
         for (uint16& stat : stats)
             stat = 0;

@@ -287,7 +287,7 @@ void TextInput::nextToken(Token& t) {
                 t._bytePosition = currentCharOffset;
                 t._line         = lineNumber;
                 t._character    = charNumber;
-                t._string       = c;
+                t._string       = c; //-V601
 
                 int c2 = peekInputChar(1);
                 if (c == '\r' && c2 == '\n') {
@@ -423,7 +423,7 @@ void TextInput::nextToken(Token& t) {
     if (c > 127 && c < 255) {
         t._type = Token::SYMBOL;                                                
         t._extendedType = Token::SYMBOL_TYPE;                                   
-        t._string = c;                                                          
+        t._string = c;                                                           //-V601
         c = eatAndPeekInputChar();                                              
     }
 
@@ -454,11 +454,11 @@ void TextInput::nextToken(Token& t) {
     case '$':
     case '?':
     case '%':
-        SETUP_SYMBOL(c);
+        SETUP_SYMBOL(c); //-V601
         return;
 
     case '-':                   // negative number, -, --, -=, or ->
-        SETUP_SYMBOL(c);
+        SETUP_SYMBOL(c); //-V601
 
         switch (c) {
         case '>':               // ->
@@ -496,7 +496,7 @@ void TextInput::nextToken(Token& t) {
         return;
 
     case '+':                   // positive number, +, ++, or +=
-        SETUP_SYMBOL(c);
+        SETUP_SYMBOL(c); //-V601
 
         switch (c) {
         case '+':               // ++
@@ -531,7 +531,7 @@ void TextInput::nextToken(Token& t) {
         return;
 
     case ':':                   // : or :: or ::> or ::= or := or :>
-        SETUP_SYMBOL(c);
+        SETUP_SYMBOL(c); //-V601
         
         if (c == ':') {
             t._string += c;
@@ -552,7 +552,7 @@ void TextInput::nextToken(Token& t) {
         return;
 
     case '=':                   // = or == or =>
-        SETUP_SYMBOL(c);
+        SETUP_SYMBOL(c); //-V601
 
         if (c == '=') {
             t._string += c;
@@ -568,7 +568,7 @@ void TextInput::nextToken(Token& t) {
     case '!':                   // ! or !=
     case '~':                   // ~ or ~=
     case '^':                   // ^ or ^=
-        SETUP_SYMBOL(c);
+        SETUP_SYMBOL(c); //-V601
         
         if (c == '=') {
             t._string += c;
@@ -582,7 +582,7 @@ void TextInput::nextToken(Token& t) {
     case '&':                   // &, &&, or &=
         {
             int orig_c = c;
-            SETUP_SYMBOL(c);
+            SETUP_SYMBOL(c); //-V601
 
             if ((c == '=') || (orig_c == c)) {
                 t._string += c;
@@ -609,7 +609,7 @@ void TextInput::nextToken(Token& t) {
         return;
             
     case '\\':                // backslash or escaped comment char.
-        SETUP_SYMBOL(c);
+        SETUP_SYMBOL(c); //-V601
 
         if ((options.otherCommentCharacter != '\0'
              && c == options.otherCommentCharacter)
@@ -619,7 +619,7 @@ void TextInput::nextToken(Token& t) {
             // escaped comment character.  Return the raw comment
             // char (no backslash).
 
-            t._string = c;
+            t._string = c; //-V601
             eatInputChar();
             return;
         }
@@ -631,7 +631,7 @@ void TextInput::nextToken(Token& t) {
             goto numLabel;
         }
 
-        SETUP_SYMBOL(c);
+        SETUP_SYMBOL(c); //-V601
 
         if (c == '.') {         // .. or ...
             t._string += c;
@@ -858,7 +858,7 @@ numLabel:
             // Single quoted string
             parseQuotedString(options.singleQuoteCharacter, t);
         } else {
-            t._string = c;
+            t._string = c; //-V601
             t._type = Token::SYMBOL;
             t._extendedType = Token::SYMBOL_TYPE;
         }
