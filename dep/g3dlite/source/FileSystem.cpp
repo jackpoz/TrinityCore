@@ -713,8 +713,8 @@ bool FilePath::isRoot(const std::string& f) {
 
         // Windows shares are considered roots, but only if this does not include a path inside the share
         if (isSlash(f[0]) && isSlash(f[1])) {
-            size_t i = f.find("/", 3);
-            size_t j = f.find("\\", 3);
+            size_t i = f.find("/", 3); //-V817
+            size_t j = f.find("\\", 3); //-V817
 
             if (i == std::string::npos) {
                 i = j;
@@ -753,7 +753,7 @@ std::string FilePath::concat(const std::string& dirname, const std::string& file
 
 
 std::string FilePath::ext(const std::string& filename) {
-    size_t i = filename.rfind(".");
+    size_t i = filename.rfind("."); //-V817
     if (i != std::string::npos) {
         return filename.substr(i + 1, filename.length() - i);
     } else {
@@ -766,7 +766,7 @@ std::string FilePath::baseExt(const std::string& filename) {
     size_t i = findLastSlash(filename);
 
 #   ifdef G3D_WINDOWS
-        size_t j = filename.rfind(":");
+        size_t j = filename.rfind(":"); //-V817
         if ((i == std::string::npos) && (j != std::string::npos)) {
             i = j;
         }
@@ -782,7 +782,7 @@ std::string FilePath::baseExt(const std::string& filename) {
 
 std::string FilePath::base(const std::string& path) {
     std::string filename = baseExt(path);
-    size_t i = filename.rfind(".");
+    size_t i = filename.rfind("."); //-V817
     if (i == std::string::npos) {
         // No extension
         return filename;
@@ -796,7 +796,7 @@ std::string FilePath::parent(const std::string& path) {
     size_t i = findLastSlash(removeTrailingSlash(path));
 
 #   ifdef G3D_WINDOWS
-        size_t j = path.rfind(":");
+        size_t j = path.rfind(":"); //-V817
         if ((i == std::string::npos) && (j != std::string::npos)) {
             i = j;
         }

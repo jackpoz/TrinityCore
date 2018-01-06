@@ -823,15 +823,15 @@ void getDirs(
 
 
 std::string filenameBaseExt(const std::string& filename) {
-    size_t i = filename.rfind("/");
-    size_t j = filename.rfind("\\");
+    size_t i = filename.rfind("/"); //-V817
+    size_t j = filename.rfind("\\"); //-V817
 
     if ((j > i) && (j != std::string::npos)) {
         i = j;
     }
 
 #   ifdef G3D_WINDOWS
-        j = filename.rfind(":");
+        j = filename.rfind(":"); //-V817
         if ((i == std::string::npos) && (j != std::string::npos)) {
             i = j;
         }
@@ -857,7 +857,7 @@ std::string filenameBase(const std::string& s) {
 
 
 std::string filenameExt(const std::string& filename) {
-    size_t i = filename.rfind(".");
+    size_t i = filename.rfind("."); //-V817
     if (i != std::string::npos) {
         return filename.substr(i + 1, filename.length() - i);
     } else {
@@ -867,15 +867,15 @@ std::string filenameExt(const std::string& filename) {
 
 
 std::string filenamePath(const std::string& filename) {
-    size_t i = filename.rfind("/");
-    size_t j = filename.rfind("\\");
+    size_t i = filename.rfind("/"); //-V817
+    size_t j = filename.rfind("\\"); //-V817
 
     if ((j > i) && (j != std::string::npos)) {
         i = j;
     }
 
 #   ifdef G3D_WINDOWS
-        j = filename.rfind(":");
+        j = filename.rfind(":"); //-V817
         if ((i == std::string::npos) && (j != std::string::npos)) {
             i = j;
         }

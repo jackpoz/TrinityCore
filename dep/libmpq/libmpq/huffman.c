@@ -235,10 +235,10 @@ void libmpq__huffman_insert_item(struct huffman_tree_item_s **p_item, struct huf
 	if (next != 0) {
 
 		/* check if previous item exist. */
-		if (PTR_INT(prev) < 0) {
+		if (PTR_INT(prev) < 0) { //-V205
 
 			/* return previous item. */
-			prev = PTR_NOT(prev);
+			prev = PTR_NOT(prev); //-V205 //-V204
 		} else {
 
 			/* add item. */
@@ -284,16 +284,16 @@ void libmpq__huffman_insert_item(struct huffman_tree_item_s **p_item, struct huf
 			item->prev = item2->prev;
 
 			/* usually NULL. */
-			next2      = PTR_INT(p_item[0]);
+			next2      = PTR_INT(p_item[0]); //-V205
 
 			/* previous item to the second (or last tree item). */
 			prev2      = item2->prev;
 
 			/* check if previous item is a valid pointer. */
-			if (PTR_INT(prev2) < 0) {
+			if (PTR_INT(prev2) < 0) { //-V205
 
 				/* set values. */
-				prev2       = PTR_NOT(prev);
+				prev2       = PTR_NOT(prev); //-V205 //-V204
 				prev2->next = item;
 
 				/* next after last item. */
@@ -339,8 +339,8 @@ void libmpq__huffman_remove_item(struct huffman_tree_item_s *hi) {
 		temp = hi->prev;
 
 		/* check if previous item is a pointer. */
-		if (PTR_INT(temp) <= 0) {
-			temp = PTR_NOT(temp);
+		if (PTR_INT(temp) <= 0) { //-V205
+			temp = PTR_NOT(temp); //-V205 //-V204
 		} else {
 			temp += (hi - hi->next->prev);
 		}
@@ -356,10 +356,10 @@ void libmpq__huffman_remove_item(struct huffman_tree_item_s *hi) {
 struct huffman_tree_item_s *libmpq__huffman_previous_item(struct huffman_tree_item_s *hi, long value) {
 
 	/* check if previous item exist. */
-	if (PTR_INT(hi->prev) < 0) {
+	if (PTR_INT(hi->prev) < 0) { //-V205
 
 		/* return previous item. */
-		return PTR_NOT(hi->prev);
+		return PTR_NOT(hi->prev); //-V205 //-V204
 	}
 
 	/* check if something else should returned. */
@@ -444,7 +444,7 @@ struct huffman_tree_item_s *libmpq__huffman_call_1500E740(struct huffman_tree_s 
 	struct huffman_tree_item_s **pp_item;
 
 	/* check if item is empty. */
-	if (PTR_INT(p_item1) <= 0 || (p_item2 = p_item1) == NULL) {
+	if (PTR_INT(p_item1) <= 0 || (p_item2 = p_item1) == NULL) { //-V205
 
 		/* check if item is not empty. */
 		if ((p_item2 = &ht->items0008[ht->items++]) != NULL) {
@@ -466,8 +466,8 @@ struct huffman_tree_item_s *libmpq__huffman_call_1500E740(struct huffman_tree_s 
 		p_prev = p_item1->prev;
 
 		/* check if previous item is a valid pointer. */
-		if (PTR_INT(p_prev) <= 0) {
-			p_prev = PTR_NOT(p_prev);
+		if (PTR_INT(p_prev) <= 0) { //-V205
+			p_prev = PTR_NOT(p_prev); //-V205 //-V204
 		} else {
 			p_prev += (p_item1 - p_item1->next->prev);
 		}
@@ -491,7 +491,7 @@ struct huffman_tree_item_s *libmpq__huffman_call_1500E740(struct huffman_tree_s 
 	if (p_prev <= 0) { //-V503
 
 		/* fill values. */
-		p_prev          = PTR_NOT(p_prev);
+		p_prev          = PTR_NOT(p_prev); //-V205 //-V204
 		p_prev->next    = p_item1;
 		p_prev->prev    = p_item2;
 		p_item2->parent = NULL;
@@ -499,10 +499,10 @@ struct huffman_tree_item_s *libmpq__huffman_call_1500E740(struct huffman_tree_s 
 	} else {
 
 		/* check if pointer is valid. */
-		if (PTR_INT(ht->item305C) < 0) {
+		if (PTR_INT(ht->item305C) < 0) { //-V205
 			p_prev += (struct huffman_tree_item_s *)pp_item - (*pp_item)->prev;
 		} else {
-			p_prev += PTR_INT(ht->item305C);
+			p_prev += PTR_INT(ht->item305C); //-V205 //-V220
 		}
 
 		/* fill values. */
@@ -544,7 +544,7 @@ void libmpq__huffman_call_1500E820(struct huffman_tree_s *ht, struct huffman_tre
 			p_prev = p_item1->prev;
 
 			/* check if pointer is valid. */
-			if (PTR_INT(p_prev) <= 0) {
+			if (PTR_INT(p_prev) <= 0) { //-V205
 				p_prev = NULL;
 				break;
 			}
@@ -638,10 +638,10 @@ void libmpq__huffman_tree_init(struct huffman_tree_s *ht, uint32_t cmp) {
 	/* fill values. */
 	ht->item3050 = NULL;
 	ht->item3054 = PTR_PTR(&ht->item3054);
-	ht->item3058 = PTR_NOT(ht->item3054);
+	ht->item3058 = PTR_NOT(ht->item3054); //-V205 //-V204
 	ht->item305C = NULL;
 	ht->first    = PTR_PTR(&ht->first);
-	ht->last     = PTR_NOT(ht->first);
+	ht->last     = PTR_NOT(ht->first); //-V205 //-V204
 	ht->offs0004 = 1;
 	ht->items    = 0;
 
@@ -673,7 +673,7 @@ void libmpq__huffman_tree_build(struct huffman_tree_s *ht, uint32_t cmp_type) {
 	uint32_t i;
 
 	/* ESI - loop while pointer has a negative value (last entry). */
-	while (PTR_INT(ht->last) > 0) {
+	while (PTR_INT(ht->last) > 0) { //-V205
 
 		/* EAX */
 		struct huffman_tree_item_s *temp;
@@ -688,7 +688,7 @@ void libmpq__huffman_tree_build(struct huffman_tree_s *ht, uint32_t cmp_type) {
 
 		/* EAX */
 		ht->last->prev = ht->item3058;
-		temp           = libmpq__huffman_previous_item(PTR_PTR(&ht->item3054), PTR_INT(&ht->item3050));
+		temp           = libmpq__huffman_previous_item(PTR_PTR(&ht->item3054), PTR_INT(&ht->item3050)); //-V205
 		temp->next     = ht->last;
 		ht->item3054   = ht->last;
 	}
@@ -722,7 +722,7 @@ void libmpq__huffman_tree_build(struct huffman_tree_s *ht, uint32_t cmp_type) {
 		}
 
 		/* if not valid pointer, take the first available item in the array. */
-		if (PTR_INT(item) <= 0) {
+		if (PTR_INT(item) <= 0) { //-V205
 			item = &ht->items0008[ht->items++];
 		}
 
@@ -756,7 +756,7 @@ void libmpq__huffman_tree_build(struct huffman_tree_s *ht, uint32_t cmp_type) {
 		found = 0;
 
 		/* EDI - Pointer to the last item. */
-		if (PTR_INT((p_item3 = ht->last)) > 0) {
+		if (PTR_INT((p_item3 = ht->last)) > 0) { //-V205
 
 			/* 15006AF7 */
 			if (p_item3 != NULL) {
@@ -772,7 +772,7 @@ void libmpq__huffman_tree_build(struct huffman_tree_s *ht, uint32_t cmp_type) {
 
 					/* switch to previous item. */
 					p_item3 = p_item3->prev;
-				} while (PTR_INT(p_item3) > 0);
+				} while (PTR_INT(p_item3) > 0); //-V205
 			}
 		}
 
@@ -808,7 +808,7 @@ void libmpq__huffman_tree_build(struct huffman_tree_s *ht, uint32_t cmp_type) {
 		struct huffman_tree_item_s *item2 = ht->item3058;
 
 		/* check if item is a valid pointer. */
-		if (PTR_INT(item2) <= 0) {
+		if (PTR_INT(item2) <= 0) { //-V205
 			item2 = &ht->items0008[ht->items++];
 		}
 
@@ -824,7 +824,7 @@ void libmpq__huffman_tree_build(struct huffman_tree_s *ht, uint32_t cmp_type) {
 	}
 
 	/* 15006BAA - EDI - last item (first child to item). */
-	if (PTR_INT((child1 = ht->last)) > 0) {
+	if (PTR_INT((child1 = ht->last)) > 0) { //-V205
 
 		/* EBP */
 		struct huffman_tree_item_s *child2;
@@ -833,8 +833,8 @@ void libmpq__huffman_tree_build(struct huffman_tree_s *ht, uint32_t cmp_type) {
 		struct huffman_tree_item_s *item;
 
 		/* 15006BB8 */
-		while (PTR_INT((child2 = child1->prev)) > 0) {
-			if (PTR_INT((item = ht->item3058)) <= 0) {
+		while (PTR_INT((child2 = child1->prev)) > 0) { //-V205
+			if (PTR_INT((item = ht->item3058)) <= 0) { //-V205
 				item = &ht->items0008[ht->items++];
 			}
 
@@ -868,7 +868,7 @@ void libmpq__huffman_tree_build(struct huffman_tree_s *ht, uint32_t cmp_type) {
 				found = 0;
 
 				/* check if item is a valid pointer. */
-				if (PTR_INT(p_item2) > 0) {
+				if (PTR_INT(p_item2) > 0) { //-V205
 
 					/* 15006C2D */
 					do {
@@ -881,7 +881,7 @@ void libmpq__huffman_tree_build(struct huffman_tree_s *ht, uint32_t cmp_type) {
 
 						/* switch to previous item. */
 						p_item2 = p_item2->prev;
-					} while (PTR_INT(p_item2) > 0);
+					} while (PTR_INT(p_item2) > 0); //-V205
 				}
 
 				/* check if item was not found. */
@@ -921,7 +921,7 @@ void libmpq__huffman_tree_build(struct huffman_tree_s *ht, uint32_t cmp_type) {
 			}
 
 			/* 15006C7B */
-			if (PTR_INT((child1 = child2->prev)) <= 0) {
+			if (PTR_INT((child1 = child2->prev)) <= 0) { //-V205
 				break;
 			}
 		}
@@ -997,7 +997,7 @@ int32_t libmpq__do_decompress_huffman(struct huffman_tree_s *ht, struct huffman_
 		} else {
 			found = 1;
 			p_item1 = ht->first->next->prev;
-			if (PTR_INT(p_item1) <= 0) {
+			if (PTR_INT(p_item1) <= 0) { //-V205
 				p_item1 = NULL;
 			}
 		}
