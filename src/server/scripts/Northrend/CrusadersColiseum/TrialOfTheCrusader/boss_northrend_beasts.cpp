@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2017 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -206,7 +206,6 @@ struct boss_northrend_beastsAI : public BossAI
     boss_northrend_beastsAI(Creature* creature, uint32 bossId) : BossAI(creature, bossId)
     {
         SetBoundary(instance->GetBossBoundary(DATA_NORTHREND_BEASTS));
-        Initialize();
     }
 
     void Reset() override
@@ -216,7 +215,6 @@ struct boss_northrend_beastsAI : public BossAI
         summons.DespawnAll();
         me->SetReactState(REACT_PASSIVE);
         me->SetCombatPulseDelay(0);
-        Initialize();
         HandleInitialMovement();
     }
 
@@ -247,9 +245,7 @@ struct boss_northrend_beastsAI : public BossAI
         }
     }
 
-    virtual void Initialize() { }
-
-    void EnterCombat(Unit* /*who*/) override
+    void JustEngagedWith(Unit* /*who*/) override
     {
         me->SetCombatPulseDelay(5);
         me->setActive(true);
@@ -422,7 +418,7 @@ struct npc_snobold_vassal : public ScriptedAI
             ScriptedAI::AttackStart(victim);
     }
 
-    void EnterCombat(Unit* /*who*/) override
+    void JustEngagedWith(Unit* /*who*/) override
     {
         _events.ScheduleEvent(EVENT_CHECK_MOUNT, 3s);
         _events.ScheduleEvent(EVENT_FIRE_BOMB, 12s, 25s);
@@ -451,7 +447,7 @@ struct npc_snobold_vassal : public ScriptedAI
         }
     }
 
-    void SetGUID(ObjectGuid guid, int32 id) override
+    void SetGUID(ObjectGuid const& guid, int32 id) override
     {
         if (id == DATA_NEW_TARGET)
             if (Unit* target = ObjectAccessor::GetPlayer(*me, guid))
@@ -626,9 +622,12 @@ private:
 
 struct boss_jormungarAI : public boss_northrend_beastsAI
 {
-    boss_jormungarAI(Creature* creature, uint32 bossId) : boss_northrend_beastsAI(creature, bossId) { }
+    boss_jormungarAI(Creature* creature, uint32 bossId) : boss_northrend_beastsAI(creature, bossId)
+    {
+        Initialize();
+    }
 
-    void Initialize() override
+    void Initialize()
     {
         otherWormEntry = 0;
         modelStationary = 0;
@@ -638,6 +637,12 @@ struct boss_jormungarAI : public boss_northrend_beastsAI
         spitSpell = 0;
         spraySpell = 0;
         wasMobile = false;
+    }
+
+    void Reset() override
+    {
+        Initialize();
+        boss_northrend_beastsAI::Reset();
     }
 
     void JustSummoned(Creature* summoned) override
@@ -729,7 +734,7 @@ struct boss_jormungarAI : public boss_northrend_beastsAI
             events.ScheduleEvent(EVENT_EMERGE, 6s, 0, PHASE_SUBMERGED);
             me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE);
         }
-        me->GetMotionMaster()->MovePoint(0, ToCCommonLoc[1].GetPositionX() + frand(-40.0f, 40.0f), ToCCommonLoc[1].GetPositionY() + frand(-40.0f, 40.0f), ToCCommonLoc[1].GetPositionZ() + me->GetMidsectionHeight());
+        me->GetMotionMaster()->MovePoint(0, ToCCommonLoc[1].GetPositionX() + frand(-40.0f, 40.0f), ToCCommonLoc[1].GetPositionY() + frand(-40.0f, 40.0f), ToCCommonLoc[1].GetPositionZ() + me->GetCollisionHeight());
     }
 
     void Emerge()
@@ -1147,7 +1152,7 @@ class spell_jormungars_paralytic_toxin : public AuraScript
             slowEff->ChangeAmount(newAmount);
 
             if (newAmount == -100 && !GetTarget()->HasAura(SPELL_PARALYSIS))
-                GetTarget()->CastSpell(GetTarget(), SPELL_PARALYSIS, true, nullptr, slowEff, GetCasterGUID());
+                GetTarget()->CastSpell(GetTarget(), SPELL_PARALYSIS, CastSpellExtraArgs(slowEff).SetOriginalCaster(GetCasterGUID()));
         }
     }
 
@@ -1192,7 +1197,9 @@ class spell_jormungars_slime_pool : public AuraScript
         PreventDefaultAction();
 
         int32 const radius = static_cast<int32>(((aurEff->GetTickNumber() / 60.f) * 0.9f + 0.1f) * 10000.f * 2.f / 3.f);
-        GetTarget()->CastCustomSpell(GetSpellInfo()->Effects[aurEff->GetEffIndex()].TriggerSpell, SPELLVALUE_RADIUS_MOD, radius, nullptr, true, nullptr, aurEff);
+        CastSpellExtraArgs args(aurEff);
+        args.SpellValueOverrides.AddMod(SPELLVALUE_RADIUS_MOD, radius);
+        GetTarget()->CastSpell(nullptr, GetSpellInfo()->Effects[aurEff->GetEffIndex()].TriggerSpell, args);
     }
 
     void Register() override
