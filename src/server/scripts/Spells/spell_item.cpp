@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
+ * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -192,7 +192,7 @@ class spell_item_alchemists_stone : public AuraScript
             }
 
             CastSpellExtraArgs args(aurEff);
-            args.SpellValueOverrides.AddBP0(CalculatePct(spellInfo->Effects[i].CalcValue(caster), 40));
+            args.AddSpellBP0(CalculatePct(spellInfo->Effects[i].CalcValue(caster), 40));
             caster->CastSpell(nullptr, spellId, args);
         }
     }
@@ -256,9 +256,15 @@ class spell_item_anger_capacitor : public SpellScriptLoader
                 caster->CastSpell(target, spellId, aurEff);
             }
 
+            void OnRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
+            {
+                GetTarget()->RemoveAurasDueToSpell(SPELL_MOTE_OF_ANGER);
+            }
+
             void Register() override
             {
                 OnEffectProc += AuraEffectProcFn(spell_item_anger_capacitor_AuraScript::HandleProc, EFFECT_0, SPELL_AURA_DUMMY);
+                AfterEffectRemove += AuraEffectRemoveFn(spell_item_anger_capacitor_AuraScript::OnRemove, EFFECT_0, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
             }
         };
 
@@ -437,7 +443,7 @@ class spell_item_blessing_of_ancient_kings : public AuraScript
         else
         {
             CastSpellExtraArgs args(aurEff);
-            args.SpellValueOverrides.AddBP0(absorb);
+            args.AddSpellBP0(absorb);
             GetTarget()->CastSpell(eventInfo.GetProcTarget(), SPELL_PROTECTION_OF_ANCIENT_KINGS, args);
         }
     }
@@ -501,7 +507,7 @@ class spell_item_deadly_precision_dummy : public SpellScript
     {
         SpellInfo const* spellInfo = sSpellMgr->AssertSpellInfo(SPELL_DEADLY_PRECISION);
         CastSpellExtraArgs args(TRIGGERED_FULL_MASK);
-        args.SpellValueOverrides.AddMod(SPELLVALUE_AURA_STACK, spellInfo->StackAmount);
+        args.AddSpellMod(SPELLVALUE_AURA_STACK, spellInfo->StackAmount);
         GetCaster()->CastSpell(GetCaster(), spellInfo->Id, args);
     }
 
@@ -955,7 +961,7 @@ class spell_item_frozen_shadoweave : public AuraScript
 
         Unit* caster = eventInfo.GetActor();
         CastSpellExtraArgs args(aurEff);
-        args.SpellValueOverrides.AddBP0(CalculatePct(damageInfo->GetDamage(), aurEff->GetAmount()));
+        args.AddSpellBP0(CalculatePct(damageInfo->GetDamage(), aurEff->GetAmount()));
         caster->CastSpell(nullptr, SPELL_SHADOWMEND, args);
     }
 
@@ -1101,7 +1107,7 @@ class spell_item_heartpierce : public SpellScriptLoader
                 Unit* caster = eventInfo.GetActor();
 
                 uint32 spellId;
-                switch (caster->getPowerType())
+                switch (caster->GetPowerType())
                 {
                     case POWER_MANA:
                         spellId = Mana;
@@ -1316,7 +1322,7 @@ class spell_item_necrotic_touch : public AuraScript
             return;
 
         CastSpellExtraArgs args(aurEff);
-        args.SpellValueOverrides.AddBP0(CalculatePct(damageInfo->GetDamage(), aurEff->GetAmount()));
+        args.AddSpellBP0(CalculatePct(damageInfo->GetDamage(), aurEff->GetAmount()));
         GetTarget()->CastSpell(nullptr, SPELL_ITEM_NECROTIC_TOUCH_PROC, args);
     }
 
@@ -1469,7 +1475,7 @@ class spell_item_persistent_shield : public AuraScript
                 return;
 
         CastSpellExtraArgs args(aurEff);
-        args.SpellValueOverrides.AddBP0(bp0);
+        args.AddSpellBP0(bp0);
         caster->CastSpell(target, SPELL_PERSISTENT_SHIELD_TRIGGERED, args);
     }
 
@@ -1505,7 +1511,7 @@ class spell_item_pet_healing : public AuraScript
             return;
 
         CastSpellExtraArgs args(aurEff);
-        args.SpellValueOverrides.AddBP0(CalculatePct(damageInfo->GetDamage(), aurEff->GetAmount()));
+        args.AddSpellBP0(CalculatePct(damageInfo->GetDamage(), aurEff->GetAmount()));
         eventInfo.GetActor()->CastSpell(nullptr, SPELL_HEALTH_LINK, args);
     }
 
@@ -1785,10 +1791,16 @@ class spell_item_shadowmourne : public AuraScript
         }
     }
 
+    void OnRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
+    {
+        GetTarget()->RemoveAurasDueToSpell(SPELL_SHADOWMOURNE_SOUL_FRAGMENT);
+    }
+
     void Register() override
     {
         DoCheckProc += AuraCheckProcFn(spell_item_shadowmourne::CheckProc);
         OnEffectProc += AuraEffectProcFn(spell_item_shadowmourne::HandleProc, EFFECT_0, SPELL_AURA_DUMMY);
+        AfterEffectRemove += AuraEffectRemoveFn(spell_item_shadowmourne::OnRemove, EFFECT_0, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
     }
 };
 
@@ -1929,7 +1941,7 @@ class spell_item_swift_hand_justice_dummy : public AuraScript
 
         Unit* caster = eventInfo.GetActor();
         CastSpellExtraArgs args(aurEff);
-        args.SpellValueOverrides.AddBP0(caster->CountPctFromMaxHealth(aurEff->GetAmount()));
+        args.AddSpellBP0(caster->CountPctFromMaxHealth(aurEff->GetAmount()));
         caster->CastSpell(nullptr, SPELL_SWIFT_HAND_OF_JUSTICE_HEAL, args);
     }
 
@@ -3456,9 +3468,15 @@ public:
                 caster->CastSpell(target, _triggerSpell, aurEff);
         }
 
+        void OnRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
+        {
+            GetTarget()->RemoveAurasDueToSpell(_stackSpell);
+        }
+
         void Register() override
         {
             OnEffectProc += AuraEffectProcFn(spell_item_trinket_stack_AuraScript::HandleProc, EFFECT_0, SPELL_AURA_PROC_TRIGGER_SPELL);
+            AfterEffectRemove += AuraEffectRemoveFn(spell_item_trinket_stack_AuraScript::OnRemove, EFFECT_0, SPELL_AURA_PROC_TRIGGER_SPELL, AURA_EFFECT_HANDLE_REAL);
         }
 
         uint32 _stackSpell;
@@ -3568,7 +3586,7 @@ class spell_item_charm_witch_doctor : public AuraScript
         {
             int32 bp = CalculatePct(target->GetCreateHealth(),aurEff->GetSpellInfo()->Effects[1].CalcValue());
             CastSpellExtraArgs args(aurEff);
-            args.SpellValueOverrides.AddBP0(bp);
+            args.AddSpellBP0(bp);
             eventInfo.GetActor()->CastSpell(target, SPELL_CHARM_WITCH_DOCTOR_PROC, args);
         }
     }
@@ -3851,7 +3869,7 @@ class spell_item_mad_alchemists_potion : public SpellScript
 
         Unit* target = GetCaster();
 
-        if (target->getPowerType() == POWER_MANA)
+        if (target->GetPowerType() == POWER_MANA)
             availableElixirs.push_back(28509); // Elixir of Major Mageblood (22840)
 
         uint32 chosenElixir = Trinity::Containers::SelectRandomContainerElement(availableElixirs);
@@ -3914,7 +3932,7 @@ class spell_item_crazy_alchemists_potion : public SpellScript
 
         if (!target->IsInCombat())
             availableElixirs.push_back(53753); // Potion of Nightmares (40081)
-        if (target->getPowerType() == POWER_MANA)
+        if (target->GetPowerType() == POWER_MANA)
             availableElixirs.push_back(43186); // Runic Mana Potion(33448)
 
         uint32 chosenElixir = Trinity::Containers::SelectRandomContainerElement(availableElixirs);

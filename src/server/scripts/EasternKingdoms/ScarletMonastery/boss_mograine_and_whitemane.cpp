@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
+ * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
  * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -129,19 +129,19 @@ public:
             Talk(SAY_MO_KILL);
         }
 
-        void DamageTaken(Unit* /*doneBy*/, uint32 &damage) override
+        void DamageTaken(Unit* /*doneBy*/, uint32& damage) override
         {
-            if (damage < me->GetHealth() || _bHasDied || _bFakeDeath)
+            if (damage <= me->GetHealth() || _bHasDied || _bFakeDeath)
                 return;
 
-            //On first death, fake death and open door, as well as initiate whitemane if exist
+            // On first death, fake death and open door, as well as initiate whitemane if exist
             if (Unit* Whitemane = ObjectAccessor::GetUnit(*me, instance->GetGuidData(DATA_WHITEMANE)))
             {
                 instance->SetBossState(DATA_MOGRAINE_AND_WHITE_EVENT, IN_PROGRESS);
 
                 Whitemane->GetMotionMaster()->MovePoint(1, 1163.113370f, 1398.856812f, 32.527786f);
 
-                me->GetMotionMaster()->MovementExpired();
+                me->GetMotionMaster()->Clear();
                 me->GetMotionMaster()->MoveIdle();
 
                 me->SetHealth(0);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
+ * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
  * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -39,7 +39,8 @@ enum AQTDataTypes
     DATA_VEKNILASH_DEATH    = 11,
     DATA_BUG_TRIO_DEATH     = 14,
     DATA_CTHUN_PHASE        = 20,
-    DATA_VISCIDUS           = 21
+    DATA_VISCIDUS           = 21,
+    DATA_SARTURA            = 22
 };
 
 enum AQTCreatures
@@ -62,7 +63,8 @@ enum AQTCreatures
     NPC_VEM                 = 15544,
     NPC_KRI                 = 15511,
     NPC_VEKLOR              = 15276,
-    NPC_VEKNILASH           = 15275
+    NPC_VEKNILASH           = 15275,
+    NPC_SARTURA             = 15516
 };
 
 template <class AI, class T>

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
+ * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -55,6 +55,16 @@ enum SharedActions
     ACTION_BUFF_YELL    = -30001
 };
 
+enum BG_AV_BroadcastTexts
+{
+    BG_AV_TEXT_START_ONE_MINUTE     = 10638,
+    BG_AV_TEXT_START_HALF_MINUTE    = 10639,
+    BG_AV_TEXT_BATTLE_HAS_BEGUN     = 10640,
+
+    BG_AV_TEXT_ALLIANCE_NEAR_LOSE   = 23210,
+    BG_AV_TEXT_HORDE_NEAR_LOSE      = 23211
+};
+
 enum BG_AV_Sounds
 { /// @todo: get out if there comes a sound when neutral team captures mine
 
@@ -97,7 +107,7 @@ horde:
     AV_SOUND_HORDE_GOOD                     = 8213,
     AV_SOUND_BOTH_TOWER_DEFEND              = 8192,
 
-    AV_SOUND_ALLIANCE_CAPTAIN               = 8232, //gets called when someone attacks them and at the beginning after 3min+rand(x)*10sec (maybe buff)
+    AV_SOUND_ALLIANCE_CAPTAIN               = 8232, //gets called when someone attacks them and at the beginning after 5min+rand(x)*10sec (maybe buff)
     AV_SOUND_HORDE_CAPTAIN                  = 8333
 };
 

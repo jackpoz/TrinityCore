@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
+ * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -65,11 +65,11 @@ bool AuctionBotSeller::Initialize()
     TC_LOG_DEBUG("ahbot", "Forced Exclusion %u items", (uint32)excludeItems.size());
 
     TC_LOG_DEBUG("ahbot", "Loading npc vendor items for filter..");
-    CreatureTemplateContainer const* creatures = sObjectMgr->GetCreatureTemplates();
-    for (CreatureTemplateContainer::const_iterator it = creatures->begin(); it != creatures->end(); ++it)
-        if (VendorItemData const* data = sObjectMgr->GetNpcVendorItemList(it->first))
-            for (VendorItem const& it2 : data->m_items)
-                npcItems.insert(it2.item);
+    CreatureTemplateContainer const& creatures = sObjectMgr->GetCreatureTemplates();
+    for (auto const& creatureTemplatePair : creatures)
+        if (VendorItemData const* data = sObjectMgr->GetNpcVendorItemList(creatureTemplatePair.first))
+            for (VendorItem const& vendorItem : data->m_items)
+                npcItems.insert(vendorItem.item);
 
     TC_LOG_DEBUG("ahbot", "Npc vendor filter has %u items", (uint32)npcItems.size());
 

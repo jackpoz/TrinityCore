@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
+ * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
  * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -75,8 +75,8 @@ public:
                 //Take 0 damage
                 uiDamage = 0;
 
-                if (Player* player = pDoneBy->ToPlayer())
-                    player->AreaExploredOrEventHappens(QUEST_BEAT);
+                if (pDoneBy && pDoneBy->GetTypeId() == TYPEID_PLAYER)
+                    pDoneBy->ToPlayer()->AreaExploredOrEventHappens(QUEST_BEAT);
                 EnterEvadeMode();
             }
         }
@@ -336,7 +336,7 @@ public:
             if (me->IsSummon())
             {
                 Unit* summoner = me->ToTempSummon()->GetSummoner();
-                if (summoner && summoner->GetTypeId() == TYPEID_UNIT && summoner->IsAIEnabled)
+                if (summoner && summoner->GetTypeId() == TYPEID_UNIT && summoner->IsAIEnabled())
                 {
                     npc_lord_gregor_lescovar::npc_lord_gregor_lescovarAI* ai =
                         CAST_AI(npc_lord_gregor_lescovar::npc_lord_gregor_lescovarAI, summoner->GetAI());

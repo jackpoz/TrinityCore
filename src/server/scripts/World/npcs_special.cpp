@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
+ * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
  * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -575,7 +575,7 @@ public:
                 if (GameObject* go = me->FindNearestGameObject(GO_RIBBON_POLE, 10.0f))
                     me->CastSpell(go, SPELL_RED_FIRE_RING, true);
 
-                events.ScheduleEvent(EVENT_CAST_BLUE_FIRE_RING, Seconds(5));
+                events.ScheduleEvent(EVENT_CAST_BLUE_FIRE_RING, 5s);
             }
             break;
             case EVENT_CAST_BLUE_FIRE_RING:
@@ -589,7 +589,7 @@ public:
                 if (GameObject* go = me->FindNearestGameObject(GO_RIBBON_POLE, 10.0f))
                     me->CastSpell(go, SPELL_BLUE_FIRE_RING, true);
 
-                events.ScheduleEvent(EVENT_CAST_RED_FIRE_RING, Seconds(5));
+                events.ScheduleEvent(EVENT_CAST_RED_FIRE_RING, 5s);
             }
             break;
             }
@@ -974,7 +974,7 @@ void npc_doctor::npc_doctorAI::UpdateAI(uint32 diff)
             if (Creature* Patient = me->SummonCreature(patientEntry, **point, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 5000))
             {
                 //303, this flag appear to be required for client side item->spell to work (TARGET_SINGLE_FRIEND)
-                Patient->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PVP_ATTACKABLE);
+                Patient->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED);
 
                 Patients.push_back(Patient->GetGUID());
                 ENSURE_AI(npc_injured_patient::npc_injured_patientAI, Patient->AI())->DoctorGUID = me->GetGUID();
@@ -1746,10 +1746,7 @@ class npc_brewfest_reveler : public CreatureScript
 enum TrainingDummy
 {
     NPC_ADVANCED_TARGET_DUMMY                  = 2674,
-    NPC_TARGET_DUMMY                           = 2673,
-
-    EVENT_TD_CHECK_COMBAT                      = 1,
-    EVENT_TD_DESPAWN                           = 2
+    NPC_TARGET_DUMMY                           = 2673
 };
 
 class npc_training_dummy : public CreatureScript
@@ -1757,27 +1754,21 @@ class npc_training_dummy : public CreatureScript
 public:
     npc_training_dummy() : CreatureScript("npc_training_dummy") { }
 
-    struct npc_training_dummyAI : ScriptedAI
+    struct npc_training_dummyAI : PassiveAI
     {
-        npc_training_dummyAI(Creature* creature) : ScriptedAI(creature)
+        npc_training_dummyAI(Creature* creature) : PassiveAI(creature), _combatCheckTimer(500)
         {
-            SetCombatMovement(false);
+            uint32 const entry = me->GetEntry();
+            if (entry == NPC_TARGET_DUMMY || entry == NPC_ADVANCED_TARGET_DUMMY)
+            {
+                _combatCheckTimer = 0;
+                me->DespawnOrUnsummon(16s);
+            }
         }
-
-        EventMap _events;
-        std::unordered_map<ObjectGuid, time_t> _damageTimes;
 
         void Reset() override
         {
-            // TODO: solve this in a different way! setting them as stunned prevents dummies from parrying
-            me->SetControlled(true, UNIT_STATE_STUNNED);//disable rotate
-
-            _events.Reset();
             _damageTimes.clear();
-            if (me->GetEntry() != NPC_ADVANCED_TARGET_DUMMY && me->GetEntry() != NPC_TARGET_DUMMY)
-                _events.ScheduleEvent(EVENT_TD_CHECK_COMBAT, 1000);
-            else
-                _events.ScheduleEvent(EVENT_TD_DESPAWN, 15000);
         }
 
         void EnterEvadeMode(EvadeReason why) override
@@ -1790,61 +1781,48 @@ public:
 
         void DamageTaken(Unit* doneBy, uint32& damage) override
         {
-            AddThreat(doneBy, float(damage));    // just to create threat reference
-            _damageTimes[doneBy->GetGUID()] = GameTime::GetGameTime();
+            if (doneBy)
+                _damageTimes[doneBy->GetGUID()] = GameTime::GetGameTime();
             damage = 0;
         }
 
         void UpdateAI(uint32 diff) override
         {
-            if (!me->IsInCombat())
+            if (!_combatCheckTimer || !me->IsInCombat())
                 return;
 
-            if (!me->HasUnitState(UNIT_STATE_STUNNED))
-                me->SetControlled(true, UNIT_STATE_STUNNED);//disable rotate
-
-            _events.Update(diff);
-
-            if (uint32 eventId = _events.ExecuteEvent())
+            if (diff < _combatCheckTimer)
             {
-                switch (eventId)
-                {
-                    case EVENT_TD_CHECK_COMBAT:
-                    {
-                        time_t const now = GameTime::GetGameTime();
-                        auto const& pveRefs = me->GetCombatManager().GetPvECombatRefs();
-                        for (auto itr = _damageTimes.begin(); itr != _damageTimes.end();)
-                        {
-                            // If unit has not dealt damage to training dummy for 5 seconds, remove him from combat
-                            if (itr->second < now - 5)
-                            {
-                                auto it = pveRefs.find(itr->first);
-                                if (it != pveRefs.end())
-                                    it->second->EndCombat();
-
-                                itr = _damageTimes.erase(itr);
-                            }
-                            else
-                                ++itr;
-                        }
-
-                        for (auto const& pair : pveRefs)
-                            if (_damageTimes.find(pair.first) == _damageTimes.end())
-                                _damageTimes[pair.first] = now;
-
-                        _events.Repeat(1s);
-                        break;
-                    }
-                    case EVENT_TD_DESPAWN:
-                        me->DespawnOrUnsummon(1);
-                        break;
-                    default:
-                        break;
-                }
+                _combatCheckTimer -= diff;
+                return;
             }
+
+            _combatCheckTimer = 500;
+
+            time_t const now = GameTime::GetGameTime();
+            auto const& pveRefs = me->GetCombatManager().GetPvECombatRefs();
+            for (auto itr = _damageTimes.begin(); itr != _damageTimes.end();)
+            {
+                // If unit has not dealt damage to training dummy for 5 seconds, remove him from combat
+                if (itr->second < now - 5)
+                {
+                    auto it = pveRefs.find(itr->first);
+                    if (it != pveRefs.end())
+                        it->second->EndCombat();
+
+                    itr = _damageTimes.erase(itr);
+                }
+                else
+                    ++itr;
+            }
+
+            for (auto const& pair : pveRefs)
+                if (_damageTimes.find(pair.first) == _damageTimes.end())
+                    _damageTimes[pair.first] = now;
         }
 
-        void MoveInLineOfSight(Unit* /*who*/) override { }
+        std::unordered_map<ObjectGuid, time_t> _damageTimes;
+        uint32 _combatCheckTimer;
     };
 
     CreatureAI* GetAI(Creature* creature) const override
@@ -2469,7 +2447,7 @@ public:
             if (summoner->GetTypeId() == TYPEID_PLAYER)
             {
                 summonerGUID = summoner->GetGUID();
-                events.ScheduleEvent(EVENT_TALK, 3000);
+                events.ScheduleEvent(EVENT_TALK, 3s);
             }
         }
 
@@ -2608,7 +2586,7 @@ class npc_train_wrecker : public CreatureScript
                             _isSearching = false;
                             _target = target->GetGUID();
                             me->SetWalk(true);
-                            me->GetMotionMaster()->MovePoint(MOVEID_CHASE, target->GetNearPosition(3.0f, target->GetAngle(me)));
+                            me->GetMotionMaster()->MovePoint(MOVEID_CHASE, target->GetNearPosition(3.0f, target->GetAbsoluteAngle(me)));
                         }
                         else
                             _timer = 3 * IN_MILLISECONDS;
@@ -2947,7 +2925,7 @@ public:
             init.DisableTransportPathTransformations();
             init.MoveTo(x, y, z, false);
             init.SetFacing(o);
-            init.Launch();
+            who->GetMotionMaster()->LaunchMoveSpline(std::move(init), EVENT_VEHICLE_BOARD, MOTION_PRIORITY_HIGHEST);
             who->m_Events.AddEvent(new CastFoodSpell(who, _chairSpells.at(who->GetEntry())), who->m_Events.CalculateTime(1000));
             if (who->GetTypeId() == TYPEID_UNIT)
                 who->SetDisplayId(who->ToCreature()->GetCreatureTemplate()->Modelid1);

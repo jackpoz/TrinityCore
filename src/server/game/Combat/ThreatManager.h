@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
+ * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License along
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
  #ifndef TRINITY_THREATMANAGER_H
  #define TRINITY_THREATMANAGER_H
 
@@ -23,9 +23,11 @@
 #include "ObjectGuid.h"
 #include "SharedDefines.h"
 #include <boost/heap/fibonacci_heap.hpp>
+#include <array>
 #include <unordered_map>
 #include <vector>
 
+class Creature;
 class Unit;
 class SpellInfo;
 
@@ -42,7 +44,7 @@ class SpellInfo;
  *  - There is an active combat reference between owner and victim.                                                                                     *
  *                                                                                                                                                      *
  * ThreatManager also keeps track of whether its owner is engaged (a boolean flag).                                                                     *
- *  - If a (non-offline) threat list entry is added to a not-yet-engaged ThreatManager, it calls JustEngagedWith on its owner's AI.                         *
+ *  - If a (non-offline) threat list entry is added to a not-yet-engaged ThreatManager, it calls JustEngagedWith on its owner's AI.                     *
  *  - The engaged state is cleared in ClearAllThreat (which is invoked on evade).                                                                       *
  *  - This flag can be accessed through the IsEngaged method. For creatures that can have a threat list, this is equal to Unit::IsEngaged.              *
  *                                                                                                                                                      *
@@ -56,20 +58,21 @@ class SpellInfo;
  * Selection uses the following properties on ThreatReference, in order:                                                                                *
  * - Online state (one of ONLINE, SUPPRESSED, OFFLINE):                                                                                                 *
  *   - ONLINE:     Normal threat state, target is valid and attackable                                                                                  *
- *   - SUPPRESSED: Target is attackable, but fully immuned. This is used for targets under HoP, Divine Shield, Ice Block etc.                           *
+ *   - SUPPRESSED: Target is attackable, but inopportune. This is used for targets under immunity effects and damage-breaking CC.                       *
  *                 Targets with SUPPRESSED threat can still be valid targets, but any target with ONLINE threat will be preferred.                      *
  *   - OFFLINE:    The target is, for whatever reason, not valid at this time (for example, IMMUNE_TO_X flags or game master state).                    *
- *                 These targets can never be selected by SelectVictim, which will return nullptr if all targets are OFFLINE (typically causing evade). *
+ *                 These targets can never be selected, and GetCurrentVictim will return nullptr if all targets are OFFLINE (typically causing evade).  *
  *   - Related methods: GetOnlineState, IsOnline, IsAvailable, IsOffline                                                                                *
  * - Taunt state (one of TAUNT, NONE, DETAUNT), the names speak for themselves                                                                          *
  *   - Related methods: GetTauntState, IsTaunting, IsDetaunted                                                                                          *
  * - Actual threat value (GetThreat)                                                                                                                    *
  *                                                                                                                                                      *
- * The current (= last selected) victim can be accessed using GetCurrentVictim. SelectVictim selects a (potentially new) victim.                        *
+ * The current (= last selected) victim can be accessed using GetCurrentVictim.                                                                         *
  * Beyond that, ThreatManager has a variety of helpers and notifiers, which are documented inline below.                                                *
  *                                                                                                                                                      *
- * SPECIAL NOTE: Please be aware that any heap iterator may be invalidated if you modify a ThreatReference. The heap holds const pointers for a reason. *
- *               If you need to modify multiple ThreatReference objects, then use GetModifiableThreatList(), which is safe to modify!                   *
+ * SPECIAL NOTE: Please be aware that any iterator may be invalidated if you modify a ThreatReference. The heap holds const pointers for a reason, but  *
+ *                 that doesn't mean you're scot free. A variety of actions (casting spells, teleporting units, and so forth) can cause changes to      *
+ *                 the threat list. Use with care - or default to GetModifiableThreatList(), which inherently copies entries.                           *
 \********************************************************************************************************************************************************/
 
 class ThreatReference;
@@ -84,7 +87,8 @@ class TC_GAME_API ThreatManager
 {
     public:
         typedef boost::heap::fibonacci_heap<ThreatReference const*, boost::heap::compare<CompareThreatLessThan>> threat_list_heap;
-        static const uint32 CLIENT_THREAT_UPDATE_INTERVAL = 1000u;
+        class ThreatListIterator;
+        static const uint32 THREAT_UPDATE_INTERVAL = 1000u;
 
         static bool CanHaveThreatList(Unit const* who);
 
@@ -102,12 +106,11 @@ class TC_GAME_API ThreatManager
         // can our owner have a threat list?
         // identical to ThreatManager::CanHaveThreatList(GetOwner())
         bool CanHaveThreatList() const { return _ownerCanHaveThreatList; }
-        // returns the victim selected by the last SelectVictim call - this can be nullptr
+        // returns the current victim - this can be nullptr if owner's threat list is empty, or has only offline targets
+        Unit* GetCurrentVictim();
         Unit* GetCurrentVictim() const;
         // returns an arbitrary non-offline victim from owner's threat list if one exists, nullptr otherwise
         Unit* GetAnyTarget() const;
-        // selects a (potentially new) victim from the threat list and returns it - this can be nullptr
-        Unit* SelectVictim();
 
         bool IsEngaged() const { return _ownerEngaged; }
         // are there any entries in owner's threat list?
@@ -120,11 +123,13 @@ class TC_GAME_API ThreatManager
         float GetThreat(Unit const* who, bool includeOffline = false) const;
         size_t GetThreatListSize() const { return _sortedThreatList.size(); }
         // fastest of the three threat list getters - gets the threat list in "arbitrary" order
-        Trinity::IteratorPair<threat_list_heap::const_iterator> GetUnsortedThreatList() const { return { _sortedThreatList.begin(), _sortedThreatList.end() }; }
+        // iterators will invalidate on adding/removing entries from the threat list; slightly less finicky than GetSorted.
+        Trinity::IteratorPair<ThreatListIterator> GetUnsortedThreatList() const { return { _myThreatListEntries.begin(), _myThreatListEntries.end() }; }
         // slightly slower than GetUnsorted, but, well...sorted - only use it if you need the sorted property, of course
+        // this iterator pair will invalidate on any modification (even indirect) of the threat list; spell casts and similar can all induce this!
         // note: current tank is NOT guaranteed to be the first entry in this list - check GetCurrentVictim separately if you want that!
         Trinity::IteratorPair<threat_list_heap::ordered_iterator> GetSortedThreatList() const { return { _sortedThreatList.ordered_begin(), _sortedThreatList.ordered_end() }; }
-        // slowest of the three threat list getters (by far), but lets you modify the threat references
+        // slowest of the three threat list getters (by far), but lets you modify the threat references - this is also sorted
         std::vector<ThreatReference*> GetModifiableThreatList() const;
 
         // does any unit have a threat list entry with victim == this.owner?
@@ -135,8 +140,8 @@ class TC_GAME_API ThreatManager
         bool IsThreateningTo(Unit const* who, bool includeOffline = false) const;
         auto const& GetThreatenedByMeList() const { return _threatenedByMe; }
 
-        // Notify the ThreatManager that a condition changed that may impact refs' online state so it can re-evaluate
-        void UpdateOnlineStates(bool meThreateningOthers = true, bool othersThreateningMe = true);
+        // Notify the ThreatManager that its owner may now be suppressed on others' threat lists (immunity or damage-breakable CC being applied)
+        void EvaluateSuppressed(bool canExpire = false);
         ///== AFFECT MY THREAT LIST ==
         void AddThreat(Unit* target, float amount, SpellInfo const* spell = nullptr, bool ignoreModifiers = false, bool ignoreRedirects = false);
         void ScaleThreat(Unit* target, float factor);
@@ -152,11 +157,15 @@ class TC_GAME_API ThreatManager
         void ResetAllThreat();
         // Removes specified target from the threat list
         void ClearThreat(Unit* target);
+        void ClearThreat(ThreatReference* ref);
         // Removes all targets from the threat list (will cause evade in UpdateVictim if called)
         void ClearAllThreat();
 
-        // sends SMSG_THREAT_UPDATE to all nearby clients (used by client to forward threat list info to addons)
-        void SendThreatListToClients() const;
+        // Fixate on the passed target; this target will always be selected until the fixate is cleared
+        // (if the target is not in the threat list, does nothing)
+        void FixateTarget(Unit* target);
+        void ClearFixate() { FixateTarget(nullptr); }
+        Unit* GetFixateTarget() const;
 
         ///== AFFECT OTHERS' THREAT LISTS ==
         // what it says on the tin - call AddThreat on everything that's threatened by us with the specified params
@@ -188,23 +197,28 @@ class TC_GAME_API ThreatManager
         // send opcodes (all for my own threat list)
         void SendClearAllThreatToClients() const;
         void SendRemoveToClients(Unit const* victim) const;
-        void SendNewVictimToClients(ThreatReference const* victimRef) const;
+        void SendThreatListToClients(bool newHighest) const;
 
         ///== MY THREAT LIST ==
         void PutThreatListRef(ObjectGuid const& guid, ThreatReference* ref);
-        void PurgeThreatListRef(ObjectGuid const& guid, bool sendRemove);
+        void PurgeThreatListRef(ObjectGuid const& guid);
 
-        uint32 _updateClientTimer;
+        bool _needClientUpdate;
+        uint32 _updateTimer;
         threat_list_heap _sortedThreatList;
         std::unordered_map<ObjectGuid, ThreatReference*> _myThreatListEntries;
-        ThreatReference const* _currentVictimRef;
+
+        // picks a new victim - called from ::Update periodically
+        void UpdateVictim();
         ThreatReference const* ReselectVictim();
+        ThreatReference const* _currentVictimRef;
+        ThreatReference const* _fixateRef;
 
         ///== OTHERS' THREAT LISTS ==
         void PutThreatenedByMeRef(ObjectGuid const& guid, ThreatReference* ref);
         void PurgeThreatenedByMeRef(ObjectGuid const& guid);
         std::unordered_map<ObjectGuid, ThreatReference*> _threatenedByMe; // these refs are entries for myself on other units' threat lists
-        float _singleSchoolModifiers[MAX_SPELL_SCHOOL]; // most spells are single school - we pre-calculate these and store them
+        std::array<float, MAX_SPELL_SCHOOL> _singleSchoolModifiers; // most spells are single school - we pre-calculate these and store them
         mutable std::unordered_map<std::underlying_type<SpellSchoolMask>::type, float> _multiSchoolModifiers; // these are calculated on demand
 
         // redirect system (is kind of dumb, but that's because none of the redirection spells actually have any aura effect associated with them, so spellscript needs to deal with it)
@@ -216,50 +230,72 @@ class TC_GAME_API ThreatManager
         ThreatManager(ThreatManager const&) = delete;
         ThreatManager& operator=(ThreatManager const&) = delete;
 
+        class ThreatListIterator
+        {
+            private:
+                decltype(_myThreatListEntries)::const_iterator _it;
+
+            public:
+                ThreatReference const* operator*() const { return _it->second; }
+                ThreatReference const* operator->() const { return _it->second; }
+                ThreatListIterator& operator++() { ++_it; return *this; }
+                bool operator==(ThreatListIterator const& o) const { return _it == o._it; }
+                bool operator!=(ThreatListIterator const& o) const { return _it != o._it; }
+                ThreatListIterator(decltype(_it) it) : _it(it) {}
+        };
+
     friend class ThreatReference;
     friend struct CompareThreatLessThan;
+    friend class debug_commandscript;
 };
 
 // Please check Game/Combat/ThreatManager.h for documentation on how this class works!
 class TC_GAME_API ThreatReference
 {
     public:
-        enum TauntState { TAUNT_STATE_DETAUNT = -1, TAUNT_STATE_NONE = 0, TAUNT_STATE_TAUNT = 1 };
+        enum TauntState : uint32 { TAUNT_STATE_DETAUNT = 0, TAUNT_STATE_NONE = 1, TAUNT_STATE_TAUNT = 2 };
         enum OnlineState { ONLINE_STATE_ONLINE = 2, ONLINE_STATE_SUPPRESSED = 1, ONLINE_STATE_OFFLINE = 0 };
 
-        Unit* GetOwner() const { return _owner; }
+        Creature* GetOwner() const { return _owner; }
         Unit* GetVictim() const { return _victim; }
         float GetThreat() const { return std::max<float>(_baseAmount + (float)_tempModifier, 0.0f); }
         OnlineState GetOnlineState() const { return _online; }
         bool IsOnline() const { return (_online >= ONLINE_STATE_ONLINE); }
         bool IsAvailable() const { return (_online > ONLINE_STATE_OFFLINE); }
+        bool IsSuppressed() const { return (_online == ONLINE_STATE_SUPPRESSED); }
         bool IsOffline() const { return (_online <= ONLINE_STATE_OFFLINE); }
-        TauntState GetTauntState() const { return _taunted; }
-        bool IsTaunting() const { return _taunted == TAUNT_STATE_TAUNT; }
+        TauntState GetTauntState() const { return IsTaunting() ? TAUNT_STATE_TAUNT : _taunted; }
+        bool IsTaunting() const { return _taunted >= TAUNT_STATE_TAUNT; }
         bool IsDetaunted() const { return _taunted == TAUNT_STATE_DETAUNT; }
 
-        void SetThreat(float amount) { _baseAmount = amount; HeapNotifyChanged(); }
         void AddThreat(float amount);
         void ScaleThreat(float factor);
         void ModifyThreatByPercent(int32 percent) { if (percent) ScaleThreat(0.01f*float(100 + percent)); }
-        void UpdateOnlineState();
+        void UpdateOffline();
 
-        void ClearThreat(bool sendRemove = true); // dealloc's this
+        void ClearThreat(); // dealloc's this
 
     private:
-        ThreatReference(ThreatManager* mgr, Unit* victim, float amount) : _owner(mgr->_owner), _mgr(mgr), _victim(victim), _baseAmount(amount), _tempModifier(0), _online(SelectOnlineState()), _taunted(TAUNT_STATE_NONE) { }
         static bool FlagsAllowFighting(Unit const* a, Unit const* b);
-        OnlineState SelectOnlineState();
-        void UpdateTauntState(bool victimIsTaunting);
-        Unit* const _owner;
-        ThreatManager* const _mgr;
-        void HeapNotifyIncreased() { _mgr->_sortedThreatList.increase(_handle); }
-        void HeapNotifyDecreased() { _mgr->_sortedThreatList.decrease(_handle); }
-        void HeapNotifyChanged() { _mgr->_sortedThreatList.update(_handle); }
+
+        ThreatReference(ThreatManager* mgr, Unit* victim) :
+            _owner(reinterpret_cast<Creature*>(mgr->_owner)), _mgr(*mgr), _victim(victim),
+            _online(ShouldBeSuppressed() ? ONLINE_STATE_SUPPRESSED : ONLINE_STATE_ONLINE),
+            _baseAmount(0.0f), _tempModifier(0), _taunted(TAUNT_STATE_NONE) { }
+
+        void UnregisterAndFree();
+
+        bool ShouldBeOffline() const;
+        bool ShouldBeSuppressed() const;
+        void UpdateTauntState(TauntState state = TAUNT_STATE_NONE);
+        Creature* const _owner;
+        ThreatManager& _mgr;
+        void HeapNotifyIncreased() { _mgr._sortedThreatList.increase(_handle); }
+        void HeapNotifyDecreased() { _mgr._sortedThreatList.decrease(_handle); }
         Unit* const _victim;
+        OnlineState _online;
         float _baseAmount;
         int32 _tempModifier; // Temporary effects (auras with SPELL_AURA_MOD_TOTAL_THREAT) - set from victim's threatmanager in ThreatManager::UpdateMyTempModifiers
-        OnlineState _online;
         TauntState _taunted;
         ThreatManager::threat_list_heap::handle_type _handle;
 
@@ -272,5 +308,5 @@ class TC_GAME_API ThreatReference
 };
 
 inline bool CompareThreatLessThan::operator()(ThreatReference const* a, ThreatReference const* b) const { return ThreatManager::CompareReferencesLT(a, b, 1.0f); }
- 
+
  #endif

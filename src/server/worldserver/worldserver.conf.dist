@@ -209,6 +209,15 @@ SourceDirectory  = ""
 MySQLExecutable = ""
 
 #
+#    IPLocationFile
+#        Description: The path to your IP2Location database CSV file.
+#        Example:     "C:/Trinity/IP2LOCATION-LITE-DB1.CSV"
+#                     "/home/trinity/IP2LOCATION-LITE-DB1.CSV"
+#        Default:     ""  - (Disabled)
+
+IPLocationFile = ""
+
+#
 ###################################################################################################
 
 ###################################################################################################
@@ -417,17 +426,6 @@ DetectPosCollision = 1
 #                     0 - (Disabled, may break some boss encounters)
 
 CheckGameObjectLoS = 1
-
-#
-#    TargetPosRecalculateRange
-#        Description: Max distance from movement target point (+moving unit size) and targeted
-#                     object (+size) after that new target movement point calculated.
-#        Range:       0.5-5.0
-#        Default:     1.5
-#                     0.5 - (Minimum, Contact Range, More sensitive reaction to target movement)
-#                     5.0 - (Maximum, Melee attack range, Less CPU usage)
-
-TargetPosRecalculateRange = 1.5
 
 #
 #    UpdateUptimeInterval
@@ -997,10 +995,10 @@ Quests.EnableQuestTracker = 0
 #        Description: Level difference between player and quest level at which quests are
 #                     considered low-level and are not shown via exclamation mark (!) at quest
 #                     givers.
-#        Default:     4  - (Enabled, Hide quests that have 4 levels less than the character)
+#        Default:     10  - (Enabled, Hide quests that have 10 levels less than the character)
 #                     -1 - (Disabled, Show all available quest marks)
 
-Quests.LowLevelHideDiff = 4
+Quests.LowLevelHideDiff = 10
 
 #
 #    Quests.HighLevelHideDiff
@@ -1878,9 +1876,10 @@ Respawn.DynamicMinimumGameObject = 10
 # CHAT SETTINGS
 #
 #    ChatFakeMessagePreventing
-#        Description: Chat protection from creating fake messages using a lot spaces or other
-#                     invisible symbols. Not applied to the addon language, but may break old
-#                     addons that use normal languages for sending data to other clients.
+#        Description: Additional protection from creating fake chat messages using spaces.
+#                     Collapses multiple subsequent whitespaces into a single whitespace.
+#                     Not applied to the addon language, but may break old addons that use
+#                     "normal" chat messages for sending data to other clients.
 #        Default:     1 - (Enabled, Blizzlike)
 #                     0 - (Disabled)
 
@@ -1889,11 +1888,8 @@ ChatFakeMessagePreventing = 1
 #
 #    ChatStrictLinkChecking.Severity
 #        Description: Check chat messages for ingame links to spells, items, quests, etc.
-#        Default:     0 - (Disabled)
-#                     1 - (Enabled, Check if only valid pipe commands are used, Prevents posting
-#                         pictures.)
-#                     2 - (Enabled, Verify that pipe commands are used in a correct order)
-#                     3 - (Check if color, entry and name don't contradict each other. For this to
+#        Default:     0 - (Only verify that link format looks valid without checking the text)
+#                     1 - (Check if color, entry and name don't contradict each other. For this to
 #                         work correctly, please assure that you have extracted locale DBCs of
 #                         every language specific client playing on this server)
 
@@ -1901,10 +1897,10 @@ ChatStrictLinkChecking.Severity = 0
 
 #
 #    ChatStrictLinkChecking.Kick
-#        Description: Defines what should be done if a message is considered to contain invalid
-#                     pipe commands.
+#        Description: Defines what should be done if a message containing invalid control characters
+#                     is received.
 #        Default:     0 - (Silently ignore message)
-#                     1 - (Disconnect players who sent malformed messages)
+#                     1 - (Ignore message and kick player)
 
 ChatStrictLinkChecking.Kick = 0
 
@@ -3023,6 +3019,30 @@ AllowTrackBothResources = 0
 PlayerStart.AllReputation = 0
 
 #
+#    XP.Boost.Daymask
+#        Description: Enables experience boost during the defined days. This field is a bitmask.
+#
+#        Default:     0 - (Disabled)
+#                     1 - (Sunday)
+#                     2 - (Monday)
+#                     4 - (Tuesday)
+#                     8 - (Wednesday)
+#                     16 - (Thrusday)
+#                     32 - (Friday)
+#                     64 - (Saturday)
+#                     65 - (Weekend only)
+#                     127 - (Always active)
+
+XP.Boost.Daymask = 0
+
+#
+#    XP.Boost.Rate
+#        Description: The boost multiplier for experience gain during XP boosted days.
+#        Default:     2.0 - (Double experience)
+
+XP.Boost.Rate = 2.0
+
+#
 #    PlayerStart.AllSpells
 #        Description: If enabled, players will start with all their class spells (not talents).
 #                     You must populate playercreateinfo_spell_custom table with the spells you
@@ -3886,6 +3906,9 @@ Logger.mmaps=3,Server
 #Logger.maps.script=3,Console Server
 #Logger.maps=3,Console Server
 #Logger.misc=3,Console Server
+#Logger.movement.flightpath=3,Console Server
+#Logger.movement.motionmaster=3,Console Server
+#Logger.movement.splinechain=3,Console Server
 #Logger.network=3,Console Server
 #Logger.network.opcode=3,Console Server
 #Logger.network.soap=3,Console Server

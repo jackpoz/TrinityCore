@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
+ * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
  * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -570,7 +570,7 @@ public:
             {
                 //spell Burn should possible do this, but it doesn't, so do this for now.
                 uint16 dmg = urand(1650, 2050);
-                me->DealDamage(me, dmg, 0, DOT, SPELL_SCHOOL_MASK_FIRE, nullptr, false);
+                Unit::DealDamage(me, me, dmg, 0, DOT, SPELL_SCHOOL_MASK_FIRE, nullptr, false);
                 BurnTimer += 2000;
             } BurnTimer -= diff;
 

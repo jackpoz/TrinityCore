@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
+ * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -286,7 +286,7 @@ class spell_anetheron_vampiric_aura : public SpellScriptLoader
 
                 Unit* actor = eventInfo.GetActor();
                 CastSpellExtraArgs args(aurEff);
-                args.SpellValueOverrides.AddMod(SPELLVALUE_BASE_POINT0, damageInfo->GetDamage() * 3);
+                args.AddSpellMod(SPELLVALUE_BASE_POINT0, damageInfo->GetDamage() * 3);
                 actor->CastSpell(actor, SPELL_VAMPIRIC_AURA_HEAL, args);
             }
 

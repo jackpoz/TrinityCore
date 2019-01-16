@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2019 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -44,16 +44,8 @@
         return false;
     if (a->HasUnitState(UNIT_STATE_IN_FLIGHT) || b->HasUnitState(UNIT_STATE_IN_FLIGHT))
         return false;
-    if (a->IsControlledByPlayer() || b->IsControlledByPlayer())
-    { // PvSomething, only block friendly fire
-        if (a->IsFriendlyTo(b) || b->IsFriendlyTo(a))
-            return false;
-    }
-    else
-    { // CvC, need hostile reaction to start a fight
-        if (!a->IsHostileTo(b) && !b->IsHostileTo(a))
-            return false;
-    }
+    if (a->IsFriendlyTo(b) || b->IsFriendlyTo(a))
+        return false;
     Player const* playerA = a->GetCharmerOrOwnerPlayerOrPlayerItself();
     Player const* playerB = b->GetCharmerOrOwnerPlayerOrPlayerItself();
     // ...neither of the two units must be (owned by) a player with .gm on
@@ -79,10 +71,12 @@ void CombatReference::EndCombat()
     bool const needSecondAI = second->GetCombatManager().UpdateOwnerCombatState();
 
     // ...and if that happened, also notify the AI of it...
-    if (needFirstAI && first->IsAIEnabled)
-        first->GetAI()->JustExitedCombat();
-    if (needSecondAI && second->IsAIEnabled)
-        second->GetAI()->JustExitedCombat();
+    if (needFirstAI)
+        if (UnitAI* firstAI = first->GetAI())
+            firstAI->JustExitedCombat();
+    if (needSecondAI)
+        if (UnitAI* secondAI = second->GetAI())
+            secondAI->JustExitedCombat();
 
     // ...and finally clean up the reference object
     delete this;
@@ -122,8 +116,8 @@ void PvPCombatReference::SuppressFor(Unit* who)
 {
     Suppress(who);
     if (who->GetCombatManager().UpdateOwnerCombatState())
-        if (who->IsAIEnabled)
-            who->GetAI()->JustExitedCombat();
+        if (UnitAI* ai = who->GetAI())
+            ai->JustExitedCombat();
 }
 
 CombatManager::~CombatManager()
@@ -202,7 +196,7 @@ bool CombatManager::SetInCombatWith(Unit* who)
         NotifyAICombat(_owner, who);
     if (needOtherAI)
         NotifyAICombat(who, _owner);
-    return true;
+    return IsInCombatWith(who);
 }
 
 bool CombatManager::IsInCombatWith(ObjectGuid const& guid) const
@@ -223,8 +217,8 @@ void CombatManager::InheritCombatStatesFrom(Unit const* who)
         if (!IsInCombatWith(ref.first))
         {
             Unit* target = ref.second->GetOther(who);
-            if ((_owner->IsImmuneToPC() && target->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PVP_ATTACKABLE)) ||
-                (_owner->IsImmuneToNPC() && !target->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PVP_ATTACKABLE)))
+            if ((_owner->IsImmuneToPC() && target->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED)) ||
+                (_owner->IsImmuneToNPC() && !target->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED)))
                 continue;
             SetInCombatWith(target);
         }
@@ -234,8 +228,8 @@ void CombatManager::InheritCombatStatesFrom(Unit const* who)
         if (!IsInCombatWith(ref.first))
         {
             Unit* target = ref.second->GetOther(who);
-            if ((_owner->IsImmuneToPC() && target->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PVP_ATTACKABLE)) ||
-                (_owner->IsImmuneToNPC() && !target->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PVP_ATTACKABLE)))
+            if ((_owner->IsImmuneToPC() && target->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED)) ||
+                (_owner->IsImmuneToNPC() && !target->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED)))
                 continue;
             SetInCombatWith(target);
         }
@@ -279,8 +273,8 @@ void CombatManager::SuppressPvPCombat()
     for (auto const& pair : _pvpRefs)
         pair.second->Suppress(_owner);
     if (UpdateOwnerCombatState())
-        if (_owner->IsAIEnabled)
-            _owner->GetAI()->JustExitedCombat();
+        if (UnitAI* ownerAI = _owner->GetAI())
+            ownerAI->JustExitedCombat();
 }
 
 void CombatManager::EndAllPvECombat()
@@ -300,7 +294,7 @@ void CombatManager::EndAllPvPCombat()
 
 /*static*/ void CombatManager::NotifyAICombat(Unit* me, Unit* other)
 {
-    if (!me->IsAIEnabled)
+    if (!me->IsAIEnabled())
         return;
     me->GetAI()->JustEnteredCombat(other);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
+ * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -155,7 +155,7 @@ class instance_magisters_terrace : public InstanceMapScript
             {
                 if (eventId == EVENT_SPAWN_KALECGOS)
                     if (!instance->GetCreature(KalecgosGUID) && Events.Empty())
-                       Events.ScheduleEvent(EVENT_SPAWN_KALECGOS, Minutes(1));
+                       Events.ScheduleEvent(EVENT_SPAWN_KALECGOS, 1min);
             }
 
             void Update(uint32 diff) override

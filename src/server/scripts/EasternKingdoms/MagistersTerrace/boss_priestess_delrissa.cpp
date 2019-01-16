@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
+ * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
  * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -356,7 +356,6 @@ struct boss_priestess_lackey_commonAI : public ScriptedAI
     {
         Initialize();
         instance = creature->GetInstanceScript();
-        AcquireGUIDs();
     }
 
     void Initialize()
@@ -380,6 +379,7 @@ struct boss_priestess_lackey_commonAI : public ScriptedAI
     void Reset() override
     {
         Initialize();
+        AcquireGUIDs();
 
         // in case she is not alive and Reset was for some reason called, respawn her (most likely party wipe after killing her)
         if (Creature* pDelrissa = ObjectAccessor::GetCreature(*me, instance->GetGuidData(DATA_DELRISSA)))

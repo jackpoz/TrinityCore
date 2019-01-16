@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
+ * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -92,9 +92,9 @@ class boss_general_zarithrian : public CreatureScript
             {
                 _JustEngagedWith();
                 Talk(SAY_AGGRO);
-                events.ScheduleEvent(EVENT_CLEAVE, Seconds(8));
-                events.ScheduleEvent(EVENT_INTIDMDATING_ROAR, Seconds(14));
-                events.ScheduleEvent(EVENT_SUMMON_ADDS, Seconds(15));
+                events.ScheduleEvent(EVENT_CLEAVE, 8s);
+                events.ScheduleEvent(EVENT_INTIDMDATING_ROAR, 14s);
+                events.ScheduleEvent(EVENT_SUMMON_ADDS, 15s);
                 if (Is25ManRaid())
                     events.ScheduleEvent(EVENT_SUMMON_ADDS2, Seconds(16));
             }
@@ -128,10 +128,10 @@ class boss_general_zarithrian : public CreatureScript
                 if (!UpdateVictim())
                     return;
 
+                events.Update(diff);
+
                 if (me->HasUnitState(UNIT_STATE_CASTING))
                     return;
-
-                events.Update(diff);
 
                 while (uint32 eventId = events.ExecuteEvent())
                 {
@@ -157,7 +157,7 @@ class boss_general_zarithrian : public CreatureScript
                             break;
                         case EVENT_CLEAVE:
                             DoCastVictim(SPELL_CLEAVE_ARMOR);
-                            events.ScheduleEvent(EVENT_CLEAVE, Seconds(15));
+                            events.ScheduleEvent(EVENT_CLEAVE, 15s);
                             break;
                         default:
                             break;
@@ -196,8 +196,8 @@ class npc_onyx_flamecaller : public CreatureScript
 
             void JustEngagedWith(Unit* /*who*/) override
             {
-                _events.ScheduleEvent(EVENT_BLAST_NOVA, Seconds(17));
-                _events.ScheduleEvent(EVENT_LAVA_GOUT, Seconds(3));
+                _events.ScheduleEvent(EVENT_BLAST_NOVA, 17s);
+                _events.ScheduleEvent(EVENT_LAVA_GOUT, 3s);
             }
 
             void EnterEvadeMode(EvadeReason /*why*/) override { }
@@ -214,7 +214,7 @@ class npc_onyx_flamecaller : public CreatureScript
                 if (type != SPLINE_CHAIN_MOTION_TYPE && pointId != POINT_GENERAL_ROOM)
                     return;
 
-                me->SetInCombatWithZone();
+                DoZoneInCombat();
             }
 
             void MoveToGeneral()

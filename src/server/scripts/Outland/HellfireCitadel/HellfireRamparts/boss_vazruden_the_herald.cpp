@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
+ * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
  * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -487,6 +487,9 @@ class npc_hellfire_sentry : public CreatureScript
 
             void JustDied(Unit* killer) override
             {
+                if (!killer)
+                    return;
+
                 if (Creature* herald = me->FindNearestCreature(NPC_VAZRUDEN_HERALD, 150))
                     ENSURE_AI(boss_vazruden_the_herald::boss_vazruden_the_heraldAI, herald->AI())->SentryDownBy(killer);
             }

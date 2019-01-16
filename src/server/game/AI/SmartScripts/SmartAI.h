@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
+ * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -73,11 +73,8 @@ class TC_GAME_API SmartAI : public CreatureAI
         void WaypointReached(uint32 nodeId, uint32 pathId) override;
         void WaypointPathEnded(uint32 nodeId, uint32 pathId) override;
 
-        void SetScript9(SmartScriptHolder& e, uint32 entry, Unit* invoker);
+        void SetTimedActionList(SmartScriptHolder& e, uint32 entry, Unit* invoker);
         SmartScript* GetScript() { return &mScript; }
-
-        // Called when creature is spawned or respawned
-        void JustAppeared() override;
 
         // Called at reaching home after evade, InitializeAI(), EnterEvadeMode() for resetting variables
         void JustReachedHome() override;
@@ -143,10 +140,7 @@ class TC_GAME_API SmartAI : public CreatureAI
         void InitializeAI() override;
 
         // Called when creature gets charmed by another unit
-        void OnCharmed(bool apply) override;
-
-        // Called when victim is in line of sight
-        bool CanAIAttack(Unit const* who) const override;
+        void OnCharmed(bool isNew) override;
 
         // Used in scripts to share variables
         void DoAction(int32 param = 0) override;
@@ -155,7 +149,8 @@ class TC_GAME_API SmartAI : public CreatureAI
         uint32 GetData(uint32 id = 0) const override;
 
         // Used in scripts to share variables
-        void SetData(uint32 id, uint32 value) override;
+        void SetData(uint32 id, uint32 value) override { SetData(id, value, nullptr); }
+        void SetData(uint32 id, uint32 value, Unit* invoker);
 
         // Used in scripts to share variables
         void SetGUID(ObjectGuid const& guid, int32 id = 0) override;
@@ -190,7 +185,7 @@ class TC_GAME_API SmartAI : public CreatureAI
         }
         void StartDespawn() { mDespawnState = 2; }
 
-        void OnSpellClick(Unit* clicker, bool& result) override;
+        void OnSpellClick(Unit* clicker, bool spellClickHandled) override;
 
         void SetWPPauseTimer(uint32 time) { _waypointPauseTimer = time; }
 
@@ -266,9 +261,10 @@ class TC_GAME_API SmartGameObjectAI : public GameObjectAI
         bool GossipSelectCode(Player* player, uint32 menuId, uint32 gossipListId, char const* code) override;
         void QuestAccept(Player* player, Quest const* quest) override;
         void QuestReward(Player* player, Quest const* quest, uint32 opt) override;
-        void Destroyed(Player* player, uint32 eventId) override;
-        void SetData(uint32 id, uint32 value) override;
-        void SetScript9(SmartScriptHolder& e, uint32 entry, Unit* invoker);
+        void Destroyed(WorldObject* attacker, uint32 eventId) override;
+        void SetData(uint32 id, uint32 value, Unit* invoker);
+        void SetData(uint32 id, uint32 value) override { SetData(id, value, nullptr); }
+        void SetTimedActionList(SmartScriptHolder& e, uint32 entry, Unit* invoker);
         void OnGameEvent(bool start, uint16 eventId) override;
         void OnLootStateChanged(uint32 state, Unit* unit) override;
         void EventInform(uint32 eventId) override;

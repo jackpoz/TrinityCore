@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
+ * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
  * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -129,7 +129,7 @@ public:
 
         void DamageTaken(Unit* done_by, uint32 &damage) override
         {
-            if (done_by->GetGUID() != victimGUID && done_by->GetGUID() != me->GetGUID())
+            if (!done_by || (done_by->GetGUID() != victimGUID && done_by->GetGUID() != me->GetGUID()))
             {
                 damage = 0;
                 ModifyThreatByPercent(done_by, -100);
@@ -158,7 +158,7 @@ public:
                     AttackStart(owner);
                 } else if (owner && owner->isDead())
                 {
-                    me->DealDamage(me, me->GetHealth(), nullptr, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, nullptr, false);
+                    me->KillSelf();
                     return;
                 }
             }

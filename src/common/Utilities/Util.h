@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
+ * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -24,6 +24,7 @@
 
 #include <string>
 #include <sstream>
+#include <utility>
 #include <vector>
 
 class TC_COMMON_API Tokenizer
@@ -53,8 +54,6 @@ private:
     char* m_str;
     StorageType m_storage;
 };
-
-TC_COMMON_API void stripLineInvisibleChars(std::string &src);
 
 TC_COMMON_API int32 MoneyStringToMoney(std::string const& moneyString);
 
@@ -88,6 +87,9 @@ inline T RoundToInterval(T& num, T floor, T ceil)
 {
     return num = std::min(std::max(num, floor), ceil);
 }
+
+template <class T>
+inline T square(T x) { return x*x; }
 
 // UTF8 handling
 TC_COMMON_API bool Utf8toWStr(const std::string& utf8str, std::wstring& wstr);
@@ -296,6 +298,13 @@ TC_COMMON_API std::string ByteArrayToHexStr(uint8 const* bytes, uint32 length, b
 TC_COMMON_API void HexStrToByteArray(std::string const& str, uint8* out, bool reverse = false);
 
 TC_COMMON_API bool StringToBool(std::string const& str);
+
+TC_COMMON_API bool StringContainsStringI(std::string const& haystack, std::string const& needle);
+template <typename T>
+inline bool ValueContainsStringI(std::pair<T, std::string> const& haystack, std::string const& needle)
+{
+    return StringContainsStringI(haystack.second, needle);
+}
 
 // simple class for not-modifyable list
 template <typename T>

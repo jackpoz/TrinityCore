@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
+ * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -94,6 +94,7 @@ enum UlduarNPCs
 
     //XT002
     NPC_XS013_SCRAPBOT                      = 33343,
+    NPC_HEART_OF_DECONSTRUCTOR              = 33329,
 
     // Flame Leviathan
     NPC_ULDUAR_COLOSSUS                     = 33237,
@@ -407,6 +408,7 @@ enum UlduarData
     DATA_TOY_PILE_1,
     DATA_TOY_PILE_2,
     DATA_TOY_PILE_3,
+    DATA_XT002_HEART,
 
     // Assembly of Iron
     DATA_STEELBREAKER,
@@ -448,6 +450,8 @@ enum UlduarData
     DATA_UNIVERSE_GLOBE,
     DATA_ALGALON_TRAPDOOR,
     DATA_BRANN_BRONZEBEARD_ALG,
+    DATA_GIFT_OF_THE_OBSERVER,
+    DATA_AZEROTH,
 
     // Thorim
     DATA_SIF,

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
+ * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -28,8 +28,6 @@
 #include "TotemAI.h"
 
 #include "MovementGenerator.h"
-#include "RandomMovementGenerator.h"
-#include "WaypointMovementGenerator.h"
 
 namespace AIRegistry
 {
@@ -55,7 +53,7 @@ namespace AIRegistry
         (new GameObjectAIFactory<SmartGameObjectAI>("SmartGameObjectAI"))->RegisterSelf();
 
         (new IdleMovementFactory())->RegisterSelf();
-        (new MovementGeneratorFactory<RandomMovementGenerator<Creature>>(RANDOM_MOTION_TYPE))->RegisterSelf();
-        (new MovementGeneratorFactory<WaypointMovementGenerator<Creature>>(WAYPOINT_MOTION_TYPE))->RegisterSelf();
+        (new RandomMovementFactory())->RegisterSelf();
+        (new WaypointMovementFactory())->RegisterSelf();
     }
 }

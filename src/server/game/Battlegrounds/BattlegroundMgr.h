@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
+ * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -53,7 +53,7 @@ struct BattlegroundTemplate
     uint16 MaxPlayersPerTeam;
     uint8 MinLevel;
     uint8 MaxLevel;
-    Position StartLocation[BG_TEAMS_COUNT];
+    Position StartLocation[PVP_TEAMS_COUNT];
     float MaxStartDistSq;
     uint8 Weight;
     uint32 ScriptId;

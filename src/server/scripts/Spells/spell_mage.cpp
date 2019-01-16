@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
+ * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -67,7 +67,8 @@ enum MageSpells
     SPELL_MAGE_T10_2P_BONUS_EFFECT               = 70753,
     SPELL_MAGE_T8_4P_BONUS                       = 64869,
     SPELL_MAGE_MISSILE_BARRAGE                   = 44401,
-    SPELL_MAGE_FINGERS_OF_FROST_AURASTATE_AURA   = 44544
+    SPELL_MAGE_FINGERS_OF_FROST_AURASTATE_AURA   = 44544,
+    SPELL_MAGE_PERMAFROST_AURA                   = 68391
 };
 
 enum MageSpellIcons
@@ -99,7 +100,7 @@ class spell_mage_incanters_absorbtion_base_AuraScript : public AuraScript
             {
                 int32 bp = CalculatePct(absorbAmount, talentAurEff->GetAmount());
                 CastSpellExtraArgs args(aurEff);
-                args.SpellValueOverrides.AddBP0(bp);
+                args.AddSpellBP0(bp);
                 target->CastSpell(target, SPELL_MAGE_INCANTERS_ABSORBTION_TRIGGERED, args);
             }
         }
@@ -288,7 +289,7 @@ class spell_mage_burnout : public SpellScriptLoader
                 mana = CalculatePct(mana, aurEff->GetAmount());
 
                 CastSpellExtraArgs args(aurEff);
-                args.SpellValueOverrides.AddBP0(mana);
+                args.AddSpellBP0(mana);
                 GetTarget()->CastSpell(GetTarget(), SPELL_MAGE_BURNOUT, args);
             }
 
@@ -531,7 +532,7 @@ class spell_mage_empowered_fire : public SpellScriptLoader
 
                 Unit* target = GetTarget();
                 CastSpellExtraArgs args(aurEff);
-                args.SpellValueOverrides.AddBP0(CalculatePct(target->GetCreateMana(), aurEff->GetAmount()));
+                args.AddSpellBP0(CalculatePct(target->GetCreateMana(), aurEff->GetAmount()));
                 target->CastSpell(target, SPELL_MAGE_EMPOWERED_FIRE_PROC, args);
             }
 
@@ -616,7 +617,7 @@ class spell_mage_fire_frost_ward : public SpellScriptLoader
                     float bonus = 0.8068f;
 
                     bonus *= caster->SpellBaseHealingBonusDone(GetSpellInfo()->GetSchoolMask());
-                    bonus *= caster->CalculateLevelPenalty(GetSpellInfo());
+                    bonus *= caster->CalculateSpellpowerCoefficientLevelPenalty(GetSpellInfo());
 
                     amount += int32(bonus);
                 }
@@ -634,7 +635,7 @@ class spell_mage_fire_frost_ward : public SpellScriptLoader
                         int32 bp = dmgInfo.GetDamage();
                         dmgInfo.AbsorbDamage(bp);
                         CastSpellExtraArgs args(aurEff);
-                        args.SpellValueOverrides.AddBP0(bp);
+                        args.AddSpellBP0(bp);
                         target->CastSpell(target, SPELL_MAGE_FROST_WARDING_TRIGGERED, args);
                         absorbAmount = 0;
                         PreventDefaultAction();
@@ -654,6 +655,34 @@ class spell_mage_fire_frost_ward : public SpellScriptLoader
         {
             return new spell_mage_fire_frost_ward_AuraScript();
         }
+};
+
+// -44614 - Frostfire Bolt
+class spell_mage_frostfire_bolt : public AuraScript
+{
+    PrepareAuraScript(spell_mage_frostfire_bolt);
+
+    bool Validate(SpellInfo const* /*spellInfo*/) override
+    {
+        return ValidateSpellInfo({ SPELL_MAGE_PERMAFROST_AURA });
+    }
+
+    void ApplyPermafrost(AuraEffect const* aurEff, AuraEffectHandleModes /*mode*/)
+    {
+        if (Unit* caster = GetCaster())
+            caster->CastSpell(GetTarget(), SPELL_MAGE_PERMAFROST_AURA, aurEff);
+    }
+
+    void RemovePermafrost(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
+    {
+        GetTarget()->RemoveAurasDueToSpell(SPELL_MAGE_PERMAFROST_AURA);
+    }
+
+    void Register() override
+    {
+        AfterEffectApply += AuraEffectApplyFn(spell_mage_frostfire_bolt::ApplyPermafrost, EFFECT_0, SPELL_AURA_MOD_DECREASE_SPEED, AURA_EFFECT_HANDLE_REAL_OR_REAPPLY_MASK);
+        AfterEffectRemove += AuraEffectRemoveFn(spell_mage_frostfire_bolt::ApplyPermafrost, EFFECT_0, SPELL_AURA_MOD_DECREASE_SPEED, AURA_EFFECT_HANDLE_REAL);
+    }
 };
 
 // 54646 - Focus Magic
@@ -935,7 +964,7 @@ class spell_mage_ice_barrier : public SpellScriptLoader
                     // Glyph of Ice Barrier is only applied at the spell damage bonus because it was already applied to the base value in CalculateSpellDamage
                     bonus = caster->ApplyEffectModifiers(GetSpellInfo(), aurEff->GetEffIndex(), bonus);
 
-                    bonus *= caster->CalculateLevelPenalty(GetSpellInfo());
+                    bonus *= caster->CalculateSpellpowerCoefficientLevelPenalty(GetSpellInfo());
 
                     amount += int32(bonus);
                 }
@@ -964,6 +993,27 @@ class spell_mage_ice_barrier : public SpellScriptLoader
         {
             return new spell_mage_ice_barrier_AuraScript();
         }
+};
+
+// 45438 - Ice Block
+class spell_mage_ice_block : public SpellScript
+{
+    PrepareSpellScript(spell_mage_ice_block);
+
+    bool Validate(SpellInfo const* spellInfo) override
+    {
+        return ValidateSpellInfo({ spellInfo->ExcludeCasterAuraSpell });
+    }
+
+    void TriggerHypothermia()
+    {
+        GetCaster()->CastSpell(nullptr, GetSpellInfo()->ExcludeCasterAuraSpell, true);
+    }
+
+    void Register() override
+    {
+        AfterHit += SpellHitFn(spell_mage_ice_block::TriggerHypothermia);
+    }
 };
 
 // -11119 - Ignite
@@ -995,10 +1045,9 @@ class spell_mage_ignite : public SpellScriptLoader
 
                 ASSERT(igniteDot->GetMaxTicks() > 0);
                 int32 amount = int32(CalculatePct(eventInfo.GetDamageInfo()->GetDamage(), pct) / igniteDot->GetMaxTicks());
-                amount += eventInfo.GetProcTarget()->GetRemainingPeriodicAmount(eventInfo.GetActor()->GetGUID(), SPELL_MAGE_IGNITE, SPELL_AURA_PERIODIC_DAMAGE);
 
                 CastSpellExtraArgs args(aurEff);
-                args.SpellValueOverrides.AddBP0(amount);
+                args.AddSpellBP0(amount);
                 GetTarget()->CastSpell(eventInfo.GetProcTarget(), SPELL_MAGE_IGNITE, args);
             }
 
@@ -1073,7 +1122,7 @@ class spell_mage_magic_absorption : public SpellScriptLoader
 
                 Unit* caster = eventInfo.GetActionTarget();
                 CastSpellExtraArgs args(aurEff);
-                args.SpellValueOverrides.AddBP0(CalculatePct(caster->GetMaxPower(POWER_MANA), aurEff->GetAmount()));
+                args.AddSpellBP0(CalculatePct(caster->GetMaxPower(POWER_MANA), aurEff->GetAmount()));
                 caster->CastSpell(caster, SPELL_MAGE_MAGIC_ABSORPTION_MANA, args);
             }
 
@@ -1114,7 +1163,7 @@ class spell_mage_mana_shield : public SpellScriptLoader
                     float bonus = 0.8053f;
 
                     bonus *= caster->SpellBaseHealingBonusDone(GetSpellInfo()->GetSchoolMask());
-                    bonus *= caster->CalculateLevelPenalty(GetSpellInfo());
+                    bonus *= caster->CalculateSpellpowerCoefficientLevelPenalty(GetSpellInfo());
 
                     amount += int32(bonus);
                 }
@@ -1175,7 +1224,7 @@ class spell_mage_master_of_elements : public SpellScriptLoader
                 if (mana > 0)
                 {
                     CastSpellExtraArgs args(aurEff);
-                    args.SpellValueOverrides.AddBP0(mana);
+                    args.AddSpellBP0(mana);
                     GetTarget()->CastSpell(GetTarget(), SPELL_MAGE_MASTER_OF_ELEMENTS_ENERGIZE, args);
                 }
             }
@@ -1361,6 +1410,7 @@ void AddSC_mage_spell_scripts()
     new spell_mage_empowered_fire();
     new spell_mage_fingers_of_frost();
     new spell_mage_fire_frost_ward();
+    RegisterAuraScript(spell_mage_frostfire_bolt);
     new spell_mage_focus_magic();
     new spell_mage_gen_extra_effects();
     new spell_mage_glyph_of_polymorph();
@@ -1368,6 +1418,7 @@ void AddSC_mage_spell_scripts()
     new spell_mage_glyph_of_ice_block();
     new spell_mage_hot_streak();
     new spell_mage_ice_barrier();
+    RegisterSpellScript(spell_mage_ice_block);
     new spell_mage_ignite();
     new spell_mage_living_bomb();
     new spell_mage_magic_absorption();

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
+ * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
  * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -60,7 +60,7 @@ enum Sinkhole
     SPELL_SET_CART                = 46797,
     SPELL_EXPLODE_CART            = 46799,
     SPELL_SUMMON_CART             = 46798,
-    SPELL_SUMMON_WORM             = 46800,
+    SPELL_SUMMON_WORM             = 46800
 };
 
 class npc_sinkhole_kill_credit : public CreatureScript
@@ -149,7 +149,7 @@ public:
                         DoCast(me, SPELL_EXPLODE_CART, true);
                         if (Unit* worm = me->FindNearestCreature(NPC_SCOURGED_BURROWER, 3.0f))
                         {
-                            me->Kill(worm);
+                            Unit::Kill(me, worm);
                             worm->RemoveFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE);
                         }
                         phaseTimer = 2000;
@@ -229,15 +229,21 @@ public:
 ## npc_corastrasza
 ######*/
 
-#define GOSSIP_ITEM_C_1 "I... I think so..."
-
 enum Corastrasza
 {
-    SPELL_SUMMON_WYRMREST_SKYTALON               = 61240,
-    SPELL_WYRMREST_SKYTALON_RIDE_PERIODIC        = 61244,
+    GOSSIP_MENU_ID_CORASTRASZA            = 10204,
+    GOSSIP_MENU_ITEM_ID_I_I_THINK_SO      = 0,
+    GOSSIP_MENU_ITEM_ID_I_AM_READY        = 1,
 
-    QUEST_ACES_HIGH_DAILY                        = 13414,
-    QUEST_ACES_HIGH                              = 13413
+    NPC_TEXT_MOST_DRAGONS_WOULD_FEAR_TO   = 14168,
+    NPC_TEXT_DO_YOU_POSSESS_THE_COURAGE   = 14169,
+    NPC_TEXT_EAGERLY_AWAITING_YOUR_RETURN = 14170,
+
+    QUEST_ACES_HIGH                       = 13413,
+    QUEST_ACES_HIGH_DAILY                 = 13414,
+
+    SPELL_SUMMON_WYRMREST_SKYTALON        = 61240,
+    SPELL_WYRMREST_SKYTALON_RIDE_PERIODIC = 61244
 };
 
 class npc_corastrasza : public CreatureScript
@@ -254,10 +260,18 @@ public:
             if (me->IsQuestGiver())
                 player->PrepareQuestMenu(me->GetGUID());
 
-            if (player->GetQuestStatus(QUEST_ACES_HIGH) == QUEST_STATUS_INCOMPLETE || player->GetQuestStatus(QUEST_ACES_HIGH_DAILY) == QUEST_STATUS_INCOMPLETE) //It's the same dragon for both quests.
-                AddGossipItemFor(player, GOSSIP_ICON_CHAT, GOSSIP_ITEM_C_1, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 1);
+            if (player->GetQuestStatus(QUEST_ACES_HIGH) == QUEST_STATUS_INCOMPLETE)
+            {
+                AddGossipItemFor(player, GOSSIP_MENU_ID_CORASTRASZA, GOSSIP_MENU_ITEM_ID_I_I_THINK_SO, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 1);
+                SendGossipMenuFor(player, NPC_TEXT_DO_YOU_POSSESS_THE_COURAGE, me->GetGUID());
+            }
+            else if (player->GetQuestStatus(QUEST_ACES_HIGH_DAILY) == QUEST_STATUS_INCOMPLETE)
+            {
+                AddGossipItemFor(player, GOSSIP_MENU_ID_CORASTRASZA, GOSSIP_MENU_ITEM_ID_I_AM_READY, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 1);
+                SendGossipMenuFor(player, NPC_TEXT_EAGERLY_AWAITING_YOUR_RETURN, me->GetGUID());
+            }
+            SendGossipMenuFor(player, NPC_TEXT_MOST_DRAGONS_WOULD_FEAR_TO, me->GetGUID());
 
-            SendGossipMenuFor(player, player->GetGossipTextId(me), me->GetGUID());
             return true;
         }
 
@@ -268,10 +282,10 @@ public:
             if (action == GOSSIP_ACTION_INFO_DEF + 1)
             {
                 CloseGossipMenuFor(player);
-
                 player->CastSpell(player, SPELL_SUMMON_WYRMREST_SKYTALON, true);
                 player->CastSpell(player, SPELL_WYRMREST_SKYTALON_RIDE_PERIODIC, true);
             }
+
             return true;
         }
     };
@@ -370,9 +384,10 @@ public:
 
         void JustDied(Unit* killer) override
         {
-            Player* player = killer->ToPlayer();
-            if (!player)
+            if (!killer || killer->GetTypeId() != TYPEID_PLAYER)
                 return;
+
+            Player* player = killer->ToPlayer();
 
             if (player->GetQuestStatus(QUEST_TAKEN_BY_THE_SCOURGE) == QUEST_STATUS_INCOMPLETE)
             {
@@ -720,7 +735,7 @@ public:
             owner->RemoveAllAurasExceptType(SPELL_AURA_DUMMY);
             owner->CombatStop(true);
             owner->GetThreatManager().ClearAllThreat();
-            owner->GetMotionMaster()->Clear(false);
+            owner->GetMotionMaster()->Clear();
             owner->GetMotionMaster()->MoveFollow(GetCaster(), 4.0f, 0.0f);
             owner->CastSpell(owner, SPELL_SUBDUED, true);
             GetCaster()->CastSpell(GetCaster(), SPELL_DRAKE_HATCHLING_SUBDUED, true);
@@ -1237,26 +1252,29 @@ public:
                 {
                     DoCastVictim(SPELL_SHADOW_BOLT);
                     shadowBoltTimer = urand(5000, 12000);
-                } else shadowBoltTimer -= diff;
+                }
+                else shadowBoltTimer -= diff;
 
                 if (deflectionTimer <= diff)
                 {
                     DoCastVictim(SPELL_DEFLECTION);
                     deflectionTimer = urand(20000, 25000);
-                } else deflectionTimer -= diff;
+                }
+                else deflectionTimer -= diff;
 
                 if (soulBlastTimer <= diff)
                 {
                     DoCastVictim(SPELL_SOUL_BLAST);
-                    soulBlastTimer  = urand(12000, 18000);
-                } else soulBlastTimer -= diff;
+                    soulBlastTimer = urand(12000, 18000);
+                }
+                else soulBlastTimer -= diff;
             }
 
             DoMeleeAttackIfReady();
-       }
+        }
 
-       void JustDied(Unit* killer) override
-       {
+        void JustDied(Unit* killer) override
+        {
             if (!leryssaGUID || !arlosGUID)
                 return;
 
@@ -1274,8 +1292,8 @@ public:
             leryssa->SetWalk(false);
             leryssa->GetMotionMaster()->MovePoint(0, 3722.114502f, 3564.201660f, 477.441437f);
 
-            if (Player* player = killer->ToPlayer())
-                player->RewardPlayerAndGroupAtEvent(NPC_PRINCE_VALANAR, 0);
+            if (killer && killer->GetTypeId() == TYPEID_PLAYER)
+                killer->ToPlayer()->RewardPlayerAndGroupAtEvent(NPC_PRINCE_VALANAR, 0);
         }
     };
 
@@ -1921,51 +1939,6 @@ public:
 };
 
 /*######
-## Quest 11653: Hah... You're Not So Big Now!
-######*/
-
-enum NotSoBig
-{
-    QUEST_YOU_RE_NOT_SO_BIG_NOW                   = 11653,
-    SPELL_AURA_NOTSOBIG_1                         = 45672,
-    SPELL_AURA_NOTSOBIG_2                         = 45673,
-    SPELL_AURA_NOTSOBIG_3                         = 45677,
-    SPELL_AURA_NOTSOBIG_4                         = 45681
-};
-
-class npc_magmoth_crusher : public CreatureScript
-{
-public:
-    npc_magmoth_crusher() : CreatureScript("npc_magmoth_crusher") { }
-
-    struct npc_magmoth_crusherAI : public ScriptedAI
-    {
-        npc_magmoth_crusherAI(Creature* creature) : ScriptedAI(creature) { }
-
-        void JustDied(Unit* killer) override
-        {
-            Player* player = killer->ToPlayer();
-            if (!player)
-                return;
-
-            if (player->GetQuestStatus(QUEST_YOU_RE_NOT_SO_BIG_NOW) == QUEST_STATUS_INCOMPLETE &&
-                (me->HasAura(SPELL_AURA_NOTSOBIG_1) || me->HasAura(SPELL_AURA_NOTSOBIG_2) ||
-                me->HasAura(SPELL_AURA_NOTSOBIG_3) || me->HasAura(SPELL_AURA_NOTSOBIG_4)))
-            {
-                Quest const* qInfo = sObjectMgr->GetQuestTemplate(QUEST_YOU_RE_NOT_SO_BIG_NOW);
-                if (qInfo)
-                    player->KilledMonsterCredit(qInfo->RequiredNpcOrGo[0]);
-            }
-        }
-    };
-
-    CreatureAI* GetAI(Creature* creature) const override
-    {
-        return new npc_magmoth_crusherAI(creature);
-    }
-};
-
-/*######
 ## Help Those That Cannot Help Themselves, Quest 11876
 ######*/
 
@@ -2442,7 +2415,7 @@ public:
             if (Player* player = ObjectAccessor::GetPlayer(*me, _playerGUID))
                 me->SetFacingToObject(player);
 
-            _events.ScheduleEvent(EVENT_TALK, Seconds(1));
+            _events.ScheduleEvent(EVENT_TALK, 1s);
         }
 
         void UpdateAI(uint32 diff) override
@@ -2463,7 +2436,7 @@ public:
                         if (Player* player = ObjectAccessor::GetPlayer(*me, _playerGUID))
                             Talk(SAY_BLOODMAGE_LAURITH, player);
                         _playerGUID.Clear();
-                        _events.ScheduleEvent(EVENT_RESET_ORIENTATION, Seconds(5));
+                        _events.ScheduleEvent(EVENT_RESET_ORIENTATION, 5s);
                         break;
                     case EVENT_RESET_ORIENTATION:
                         me->SetFacingTo(me->GetHomePosition().GetOrientation());
@@ -2503,7 +2476,6 @@ void AddSC_borean_tundra()
     new npc_mootoo_the_younger();
     new npc_bonker_togglevolt();
     new npc_trapped_mammoth_calf();
-    new npc_magmoth_crusher();
     new npc_valiance_keep_cannoneer();
     new npc_warmage_coldarra();
     new npc_hidden_cultist();

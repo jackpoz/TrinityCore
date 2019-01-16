@@ -189,8 +189,8 @@ DROP TABLE IF EXISTS `auctionbidders`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `auctionbidders` (
-  `id` INT(10) unsigned NOT NULL DEFAULT '0',
-  `bidderguid` INT(10) unsigned NOT NULL DEFAULT '0',
+  `id` int(10) unsigned NOT NULL DEFAULT '0',
+  `bidderguid` int(10) unsigned NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`,`bidderguid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -530,6 +530,7 @@ DROP TABLE IF EXISTS `character_aura`;
 CREATE TABLE `character_aura` (
   `guid` int(10) unsigned NOT NULL DEFAULT '0' COMMENT 'Global Unique Identifier',
   `casterGuid` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'Full Global Unique Identifier',
+  `itemGuid` bigint(20) unsigned NOT NULL DEFAULT '0',
   `spell` mediumint(8) unsigned NOT NULL DEFAULT '0',
   `effectMask` tinyint(3) unsigned NOT NULL DEFAULT '0',
   `recalculateMask` tinyint(3) unsigned NOT NULL DEFAULT '0',
@@ -543,7 +544,9 @@ CREATE TABLE `character_aura` (
   `maxDuration` int(11) NOT NULL DEFAULT '0',
   `remainTime` int(11) NOT NULL DEFAULT '0',
   `remainCharges` tinyint(3) unsigned NOT NULL DEFAULT '0',
-  PRIMARY KEY (`guid`,`casterGuid`,`spell`,`effectMask`)
+  `critChance` float NOT NULL DEFAULT '0',
+  `applyResilience` tinyint(3) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`guid`,`casterGuid`,`itemGuid`,`spell`,`effectMask`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Player System';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -960,6 +963,8 @@ CREATE TABLE `character_queststatus` (
   `itemcount2` smallint(5) unsigned NOT NULL DEFAULT '0',
   `itemcount3` smallint(5) unsigned NOT NULL DEFAULT '0',
   `itemcount4` smallint(5) unsigned NOT NULL DEFAULT '0',
+  `itemcount5` smallint(5) unsigned NOT NULL DEFAULT '0',
+  `itemcount6` smallint(5) unsigned NOT NULL DEFAULT '0',
   `playercount` smallint(5) unsigned NOT NULL DEFAULT '0',
   PRIMARY KEY (`guid`,`quest`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Player System';
@@ -2317,6 +2322,8 @@ CREATE TABLE `pet_aura` (
   `maxDuration` int(11) NOT NULL DEFAULT '0',
   `remainTime` int(11) NOT NULL DEFAULT '0',
   `remainCharges` tinyint(3) unsigned NOT NULL DEFAULT '0',
+  `critChance` float NOT NULL DEFAULT '0',
+  `applyResilience` tinyint(3) NOT NULL DEFAULT '0',
   PRIMARY KEY (`guid`,`casterGuid`,`spell`,`effectMask`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Pet System';
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -2614,9 +2621,14 @@ INSERT INTO `updates` VALUES
 ('2017_04_03_00_characters.sql','CB072C56692C9FBF170C4036F15773DD86D368B5','ARCHIVED','2017-04-03 00:00:00',0),
 ('2017_04_12_00_characters.sql','4FE3C6866A6DCD4926D451F6009464D290C2EF1F','ARCHIVED','2017-04-12 00:00:00',0),
 ('2017_04_12_01_characters.sql','5A8A1215E3A2356722F52CD7A64BBE03D21FBEA3','ARCHIVED','2017-04-12 00:00:00',0),
-('2017_04_19_00_characters.sql','CE06FA9005C8A8EE4BDD925520278A5D83E87485','RELEASED','2017-04-19 00:07:40',25),
-('2017_10_29_00_characters.sql','6209D716E22C391F1FB464221D9F25AF','RELEASED','2017-04-19 00:07:40',25),
-('2017_11_27_00_characters.sql','6FF1F84B8985ADFC7FF97F0BF8E53403CF13C320','RELEASED','2017-11-27 22:08:42',0);
+('2017_04_19_00_characters.sql','CE06FA9005C8A8EE4BDD925520278A5D83E87485','ARCHIVED','2017-04-19 00:07:40',25),
+('2017_10_29_00_characters.sql','8CFC473E7E87E58C317A72016BF69E9050D3BC83','ARCHIVED','2017-04-19 00:07:40',25),
+('2017_11_27_00_characters.sql','6FF1F84B8985ADFC7FF97F0BF8E53403CF13C320','ARCHIVED','2017-11-27 22:08:42',0),
+('2018_01_13_00_characters.sql','E3C0DA9995BA71ED5A267294470CD03DC51862DD','ARCHIVED','2018-01-13 00:00:00',0),
+('2018_02_19_00_characters.sql','FE5C5F9B88F0791549DDE680942493781E2269E6','ARCHIVED','2018-02-18 19:49:38',0),
+('2018_04_24_00_characters.sql','77264AB7BEF421C0A4BB81EEAFD0D8C1CBCA840F','ARCHIVED','2018-04-20 09:38:10',0),
+('2018_07_09_00_characters.sql','6F3EA22DD5E4CD9F9C60C4332B147E3DBF2E8A44','ARCHIVED','2018-07-09 18:19:18',0),
+('2018_11_09_00_characters.sql','50429D68E6EBD1149CDA14A9EA642BC06A1FAE3D','ARCHIVED','2018-11-09 20:49:47',0);
 /*!40000 ALTER TABLE `updates` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -2782,4 +2794,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2017-04-19  1:08:18
+-- Dump completed on 2018-02-18 19:49:38

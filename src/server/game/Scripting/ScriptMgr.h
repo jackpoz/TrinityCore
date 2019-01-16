@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
+ * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -416,9 +416,6 @@ class TC_GAME_API CreatureScript : public UnitScript
         CreatureScript(char const* name);
 
     public:
-
-        // Called when the creature tries to spawn. Return false to block spawn and re-evaluate on next tick.
-        virtual bool CanSpawn(ObjectGuid::LowType /*spawnId*/, uint32 /*entry*/, CreatureTemplate const* /*baseTemplate*/, CreatureTemplate const* /*actTemplate*/, CreatureData const* /*cData*/, Map const* /*map*/) const { return true; }
 
         // Called when a CreatureAI object is needed for the creature.
         virtual CreatureAI* GetAI(Creature* /*creature*/) const = 0;
@@ -920,7 +917,6 @@ class TC_GAME_API ScriptMgr
 
     public: /* CreatureScript */
 
-        bool CanSpawn(ObjectGuid::LowType spawnId, uint32 entry, CreatureData const* cData, Map const* map);
         CreatureAI* GetCreatureAI(Creature* creature);
 
     public: /* GameObjectScript */

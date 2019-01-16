@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
+ * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
  * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -153,6 +153,7 @@ public:
             {
                 Madrigosa->Respawn();
                 Madrigosa->setActive(true);
+                Madrigosa->SetFarVisible(true);
                 IsIntro = true;
                 Madrigosa->SetMaxHealth(me->GetMaxHealth());
                 Madrigosa->SetHealth(me->GetMaxHealth());
@@ -234,7 +235,7 @@ public:
                     ++IntroPhase;
                     break;
                 case 7:
-                    me->Kill(Madrigosa);
+                    Unit::Kill(me, Madrigosa);
                     Madrigosa->AI()->Talk(YELL_MADR_DEATH);
                     me->SetFullHealth();
                     me->AttackStop();

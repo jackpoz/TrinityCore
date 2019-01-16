@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
+ * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -190,8 +190,8 @@ Position const ToCCommonLoc[] =
     { 550.955933f, 195.338888f, 395.14000f, 0.0f },     //  4 - Left
     { 563.833008f, 195.244995f, 394.585561f, 0.0f }, //  5 - Center
     { 573.500000f, 180.500000f, 395.14f, 0.0f },               //  6 Move 0 Right
-    { 553.5f, 180.5f, 395.14f, 0 },               //  7 Move 0 Left
-    { 573.0f, 170.0f, 395.14f, 0 },               //  8 Move 1 Right
+    { 553.5f, 180.5f, 400.5521f, 0 },               //  7 Move 0 Left
+    { 573.0f, 170.0f, 400.5521f, 0 },               //  8 Move 1 Right
     { 549.5139f, 170.1389f, 394.7965f, 5.009095f }, //  9 Move 1 Left
     { 563.8f, 216.1f, 395.1f, 0 },                // 10 Behind the door
 
@@ -390,7 +390,11 @@ struct npc_tirion_toc : public ScriptedAI
         else if (_instance->GetBossState(DATA_NORTHREND_BEASTS) != DONE)
             me->SummonCreature(NPC_BARRETT_BEASTS, BarretSpawnPosition);
         else if (_instance->GetBossState(DATA_JARAXXUS) != DONE)
+        {
             me->SummonCreature(NPC_BARRETT_JARAXXUS, BarretSpawnPosition);
+            if (_instance->GetBossState(DATA_JARAXXUS) == FAIL)
+                DoAction(ACTION_SUMMON_JARAXXUS);
+        }
         else if (_instance->GetBossState(DATA_FACTION_CRUSADERS) != DONE)
             me->SummonCreature(NPC_BARRETT_FACTION, BarretSpawnPosition);
         else if (_instance->GetBossState(DATA_TWIN_VALKIRIES) != DONE)
@@ -668,7 +672,7 @@ struct npc_fizzlebang_toc : public ScriptedAI
     {
         me->SetReactState(REACT_PASSIVE);
         _events.Reset();
-        _events.ScheduleEvent(EVENT_START_MOVE, Seconds(1));
+        _events.ScheduleEvent(EVENT_START_MOVE, 1s);
     }
 
     void MovementInform(uint32 type, uint32 pointId) override

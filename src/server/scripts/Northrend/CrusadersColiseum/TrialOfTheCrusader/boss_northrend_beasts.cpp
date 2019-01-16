@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
+ * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -358,7 +358,7 @@ struct boss_gormok : public boss_northrend_beastsAI
                 // Npc that should keep raid in combat while boss change
                 if (Creature* combatStalker = me->SummonCreature(NPC_BEASTS_COMBAT_STALKER, CombatStalkerPosition))
                 {
-                    combatStalker->SetInCombatWithZone();
+                    DoZoneInCombat(combatStalker);
                     combatStalker->SetCombatPulseDelay(5);
                 }
                 DoZoneInCombat();
@@ -878,7 +878,7 @@ struct boss_dreadscale : public boss_jormungarAI
     void MovementInform(uint32 type, uint32 pointId) override
     {
         if (type == SPLINE_CHAIN_MOTION_TYPE && pointId == POINT_INITIAL_MOVEMENT)
-            events.ScheduleEvent(EVENT_ENGAGE, Seconds(3));
+            events.ScheduleEvent(EVENT_ENGAGE, 3s);
     }
 };
 
@@ -900,7 +900,7 @@ struct boss_acidmaw : public boss_jormungarAI
         wasMobile = false;
         me->SetControlled(true, UNIT_STATE_ROOT);
         DoCastSelf(SPELL_GROUND_VISUAL_1, true);
-        events.ScheduleEvent(EVENT_ENGAGE, Seconds(3));
+        events.ScheduleEvent(EVENT_ENGAGE, 3s);
     }
 };
 
@@ -1079,7 +1079,7 @@ class spell_gormok_ride_player : public AuraScript
             return;
 
         if (Unit *caster = GetCaster())
-            if (caster->IsAIEnabled)
+            if (caster->IsAIEnabled())
                 caster->GetAI()->SetGUID(target->GetGUID(), DATA_NEW_TARGET);
     }
 
@@ -1198,7 +1198,7 @@ class spell_jormungars_slime_pool : public AuraScript
 
         int32 const radius = static_cast<int32>(((aurEff->GetTickNumber() / 60.f) * 0.9f + 0.1f) * 10000.f * 2.f / 3.f);
         CastSpellExtraArgs args(aurEff);
-        args.SpellValueOverrides.AddMod(SPELLVALUE_RADIUS_MOD, radius);
+        args.AddSpellMod(SPELLVALUE_RADIUS_MOD, radius);
         GetTarget()->CastSpell(nullptr, GetSpellInfo()->Effects[aurEff->GetEffIndex()].TriggerSpell, args);
     }
 
@@ -1300,7 +1300,7 @@ class spell_icehowl_trample : public SpellScript
     void CheckTargets(std::list<WorldObject*>& targets)
     {
         Creature* caster = GetCaster()->ToCreature();
-        if (!caster || !caster->IsAIEnabled)
+        if (!caster || !caster->IsAIEnabled())
             return;
 
         if (targets.empty())

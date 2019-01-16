@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
+ * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
  * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -136,7 +136,7 @@ public:
                     {
                         if (Creature* RWORG = ObjectAccessor::GetCreature(*me, _RavenousworgGUID))
                         {
-                            RWORG->Kill(Mrfloppy);
+                            Unit::Kill(RWORG, Mrfloppy);
                             Mrfloppy->ExitVehicle();
                             RWORG->SetFaction(FACTION_MONSTER);
                             RWORG->GetMotionMaster()->MovePoint(0, RWORG->GetPositionX()+10, RWORG->GetPositionY()+80, RWORG->GetPositionZ());
@@ -501,7 +501,7 @@ public:
                 && caster->ToPlayer()->GetQuestStatus(QUEST_OVERWHELMED) == QUEST_STATUS_INCOMPLETE)
             {
                 DoCast(caster, SPELL_KILL_CREDIT);
-                Talk(SAY_RANDOM);
+                Talk(SAY_RANDOM, caster);
                 if (me->IsStandState())
                     me->GetMotionMaster()->MovePoint(1, me->GetPositionX()+7, me->GetPositionY()+7, me->GetPositionZ());
                 else
@@ -563,7 +563,7 @@ public:
 
     void JustEngagedWith(Unit* /*who*/) override
     {
-        _events.ScheduleEvent(EVENT_CHOP, Seconds(3), Seconds(6));
+        _events.ScheduleEvent(EVENT_CHOP, 3s, 6s);
     }
 
         void Reset() override
@@ -900,7 +900,7 @@ public:
         {
             _finished = false;
             me->SetVisible(true);
-            me->GetMotionMaster()->Clear(true);
+            me->GetMotionMaster()->Clear();
         }
 
         void DoAction(int32 /*action*/) override

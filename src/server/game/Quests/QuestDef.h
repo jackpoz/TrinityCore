@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
+ * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -181,6 +181,16 @@ struct QuestLocale
     std::vector<std::string> AreaDescription;
     std::vector<std::string> CompletedText;
     std::vector<std::vector<std::string>> ObjectiveText;
+};
+
+struct QuestRequestItemsLocale
+{
+    std::vector<std::string> CompletionText;
+};
+
+struct QuestOfferRewardLocale
+{
+    std::vector<std::string> RewardText;
 };
 
 // This Quest class provides a convenient way to access a few pretotaled (cached) quest details,

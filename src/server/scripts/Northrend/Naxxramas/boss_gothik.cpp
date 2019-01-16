@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
+ * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -533,7 +533,7 @@ class boss_gothik : public CreatureScript
                             break;
                         case EVENT_RESUME_ATTACK:
                             me->SetReactState(REACT_AGGRESSIVE);
-                            events.ScheduleEvent(EVENT_BOLT, Seconds(0), 0, PHASE_TWO);
+                            events.ScheduleEvent(EVENT_BOLT, 0s, 0, PHASE_TWO);
                             // return to the start of this method so victim side etc is re-evaluated
                             return UpdateAI(0u); // tail recursion for efficiency
                         case EVENT_BOLT:
@@ -584,7 +584,7 @@ struct npc_gothik_minion_baseAI : public ScriptedAI
 
         void DamageTaken(Unit* attacker, uint32 &damage) override
         { // do not allow minions to take damage before the gate is opened
-            if (!_gateIsOpen && !isOnSameSide(attacker))
+            if (!_gateIsOpen && (!attacker || !isOnSameSide(attacker)))
                 damage = 0;
         }
 

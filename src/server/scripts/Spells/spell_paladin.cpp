@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
+ * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -22,6 +22,7 @@
  */
 
 #include "ScriptMgr.h"
+#include "Containers.h"
 #include "GameTime.h"
 #include "Group.h"
 #include "Player.h"
@@ -189,7 +190,7 @@ class spell_pal_ardent_defender : public SpellScriptLoader
                     float defenseFactor = std::min(1.0f, defenseSkillValue / reqDefForMaxHeal);
 
                     CastSpellExtraArgs args(aurEff);
-                    args.SpellValueOverrides.AddBP0(victim->CountPctFromMaxHealth(lroundf(_healPct * defenseFactor)));
+                    args.AddSpellBP0(victim->CountPctFromMaxHealth(lroundf(_healPct * defenseFactor)));
                     victim->CastSpell(victim, PAL_SPELL_ARDENT_DEFENDER_HEAL, args);
                     victim->GetSpellHistory()->AddCooldown(PAL_SPELL_ARDENT_DEFENDER_HEAL, 0, std::chrono::minutes(2));
                 }
@@ -301,19 +302,27 @@ class spell_pal_avenging_wrath : public SpellScriptLoader
                 return ValidateSpellInfo(
                 {
                     SPELL_PALADIN_SANCTIFIED_WRATH,
-                    SPELL_PALADIN_SANCTIFIED_WRATH_TALENT_R1
+                    SPELL_PALADIN_SANCTIFIED_WRATH_TALENT_R1,
+                    SPELL_PALADIN_AVENGING_WRATH_MARKER,
+                    SPELL_PALADIN_IMMUNE_SHIELD_MARKER
                 });
             }
 
-            void HandleApply(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
+            void HandleApply(AuraEffect const* aurEff, AuraEffectHandleModes /*mode*/)
             {
                 Unit* target = GetTarget();
                 if (AuraEffect const* aurEff = target->GetAuraEffectOfRankedSpell(SPELL_PALADIN_SANCTIFIED_WRATH_TALENT_R1, EFFECT_2))
                 {
                     CastSpellExtraArgs args(aurEff);
-                    args.SpellValueOverrides.AddBP0(aurEff->GetAmount());
+                    args.AddSpellMod(SPELLVALUE_BASE_POINT0, aurEff->GetAmount())
+                        .AddSpellMod(SPELLVALUE_BASE_POINT1, aurEff->GetAmount());
                     target->CastSpell(target, SPELL_PALADIN_SANCTIFIED_WRATH, args);
                 }
+
+                target->CastSpell(nullptr, SPELL_PALADIN_AVENGING_WRATH_MARKER, aurEff);
+
+                // Blizz seems to just apply aura without bothering to cast
+                target->AddAura(SPELL_PALADIN_IMMUNE_SHIELD_MARKER, target);
             }
 
             void HandleRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
@@ -323,7 +332,7 @@ class spell_pal_avenging_wrath : public SpellScriptLoader
 
             void Register() override
             {
-                OnEffectApply += AuraEffectApplyFn(spell_pal_avenging_wrath_AuraScript::HandleApply, EFFECT_0, SPELL_AURA_MOD_DAMAGE_PERCENT_DONE, AURA_EFFECT_HANDLE_REAL);
+                AfterEffectApply += AuraEffectApplyFn(spell_pal_avenging_wrath_AuraScript::HandleApply, EFFECT_0, SPELL_AURA_MOD_DAMAGE_PERCENT_DONE, AURA_EFFECT_HANDLE_REAL_OR_REAPPLY_MASK);
                 AfterEffectRemove += AuraEffectRemoveFn(spell_pal_avenging_wrath_AuraScript::HandleRemove, EFFECT_0, SPELL_AURA_MOD_DAMAGE_PERCENT_DONE, AURA_EFFECT_HANDLE_REAL);
             }
         };
@@ -453,7 +462,7 @@ class spell_pal_blessing_of_sanctuary : public SpellScriptLoader
 
             bool CheckProc(ProcEventInfo& /*eventInfo*/)
             {
-                return GetTarget()->getPowerType() == POWER_MANA;
+                return GetTarget()->GetPowerType() == POWER_MANA;
             }
 
             void HandleProc(AuraEffect const* aurEff, ProcEventInfo& /*eventInfo*/)
@@ -587,7 +596,7 @@ class spell_pal_divine_storm : public SpellScriptLoader
             {
                 Unit* caster = GetCaster();
                 CastSpellExtraArgs args(TRIGGERED_FULL_MASK);
-                args.SpellValueOverrides.AddBP0(CalculatePct(GetHitDamage(), _healPct));
+                args.AddSpellBP0(CalculatePct(GetHitDamage(), _healPct));
                 caster->CastSpell(caster, SPELL_PALADIN_DIVINE_STORM_DUMMY, args);
             }
 
@@ -630,7 +639,7 @@ class spell_pal_divine_storm_dummy : public SpellScriptLoader
                     return;
 
                 CastSpellExtraArgs args(TRIGGERED_FULL_MASK);
-                args.SpellValueOverrides.AddBP0(GetEffectValue() / _targetCount);
+                args.AddSpellBP0(GetEffectValue() / _targetCount);
                 GetCaster()->CastSpell(GetHitUnit(), SPELL_PALADIN_DIVINE_STORM_HEAL, args);
             }
 
@@ -710,7 +719,7 @@ class spell_pal_eye_for_an_eye : public SpellScriptLoader
                 // return damage % to attacker but < 50% own total health
                 int32 damage = std::min(CalculatePct(static_cast<int32>(damageInfo->GetDamage()), aurEff->GetAmount()), static_cast<int32>(GetTarget()->GetMaxHealth()) / 2);
                 CastSpellExtraArgs args(aurEff);
-                args.SpellValueOverrides.AddBP0(damage);
+                args.AddSpellBP0(damage);
                 GetTarget()->CastSpell(eventInfo.GetProcTarget(), SPELL_PALADIN_EYE_FOR_AN_EYE_DAMAGE, args);
             }
 
@@ -753,7 +762,7 @@ class spell_pal_glyph_of_divinity : public SpellScriptLoader
                     return;
 
                 CastSpellExtraArgs args(aurEff);
-                args.SpellValueOverrides.AddMod(SPELLVALUE_BASE_POINT1, spellInfo->Effects[EFFECT_1].CalcValue() * 2);
+                args.AddSpellMod(SPELLVALUE_BASE_POINT1, spellInfo->Effects[EFFECT_1].CalcValue() * 2);
                 caster->CastSpell(nullptr, SPELL_PALADIN_GLYPH_OF_DIVINITY_PROC, args);
             }
 
@@ -825,7 +834,7 @@ class spell_pal_glyph_of_holy_light_dummy : public SpellScriptLoader
                     return;
 
                 CastSpellExtraArgs args(aurEff);
-                args.SpellValueOverrides.AddBP0(CalculatePct(healInfo->GetHeal(), aurEff->GetAmount()));
+                args.AddSpellBP0(CalculatePct(healInfo->GetHeal(), aurEff->GetAmount()));
                 eventInfo.GetActor()->CastSpell(eventInfo.GetProcTarget(), SPELL_PALADIN_GLYPH_OF_HOLY_LIGHT_HEAL, args);
             }
 
@@ -1089,7 +1098,7 @@ public:
                     Unit* target = eventInfo.GetActor(); // Paladin is the target of the energize
                     uint32 bp = CalculatePct(originalSpell->CalcPowerCost(target, originalSpell->GetSchoolMask()), aurEff->GetSpellInfo()->Effects[EFFECT_1].CalcValue());
                     CastSpellExtraArgs args(aurEff);
-                    args.SpellValueOverrides.AddBP0(bp);
+                    args.AddSpellBP0(bp);
                     target->CastSpell(target, SPELL_PALADIN_ILLUMINATION_ENERGIZE, args);
                 }
             }
@@ -1104,6 +1113,57 @@ public:
     AuraScript* GetAuraScript() const override
     {
         return new spell_pal_illumination_AuraScript();
+    }
+};
+
+//   498 - Divine Protection
+//   642 - Divine Shield
+// -1022 - Hand of Protection
+class spell_pal_immunities : public SpellScript
+{
+    PrepareSpellScript(spell_pal_immunities);
+
+    bool Validate(SpellInfo const* /*spellInfo*/) override
+    {
+        return ValidateSpellInfo(
+            {
+                SPELL_PALADIN_FORBEARANCE,
+                SPELL_PALADIN_AVENGING_WRATH_MARKER,
+                SPELL_PALADIN_IMMUNE_SHIELD_MARKER
+            });
+    }
+
+    SpellCastResult CheckCast()
+    {
+        Unit* caster = GetCaster();
+
+        // for HoP
+        Unit* target = GetExplTargetUnit();
+        if (!target)
+            target = caster;
+
+        // "Cannot be used within $61987d. of using Avenging Wrath."
+        if (target->HasAura(SPELL_PALADIN_FORBEARANCE) || target->HasAura(SPELL_PALADIN_AVENGING_WRATH_MARKER))
+            return SPELL_FAILED_TARGET_AURASTATE;
+
+        return SPELL_CAST_OK;
+    }
+
+    void TriggerDebuffs()
+    {
+        if (Unit* target = GetHitUnit())
+        {
+            // Blizz seems to just apply aura without bothering to cast
+            GetCaster()->AddAura(SPELL_PALADIN_FORBEARANCE, target);
+            GetCaster()->AddAura(SPELL_PALADIN_AVENGING_WRATH_MARKER, target);
+            GetCaster()->AddAura(SPELL_PALADIN_IMMUNE_SHIELD_MARKER, target);
+        }
+    }
+
+    void Register() override
+    {
+        OnCheckCast += SpellCheckCastFn(spell_pal_immunities::CheckCast);
+        AfterHit += SpellHitFn(spell_pal_immunities::TriggerDebuffs);
     }
 };
 
@@ -1171,48 +1231,6 @@ class spell_pal_improved_aura : public SpellScriptLoader
 
     private:
         uint32 _spellId;
-};
-
-// 63510 - Improved Concentration Aura (Area Aura)
-// 63514 - Improved Devotion Aura (Area Aura)
-// 63531 - Sanctified Retribution (Area Aura)
-class spell_pal_improved_aura_effect : public SpellScriptLoader
-{
-    public:
-        spell_pal_improved_aura_effect(char const* name) : SpellScriptLoader(name) { }
-
-        class spell_pal_improved_aura_effect_AuraScript : public AuraScript
-        {
-            PrepareAuraScript(spell_pal_improved_aura_effect_AuraScript);
-
-            bool CheckAreaTarget(Unit* target)
-            {
-                Unit::AuraApplicationMap& appliedAuras = target->GetAppliedAuras();
-                for (Unit::AuraApplicationMap::iterator itr = appliedAuras.begin(); itr != appliedAuras.end(); ++itr)
-                {
-                    Aura const* aura = itr->second->GetBase();
-                    if (aura->GetSpellInfo()->GetSpellSpecific() == SPELL_SPECIFIC_AURA && aura->GetCasterGUID() == GetCasterGUID())
-                    {
-                        // Not allow for Retribution Aura (prevent stacking) - Retribution Aura Overflow and Retribution Aura has same spell effects
-                        if (GetSpellInfo()->Id == SPELL_PALADIN_SANCTIFIED_RETRIBUTION_AURA && aura->GetSpellInfo()->SpellIconID == PALADIN_ICON_ID_RETRIBUTION_AURA)
-                            return false;
-                        return true;
-                    }
-                }
-
-                return false;
-            }
-
-            void Register() override
-            {
-                DoCheckAreaTarget += AuraCheckAreaTargetFn(spell_pal_improved_aura_effect_AuraScript::CheckAreaTarget);
-            }
-        };
-
-        AuraScript* GetAuraScript() const override
-        {
-            return new spell_pal_improved_aura_effect_AuraScript();
-        }
 };
 
 // -20234 - Improved Lay on Hands
@@ -1296,7 +1314,7 @@ class spell_pal_infusion_of_light : public SpellScriptLoader
                                 AddPct(bp0, bonus->GetAmount());
 
                             CastSpellExtraArgs args(aurEff);
-                            args.SpellValueOverrides.AddBP0(bp0);
+                            args.AddSpellBP0(bp0);
                             target->CastSpell(procTarget, SPELL_PALADIN_FLASH_OF_LIGHT_PROC, args);
                         }
                     }
@@ -1526,7 +1544,7 @@ class spell_pal_judgement_of_light_heal : public SpellScriptLoader
 
                 CastSpellExtraArgs args(aurEff);
                 args.OriginalCaster = GetCasterGUID();
-                args.SpellValueOverrides.AddBP0(caster->CountPctFromMaxHealth(aurEff->GetAmount()));
+                args.AddSpellBP0(caster->CountPctFromMaxHealth(aurEff->GetAmount()));
                 caster->CastSpell(nullptr, SPELL_PALADIN_JUDGEMENT_OF_LIGHT_HEAL, args);
             }
 
@@ -1559,7 +1577,7 @@ class spell_pal_judgement_of_wisdom_mana : public SpellScriptLoader
 
             bool CheckProc(ProcEventInfo& eventInfo)
             {
-                return eventInfo.GetProcTarget()->getPowerType() == POWER_MANA;
+                return eventInfo.GetProcTarget()->GetPowerType() == POWER_MANA;
             }
 
             void HandleProc(AuraEffect const* aurEff, ProcEventInfo& eventInfo)
@@ -1572,7 +1590,7 @@ class spell_pal_judgement_of_wisdom_mana : public SpellScriptLoader
                 int32 const amount = CalculatePct(static_cast<int32>(caster->GetCreateMana()), spellInfo->Effects[EFFECT_0].CalcValue());
                 CastSpellExtraArgs args(aurEff);
                 args.OriginalCaster = GetCasterGUID();
-                args.SpellValueOverrides.AddBP0(amount);
+                args.AddSpellBP0(amount);
                 caster->CastSpell(nullptr, spellInfo->Id, args);
             }
 
@@ -1769,7 +1787,7 @@ class spell_pal_light_s_beacon : public SpellScriptLoader
                 ///        but that will break animation on clientside
                 ///        caster in spell packets must be the healing unit
                 CastSpellExtraArgs args(aurEff);
-                args.SpellValueOverrides.AddBP0(heal);
+                args.AddSpellBP0(heal);
                 eventInfo.GetActor()->CastSpell(beaconTarget, healSpellId, args);
             }
 
@@ -1787,65 +1805,51 @@ class spell_pal_light_s_beacon : public SpellScriptLoader
 };
 
 // 31789 - Righteous Defense
-class spell_pal_righteous_defense : public SpellScriptLoader
+class spell_pal_righteous_defense : public SpellScript
 {
-    public:
-        spell_pal_righteous_defense() : SpellScriptLoader("spell_pal_righteous_defense") { }
+    PrepareSpellScript(spell_pal_righteous_defense);
 
-        class spell_pal_righteous_defense_SpellScript : public SpellScript
+    bool Validate(SpellInfo const* /*spellInfo*/) override
+    {
+        return ValidateSpellInfo({ SPELL_PALADIN_RIGHTEOUS_DEFENSE_TAUNT });
+    }
+
+    SpellCastResult CheckCast()
+    {
+        Unit* caster = GetCaster();
+        if (caster->GetTypeId() != TYPEID_PLAYER)
+            return SPELL_FAILED_DONT_REPORT;
+
+        if (Unit* target = GetExplTargetUnit())
         {
-            PrepareSpellScript(spell_pal_righteous_defense_SpellScript);
-
-            bool Validate(SpellInfo const* /*spellInfo*/) override
-            {
-                return ValidateSpellInfo({ SPELL_PALADIN_RIGHTEOUS_DEFENSE_TAUNT });
-            }
-
-            SpellCastResult CheckCast()
-            {
-                Unit* caster = GetCaster();
-                if (caster->GetTypeId() != TYPEID_PLAYER)
-                    return SPELL_FAILED_DONT_REPORT;
-
-                if (Unit* target = GetExplTargetUnit())
-                {
-                    if (!target->IsFriendlyTo(caster) || target->getAttackers().empty())
-                        return SPELL_FAILED_BAD_TARGETS;
-                }
-                else
-                    return SPELL_FAILED_BAD_TARGETS;
-
-                return SPELL_CAST_OK;
-            }
-
-            void HandleTriggerSpellLaunch(SpellEffIndex effIndex)
-            {
-                PreventHitDefaultEffect(effIndex);
-            }
-
-            void HandleTriggerSpellHit(SpellEffIndex effIndex)
-            {
-                PreventHitDefaultEffect(effIndex);
-                if (Unit* target = GetHitUnit())
-                    GetCaster()->CastSpell(target, SPELL_PALADIN_RIGHTEOUS_DEFENSE_TAUNT, true);
-            }
-
-            void Register() override
-            {
-                OnCheckCast += SpellCheckCastFn(spell_pal_righteous_defense_SpellScript::CheckCast);
-                //! WORKAROUND
-                //! target select will be executed in hitphase of effect 0
-                //! so we must handle trigger spell also in hit phase (default execution in launch phase)
-                //! see issue #3718
-                OnEffectLaunchTarget += SpellEffectFn(spell_pal_righteous_defense_SpellScript::HandleTriggerSpellLaunch, EFFECT_1, SPELL_EFFECT_TRIGGER_SPELL);
-                OnEffectHitTarget += SpellEffectFn(spell_pal_righteous_defense_SpellScript::HandleTriggerSpellHit, EFFECT_1, SPELL_EFFECT_TRIGGER_SPELL);
-            }
-        };
-
-        SpellScript* GetSpellScript() const override
-        {
-            return new spell_pal_righteous_defense_SpellScript();
+            if (!target->IsFriendlyTo(caster) || target == caster || target->getAttackers().empty())
+                return SPELL_FAILED_BAD_TARGETS;
         }
+        else
+            return SPELL_FAILED_BAD_TARGETS;
+
+        return SPELL_CAST_OK;
+    }
+
+    void HandleDummy(SpellEffIndex /*effIndex*/)
+    {
+        if (Unit* target = GetHitUnit())
+        {
+            auto const& attackers = target->getAttackers();
+
+            std::vector<Unit*> list(attackers.cbegin(), attackers.cend());
+            Trinity::Containers::RandomResize(list, 3);
+
+            for (Unit* attacker : list)
+                GetCaster()->CastSpell(attacker, SPELL_PALADIN_RIGHTEOUS_DEFENSE_TAUNT, TRIGGERED_FULL_MASK);
+        }
+    }
+
+    void Register() override
+    {
+        OnCheckCast += SpellCheckCastFn(spell_pal_righteous_defense::CheckCast);
+        OnEffectHitTarget += SpellEffectFn(spell_pal_righteous_defense::HandleDummy, EFFECT_0, SPELL_EFFECT_DUMMY);
+    }
 };
 
 // -53380 - Righteous Vengeance
@@ -1879,11 +1883,9 @@ class spell_pal_righteous_vengeance : public SpellScriptLoader
 
                 ASSERT(spellInfo->GetMaxTicks() > 0);
                 amount /= spellInfo->GetMaxTicks();
-                // Add remaining ticks to damage done
-                amount += target->GetRemainingPeriodicAmount(caster->GetGUID(), SPELL_PALADIN_RIGHTEOUS_VENGEANCE_DAMAGE, SPELL_AURA_PERIODIC_DAMAGE);
 
                 CastSpellExtraArgs args(aurEff);
-                args.SpellValueOverrides.AddBP0(amount);
+                args.AddSpellBP0(amount);
                 caster->CastSpell(target, SPELL_PALADIN_RIGHTEOUS_VENGEANCE_DAMAGE, args);
             }
 
@@ -1918,7 +1920,7 @@ class spell_pal_sacred_shield : public SpellScriptLoader
 
                     // Divine Guardian is only applied at the spell healing bonus because it was already applied to the base value in CalculateSpellDamage
                     bonus = caster->ApplyEffectModifiers(GetSpellInfo(), aurEff->GetEffIndex(), bonus);
-                    bonus *= caster->CalculateLevelPenalty(GetSpellInfo());
+                    bonus *= caster->CalculateSpellpowerCoefficientLevelPenalty(GetSpellInfo());
 
                     amount += int32(bonus);
 
@@ -2021,13 +2023,21 @@ class spell_pal_seal_of_righteousness : public SpellScriptLoader
             {
                 PreventDefaultAction();
 
+                Unit* victim = eventInfo.GetProcTarget();
+
                 float ap = GetTarget()->GetTotalAttackPowerValue(BASE_ATTACK);
-                int32 holy = GetTarget()->SpellBaseDamageBonusDone(SPELL_SCHOOL_MASK_HOLY);
-                holy += eventInfo.GetProcTarget()->SpellBaseDamageBonusTaken(SPELL_SCHOOL_MASK_HOLY);
-                int32 bp = int32((ap * 0.022f + 0.044f * holy) * GetTarget()->GetAttackTime(BASE_ATTACK) / 1000);
+                ap += victim->GetTotalAuraModifier(SPELL_AURA_MELEE_ATTACK_POWER_ATTACKER_BONUS);
+
+                int32 sph = GetTarget()->SpellBaseDamageBonusDone(SPELL_SCHOOL_MASK_HOLY);
+                sph += victim->GetTotalAuraModifierByMiscMask(SPELL_AURA_MOD_DAMAGE_TAKEN, SPELL_SCHOOL_MASK_HOLY);
+
+                float mws = GetTarget()->GetAttackTime(BASE_ATTACK);
+                mws /= 1000.0f;
+
+                int32 bp = int32(mws * (0.022f * ap + 0.044f * sph));
                 CastSpellExtraArgs args(aurEff);
-                args.SpellValueOverrides.AddBP0(bp);
-                GetTarget()->CastSpell(eventInfo.GetProcTarget(), SPELL_PALADIN_SEAL_OF_RIGHTEOUSNESS, args);
+                args.AddSpellBP0(bp);
+                GetTarget()->CastSpell(victim, SPELL_PALADIN_SEAL_OF_RIGHTEOUSNESS, args);
             }
 
             void Register() override
@@ -2122,7 +2132,7 @@ class spell_pal_seal_of_vengeance : public SpellScriptLoader
                 amount /= maxStacks;
 
                 CastSpellExtraArgs args(aurEff);
-                args.SpellValueOverrides.AddBP0(amount);
+                args.AddSpellBP0(amount);
                 caster->CastSpell(target, DamageSpell, args);
             }
 
@@ -2206,7 +2216,7 @@ class spell_pal_spiritual_attunement : public SpellScriptLoader
                 int32 amount = CalculatePct(static_cast<int32>(healInfo->GetEffectiveHeal()), aurEff->GetAmount());
 
                 CastSpellExtraArgs args(aurEff);
-                args.SpellValueOverrides.AddBP0(amount);
+                args.AddSpellBP0(amount);
                 eventInfo.GetActionTarget()->CastSpell(nullptr, SPELL_PALADIN_SPIRITUAL_ATTUNEMENT_MANA, args);
             }
 
@@ -2254,11 +2264,9 @@ class spell_pal_sheath_of_light : public SpellScriptLoader
 
                 ASSERT(spellInfo->GetMaxTicks() > 0);
                 amount /= spellInfo->GetMaxTicks();
-                // Add remaining ticks to healing done
-                amount += target->GetRemainingPeriodicAmount(caster->GetGUID(), SPELL_PALADIN_SHEATH_OF_LIGHT_HEAL, SPELL_AURA_PERIODIC_HEAL);
 
                 CastSpellExtraArgs args(aurEff);
-                args.SpellValueOverrides.AddBP0(amount);
+                args.AddSpellBP0(amount);
                 caster->CastSpell(target, SPELL_PALADIN_SHEATH_OF_LIGHT_HEAL, args);
             }
 
@@ -2372,11 +2380,9 @@ class spell_pal_t8_2p_bonus : public SpellScriptLoader
 
                 ASSERT(spellInfo->GetMaxTicks() > 0);
                 amount /= spellInfo->GetMaxTicks();
-                // Add remaining ticks to healing done
-                amount += target->GetRemainingPeriodicAmount(caster->GetGUID(), SPELL_PALADIN_HOLY_MENDING, SPELL_AURA_PERIODIC_HEAL);
 
                 CastSpellExtraArgs args(aurEff);
-                args.SpellValueOverrides.AddBP0(amount);
+                args.AddSpellBP0(amount);
                 caster->CastSpell(target, SPELL_PALADIN_HOLY_MENDING, args);
             }
 
@@ -2416,13 +2422,11 @@ void AddSC_paladin_spell_scripts()
     new spell_pal_heart_of_the_crusader();
     new spell_pal_holy_shock();
     new spell_pal_illumination();
+    RegisterSpellScript(spell_pal_immunities);
     new spell_pal_improved_aura("spell_pal_improved_concentraction_aura", SPELL_PALADIN_IMPROVED_CONCENTRACTION_AURA);
     new spell_pal_improved_aura("spell_pal_improved_devotion_aura", SPELL_PALADIN_IMPROVED_DEVOTION_AURA);
     new spell_pal_improved_aura("spell_pal_sanctified_retribution", SPELL_PALADIN_SANCTIFIED_RETRIBUTION_AURA);
     new spell_pal_improved_aura("spell_pal_swift_retribution", SPELL_PALADIN_SANCTIFIED_RETRIBUTION_AURA);
-    new spell_pal_improved_aura_effect("spell_pal_improved_concentraction_aura_effect");
-    new spell_pal_improved_aura_effect("spell_pal_improved_devotion_aura_effect");
-    new spell_pal_improved_aura_effect("spell_pal_sanctified_retribution_effect");
     new spell_pal_improved_lay_of_hands();
     new spell_pal_infusion_of_light();
     new spell_pal_item_healing_discount();
@@ -2437,7 +2441,7 @@ void AddSC_paladin_spell_scripts()
     new spell_pal_judgements_of_the_wise();
     new spell_pal_lay_on_hands();
     new spell_pal_light_s_beacon();
-    new spell_pal_righteous_defense();
+    RegisterSpellScript(spell_pal_righteous_defense);
     new spell_pal_righteous_vengeance();
     new spell_pal_sacred_shield();
     new spell_pal_sacred_shield_dummy();

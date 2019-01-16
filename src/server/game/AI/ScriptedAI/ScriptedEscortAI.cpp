@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
+ * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
  * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -72,7 +72,7 @@ void EscortAI::JustDied(Unit* /*killer*/)
     }
 }
 
-void EscortAI::JustAppeared()
+void EscortAI::InitializeAI()
 {
     _escortState = STATE_ESCORT_NONE;
 
@@ -84,8 +84,6 @@ void EscortAI::JustAppeared()
 
     if (me->GetFaction() != me->GetCreatureTemplate()->faction)
         me->RestoreFaction();
-
-    Reset();
 }
 
 void EscortAI::ReturnToLastPoint()
@@ -156,13 +154,6 @@ void EscortAI::MovementInform(uint32 type, uint32 id)
     }
 }
 
-///@todo investigate whether if its necessary to handle anything on charm
-/*
-void EscortAI::OnCharmed(bool apply)
-{
-}
-*/
-
 void EscortAI::UpdateAI(uint32 diff)
 {
     // Waypoint Updating
@@ -209,7 +200,7 @@ void EscortAI::UpdateAI(uint32 diff)
                 else if (_resume)
                 {
                     _resume = false;
-                    if (MovementGenerator* movementGenerator = me->GetMotionMaster()->GetMotionSlot(MOTION_SLOT_IDLE))
+                    if (MovementGenerator* movementGenerator = me->GetMotionMaster()->GetCurrentMovementGenerator(MOTION_SLOT_DEFAULT))
                         movementGenerator->Resume(0);
                 }
             }
@@ -219,7 +210,7 @@ void EscortAI::UpdateAI(uint32 diff)
     }
 
     // Check if player or any member of his group is within range
-    if (_despawnAtFar && HasEscortState(STATE_ESCORT_ESCORTING) && _playerGUID && !me->GetVictim() && !HasEscortState(STATE_ESCORT_RETURNING))
+    if (_despawnAtFar && HasEscortState(STATE_ESCORT_ESCORTING) && _playerGUID && !me->IsEngaged() && !HasEscortState(STATE_ESCORT_RETURNING))
     {
         if (_playerCheckTimer <= diff)
         {
@@ -231,10 +222,13 @@ void EscortAI::UpdateAI(uint32 diff)
                 if (CreatureData const* creatureData = me->GetCreatureData())
                     isEscort = (sWorld->getBoolConfig(CONFIG_RESPAWN_DYNAMIC_ESCORTNPC) && (creatureData->spawnGroupData->flags & SPAWNGROUP_FLAG_ESCORTQUESTNPC));
 
-                if (_instantRespawn && !isEscort)
-                    me->DespawnOrUnsummon(0, Seconds(1));
-                else if (_instantRespawn && isEscort)
-                    me->GetMap()->RemoveRespawnTime(SPAWN_TYPE_CREATURE, me->GetSpawnId(), true);
+                if (_instantRespawn)
+                {
+                    if (!isEscort)
+                      me->DespawnOrUnsummon(0, 1s);
+                    else
+                      me->GetMap()->RemoveRespawnTime(SPAWN_TYPE_CREATURE, me->GetSpawnId(), true);
+                }
                 else
                     me->DespawnOrUnsummon();
 
@@ -309,6 +303,8 @@ void EscortAI::Start(bool isActiveAttacker /* = true*/, bool run /* = false */, 
         return;
     }
 
+    _running = run;
+    
     if (!_manualPath && resetWaypoints)
         FillPointMovementListForCreature();
 
@@ -320,7 +316,6 @@ void EscortAI::Start(bool isActiveAttacker /* = true*/, bool run /* = false */, 
 
     // set variables
     _activeAttacker = isActiveAttacker;
-    _running = run;
     _playerGUID = playerGUID;
     _escortQuest = quest;
     _instantRespawn = instantRespawn;
@@ -330,7 +325,7 @@ void EscortAI::Start(bool isActiveAttacker /* = true*/, bool run /* = false */, 
         TC_LOG_DEBUG("scripts", "EscortAI::Start: (script: %s, creature entry: %u) is set to return home after waypoint end and instant respawn at waypoint end. Creature will never despawn.", me->GetScriptName().c_str(), me->GetEntry());
 
     me->GetMotionMaster()->MoveIdle();
-    me->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+    me->GetMotionMaster()->Clear(MOTION_PRIORITY_NORMAL);
 
     // disable npcflags
     me->SetUInt32Value(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_NONE);
@@ -351,11 +346,13 @@ void EscortAI::Start(bool isActiveAttacker /* = true*/, bool run /* = false */, 
 
 void EscortAI::SetRun(bool on)
 {
-    if (on && !_running)
-        me->SetWalk(false);
-    else if (!on && _running)
-        me->SetWalk(true);
+    if (on == _running)
+        return;
 
+    for (auto& node : _path.nodes)
+        node.moveType = on ? WAYPOINT_MOVE_TYPE_RUN : WAYPOINT_MOVE_TYPE_WALK;
+
+    me->SetWalk(!on);
     _running = on;
 }
 
@@ -367,7 +364,7 @@ void EscortAI::SetEscortPaused(bool on)
     if (on)
     {
         AddEscortState(STATE_ESCORT_PAUSED);
-        if (MovementGenerator* movementGenerator = me->GetMotionMaster()->GetMotionSlot(MOTION_SLOT_IDLE))
+        if (MovementGenerator* movementGenerator = me->GetMotionMaster()->GetCurrentMovementGenerator(MOTION_SLOT_DEFAULT))
             movementGenerator->Pause(0);
     }
     else

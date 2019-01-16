@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
+ * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -445,6 +445,19 @@ struct GameObjectTemplate
         }
     }
 
+    bool IsIgnoringLOSChecks() const
+    {
+        switch (type)
+        {
+            case GAMEOBJECT_TYPE_BUTTON: return button.losOK == 0;
+            case GAMEOBJECT_TYPE_QUESTGIVER: return questgiver.losOK == 0;
+            case GAMEOBJECT_TYPE_CHEST: return chest.losOK == 0;
+            case GAMEOBJECT_TYPE_GOOBER: return goober.losOK == 0;
+            case GAMEOBJECT_TYPE_FLAGSTAND: return flagstand.losOK == 0;
+            default: return false;
+        }
+    }
+
     uint32 GetLockId() const
     {
         switch (type)
@@ -562,14 +575,18 @@ struct GameObjectTemplate
     WorldPacket BuildQueryData(LocaleConstant loc) const;
 };
 
-// From `gameobject_template_addon`
-struct GameObjectTemplateAddon
+// From `gameobject_template_addon`, `gameobject_overrides`
+struct GameObjectOverride
 {
-    uint32  entry;
-    uint32  faction;
-    uint32  flags;
-    uint32  mingold;
-    uint32  maxgold;
+    uint32 Faction;
+    uint32 Flags;
+};
+
+// From `gameobject_template_addon`
+struct GameObjectTemplateAddon : public GameObjectOverride
+{
+    uint32 Mingold;
+    uint32 Maxgold;
 };
 
 struct GameObjectLocale
@@ -586,6 +603,7 @@ struct TC_GAME_API QuaternionData
     QuaternionData(float X, float Y, float Z, float W) : x(X), y(Y), z(Z), w(W) { }
 
     bool isUnit() const;
+    void toEulerAnglesZYX(float& Z, float& Y, float& X) const;
     static QuaternionData fromEulerAnglesZYX(float Z, float Y, float X);
 };
 
