@@ -19526,11 +19526,36 @@ void Player::_SaveActions(SQLTransaction& trans)
     }
 }
 
+class AuraCharDbIndex
+{
+public:
+    AuraCharDbIndex() : AuraCharDbIndex(0, 0, 0, 0, 0)
+    {
+    }
+
+    AuraCharDbIndex(uint32 guid, uint64 casterGuid, uint64 itemGuid, uint32 spell, uint8 effectMask)
+    {
+        m_guid = guid;
+        m_casterGuid = casterGuid;
+        m_itemGuid = itemGuid;
+        m_spell = spell;
+        m_effectMask = effectMask;
+    }
+
+    uint32 m_guid;
+    uint64 m_casterGuid;
+    uint64 m_itemGuid;
+    uint32 m_spell;
+    uint8 m_effectMask;
+};
+
 void Player::_SaveAuras(SQLTransaction& trans)
 {
     PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_CHAR_AURA);
     stmt->setUInt32(0, GetGUID().GetCounter());
     trans->Append(stmt);
+
+    std::unordered_set<AuraCharDbIndex> aurasToSave;
 
     for (AuraMap::const_iterator itr = m_ownedAuras.begin(); itr != m_ownedAuras.end(); ++itr)
     {
@@ -19558,6 +19583,12 @@ void Player::_SaveAuras(SQLTransaction& trans)
                 baseDamage[i] = 0;
                 damage[i] = 0;
             }
+        }
+
+        if (!aurasToSave.emplace(GetGUID().GetCounter(), itr->second->GetCasterGUID().GetRawValue()).second, itr->second->GetCastItemGUID().GetRawValue(), itr->second->GetId(), effMask)
+        {
+            TC_LOG_ERROR("entities.player.duplicateaura", "Duplicate aura, guid: %u casterGuid: %", auraToSave.first->m_guid, auraToSave.first->m_casterGuid, auraToSave.first->m_itemGuid, auraToSave.first->m_spell, auraToSave.first->m_effectMask);
+            continue;
         }
 
         uint8 index = 0;
