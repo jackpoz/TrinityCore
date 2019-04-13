@@ -25,6 +25,10 @@ public:
     {
         return 0.f;
     }
+    std::string GetString()
+    {
+        return "";
+    }
 };
 #ifndef ASSERT
 #define ASSERT(x)
