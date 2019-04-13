@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2017 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -376,15 +376,6 @@ void WorldSession::HandleCastSpellOpcode(WorldPacket& recvPacket)
         return;
     }
 
-    // Client is resending autoshot cast opcode when other spell is cast during shoot rotation
-    // Skip it to prevent "interrupt" message
-    if (spellInfo->IsAutoRepeatRangedSpell() && caster->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL)
-        && caster->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL)->m_spellInfo == spellInfo)
-    {
-        recvPacket.rfinish();
-        return;
-    }
-
     // can't use our own spells when we're in possession of another unit,
     if (_player->isPossessing())
     {
@@ -397,19 +388,36 @@ void WorldSession::HandleCastSpellOpcode(WorldPacket& recvPacket)
     targets.Read(recvPacket, caster);
     HandleClientCastFlags(recvPacket, castFlags, targets);
 
-    // auto-selection buff level base at target level (in spellInfo)
-    if (targets.GetUnitTarget())
+    // Client is resending autoshot cast opcode when other spell is cast during shoot rotation
+    // Skip it to prevent "interrupt" message
+    // Also check targets! target may have changed and we need to interrupt current spell
+    if (spellInfo->IsAutoRepeatRangedSpell())
     {
-        SpellInfo const* actualSpellInfo = spellInfo->GetAuraRankForLevel(targets.GetUnitTarget()->getLevel());
-
-        // if rank not found then function return NULL but in explicit cast case original spell can be cast and later failed with appropriate error message
-        if (actualSpellInfo)
-            spellInfo = actualSpellInfo;
+        if (Spell* spell = caster->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL))
+        {
+            if (spell->m_spellInfo == spellInfo && spell->m_targets.GetUnitTargetGUID() == targets.GetUnitTargetGUID())
+            {
+                recvPacket.rfinish();
+                return;
+            }
+        }
     }
 
-    Spell* spell = new Spell(caster, spellInfo, TRIGGERED_NONE, ObjectGuid::Empty, false);
+    // auto-selection buff level base at target level (in spellInfo)
+    // TODO: is this even necessary? client already seems to send correct rank for "standard" buffs
+    if (spellInfo->IsPositive())
+        if (Unit* target = targets.GetUnitTarget())
+        {
+            SpellInfo const* actualSpellInfo = spellInfo->GetAuraRankForLevel(target->getLevel());
+
+            // if rank not found then function return NULL but in explicit cast case original spell can be cast and later failed with appropriate error message
+            if (actualSpellInfo)
+                spellInfo = actualSpellInfo;
+        }
+
+    Spell* spell = new Spell(caster, spellInfo, TRIGGERED_NONE);
     spell->m_cast_count = castCount;                       // set count of casts
-    spell->prepare(&targets);
+    spell->prepare(targets);
 }
 
 void WorldSession::HandleCancelCastOpcode(WorldPacket& recvPacket)
@@ -497,7 +505,7 @@ void WorldSession::HandlePetCancelAuraOpcode(WorldPacket& recvPacket)
         return;
     }
 
-    if (pet != GetPlayer()->GetGuardianPet() && pet != GetPlayer()->GetCharm())
+    if (pet != GetPlayer()->GetGuardianPet() && pet != GetPlayer()->GetCharmed())
     {
         TC_LOG_ERROR("network", "HandlePetCancelAura: %s is not a pet of player '%s'", guid.ToString().c_str(), GetPlayer()->GetName().c_str());
         return;
@@ -562,12 +570,9 @@ void WorldSession::HandleSelfResOpcode(WorldPacket & /*recvData*/)
     if (_player->HasAuraType(SPELL_AURA_PREVENT_RESURRECTION))
         return; // silent return, client should display error by itself and not send this opcode
 
-    if (_player->GetUInt32Value(PLAYER_SELF_RES_SPELL))
+    if (uint32 spellId = _player->GetUInt32Value(PLAYER_SELF_RES_SPELL))
     {
-        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(_player->GetUInt32Value(PLAYER_SELF_RES_SPELL));
-        if (spellInfo)
-            _player->CastSpell(_player, spellInfo, false, nullptr);
-
+        _player->CastSpell(_player, spellId);
         _player->SetUInt32Value(PLAYER_SELF_RES_SPELL, 0);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2017 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -158,7 +158,7 @@ struct boss_reliquary_of_souls : public BossAI
             _inCombat = true;
             DoZoneInCombat();
             me->SetByteValue(UNIT_FIELD_BYTES_1, UNIT_BYTES_1_OFFSET_STAND_STATE, UNIT_STAND_STATE_STAND);
-            events.ScheduleEvent(EVENT_SUBMERGE, Seconds(10));
+            events.ScheduleEvent(EVENT_SUBMERGE, 10s);
         }
     }
 
@@ -182,13 +182,13 @@ struct boss_reliquary_of_souls : public BossAI
                 me->RemoveAurasDueToSpell(SPELL_SUBMERGE_VISUAL);
                 events.SetPhase(PHASE_ESSENCE_OF_DESIRE);
                 HandleSpirits();
-                events.ScheduleEvent(EVENT_SUBMERGE, Seconds(40));
+                events.ScheduleEvent(EVENT_SUBMERGE, 40s);
                 break;
             case ACTION_ESSENCE_OF_DESIRE_DEAD:
                 me->RemoveAurasDueToSpell(SPELL_SUBMERGE_VISUAL);
                 events.SetPhase(PHASE_ESSENCE_OF_ANGER);
                 HandleSpirits();
-                events.ScheduleEvent(EVENT_SUBMERGE, Seconds(40));
+                events.ScheduleEvent(EVENT_SUBMERGE, 40s);
                 break;
             case ACTION_KILL_SELF:
                 me->KillSelf();
@@ -259,10 +259,10 @@ struct boss_reliquary_of_souls : public BossAI
         if (!UpdateVictim())
             return;
 
+        events.Update(diff);
+
         if (me->HasUnitState(UNIT_STATE_CASTING))
             return;
-
-        events.Update(diff);
 
         while (uint32 eventId = events.ExecuteEvent())
         {
@@ -270,7 +270,7 @@ struct boss_reliquary_of_souls : public BossAI
             {
                 case EVENT_SUBMERGE:
                     DoCastSelf(SPELL_SUBMERGE_VISUAL, true);
-                    events.ScheduleEvent(EVENT_SUMMON_ESSENCE, Seconds(3));
+                    events.ScheduleEvent(EVENT_SUMMON_ESSENCE, 3s);
                     break;
                 case EVENT_SUMMON_ESSENCE:
                 {
@@ -339,14 +339,14 @@ struct boss_essence_of_suffering : public BossAI
         }
     }
 
-    void EnterCombat(Unit* /*who*/) override
+    void JustEngagedWith(Unit* /*who*/) override
     {
         me->SetCombatPulseDelay(5);
         me->setActive(true);
         DoZoneInCombat();
 
-        events.ScheduleEvent(EVENT_SOUL_DRAIN, Seconds(20));
-        events.ScheduleEvent(EVENT_FRENZY, Seconds(45));
+        events.ScheduleEvent(EVENT_SOUL_DRAIN, 20s);
+        events.ScheduleEvent(EVENT_FRENZY, 45s);
         Talk(SUFF_SAY_AGRO);
     }
 
@@ -377,7 +377,7 @@ struct boss_essence_of_suffering : public BossAI
             switch (eventId)
             {
                 case EVENT_SOUL_DRAIN:
-                    me->CastCustomSpell(SPELL_SOUL_DRAIN, SPELLVALUE_MAX_TARGETS, 5, me);
+                    DoCastSelf(SPELL_SOUL_DRAIN, { SPELLVALUE_MAX_TARGETS, 5 });
                     events.Repeat(Seconds(30), Seconds(35));
                     break;
                 case EVENT_FRENZY:
@@ -413,11 +413,11 @@ struct boss_essence_of_desire : public BossAI
         _dead = false;
     }
 
-    void EnterCombat(Unit* /*who*/) override
+    void JustEngagedWith(Unit* /*who*/) override
     {
-        events.ScheduleEvent(EVENT_SPIRIT_SHOCK, Seconds(11));
-        events.ScheduleEvent(EVENT_RUNE_SHIELD, Seconds(16));
-        events.ScheduleEvent(EVENT_DEADEN, Seconds(31));
+        events.ScheduleEvent(EVENT_SPIRIT_SHOCK, 11s);
+        events.ScheduleEvent(EVENT_RUNE_SHIELD, 16s);
+        events.ScheduleEvent(EVENT_DEADEN, 31s);
 
         me->SetCombatPulseDelay(5);
         me->setActive(true);
@@ -525,13 +525,13 @@ struct boss_essence_of_anger : public BossAI
         DoCastSelf(SPELL_AURA_OF_ANGER);
     }
 
-    void EnterCombat(Unit* /*who*/) override
+    void JustEngagedWith(Unit* /*who*/) override
     {
         Talk(ANGER_SAY_FREED);
 
-        events.ScheduleEvent(EVENT_START_CHECK_TANKER, Seconds(5));
-        events.ScheduleEvent(EVENT_SOUL_SCREAM, Seconds(11));
-        events.ScheduleEvent(EVENT_SPITE, Seconds(20));
+        events.ScheduleEvent(EVENT_START_CHECK_TANKER, 5s);
+        events.ScheduleEvent(EVENT_SOUL_SCREAM, 11s);
+        events.ScheduleEvent(EVENT_SPITE, 20s);
         events.ScheduleEvent(EVENT_FREED_2, Seconds(1), Minutes(3));
 
         me->SetCombatPulseDelay(5);
@@ -581,14 +581,14 @@ struct boss_essence_of_anger : public BossAI
                     break;
                 case EVENT_SPITE:
                     Talk(ANGER_SAY_SPITE);
-                    me->CastCustomSpell(SPELL_SPITE, SPELLVALUE_MAX_TARGETS, 3, me);
+                    DoCastSelf(SPELL_SPITE, { SPELLVALUE_MAX_TARGETS, 3 });
                     events.Repeat(Seconds(20));
                     break;
                 case EVENT_START_CHECK_TANKER:
                     if (Unit* target = me->GetVictim())
                     {
                         _targetGUID = target->GetGUID();
-                        events.ScheduleEvent(EVENT_CHECK_TANKER, Seconds(1));
+                        events.ScheduleEvent(EVENT_CHECK_TANKER, 1s);
                     }
                     else
                         events.Repeat(Seconds(1));
@@ -632,7 +632,7 @@ struct npc_enslaved_soul : public ScriptedAI
         _scheduler.Schedule(Seconds(3), [this](TaskContext /*context*/)
         {
             me->SetReactState(REACT_AGGRESSIVE);
-            me->SetInCombatWithZone();
+            DoZoneInCombat();
         });
     }
 
@@ -680,8 +680,7 @@ class spell_reliquary_of_souls_aura_of_desire : public AuraScript
             return;
 
         Unit* caster = eventInfo.GetActor();
-        int32 bp = damageInfo->GetDamage() / 2;
-        caster->CastCustomSpell(SPELL_AURA_OF_DESIRE_DAMAGE, SPELLVALUE_BASE_POINT0, bp, caster, true, nullptr, aurEff);
+        caster->CastSpell(caster, SPELL_AURA_OF_DESIRE_DAMAGE, CastSpellExtraArgs(aurEff).AddSpellBP0(damageInfo->GetDamage() / 2));
     }
 
     void UpdateAmount(AuraEffect* /*aurEff*/)

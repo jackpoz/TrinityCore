@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2017 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -72,7 +72,7 @@ struct npc_wrathbone_flayer : public ScriptedAI
 
     void Reset() override
     {
-        _events.ScheduleEvent(EVENT_GET_CHANNELERS, 3000);
+        _events.ScheduleEvent(EVENT_GET_CHANNELERS, 3s);
         Initialize();
         _bloodmageList.clear();
         _deathshaperList.clear();
@@ -80,10 +80,10 @@ struct npc_wrathbone_flayer : public ScriptedAI
 
     void JustDied(Unit* /*killer*/) override { }
 
-    void EnterCombat(Unit* /*who*/) override
+    void JustEngagedWith(Unit* /*who*/) override
     {
-        _events.ScheduleEvent(EVENT_CLEAVE, 5000);
-        _events.ScheduleEvent(EVENT_IGNORED, 7000);
+        _events.ScheduleEvent(EVENT_CLEAVE, 5s);
+        _events.ScheduleEvent(EVENT_IGNORED, 7s);
         _enteredCombat = true;
     }
 
@@ -121,7 +121,7 @@ struct npc_wrathbone_flayer : public ScriptedAI
                                     (*itr)->Respawn();
                             }
 
-                        _events.ScheduleEvent(EVENT_SET_CHANNELERS, 3000);
+                        _events.ScheduleEvent(EVENT_SET_CHANNELERS, 3s);
 
                         break;
                     }
@@ -135,7 +135,7 @@ struct npc_wrathbone_flayer : public ScriptedAI
                             if (Creature* deathshaper = ObjectAccessor::GetCreature(*me, guid))
                                 deathshaper->CastSpell(nullptr, SPELL_SUMMON_CHANNEL);
 
-                        _events.ScheduleEvent(EVENT_SET_CHANNELERS, 12000);
+                        _events.ScheduleEvent(EVENT_SET_CHANNELERS, 12s);
 
                         break;
                     }
@@ -156,12 +156,12 @@ struct npc_wrathbone_flayer : public ScriptedAI
             {
                 case EVENT_CLEAVE:
                     DoCastVictim(SPELL_CLEAVE);
-                    _events.ScheduleEvent(EVENT_CLEAVE, urand(1000, 2000));
+                    _events.ScheduleEvent(EVENT_CLEAVE, 1s, 2s);
                     break;
                 case EVENT_IGNORED:
                     if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0))
                         DoCast(target, SPELL_IGNORED);
-                    _events.ScheduleEvent(EVENT_IGNORED, 10000);
+                    _events.ScheduleEvent(EVENT_IGNORED, 10s);
                     break;
                 default:
                     break;
@@ -201,7 +201,7 @@ struct npc_angered_soul_fragment : public ScriptedAI
         });
     }
 
-    void EnterCombat(Unit* /*who*/) override
+    void JustEngagedWith(Unit* /*who*/) override
     {
         me->RemoveAurasDueToSpell(SPELL_GREATER_INVISIBILITY);
 
@@ -264,7 +264,7 @@ class spell_illidari_nightlord_shadow_inferno : public AuraScript
     {
         PreventDefaultAction();
         int32 bp = aurEffect->GetTickNumber() * aurEffect->GetAmount();
-        GetUnitOwner()->CastCustomSpell(SPELL_SHADOW_INFERNO_DAMAGE, SPELLVALUE_BASE_POINT0, bp, GetUnitOwner(), true);
+        GetUnitOwner()->CastSpell(GetUnitOwner(), SPELL_SHADOW_INFERNO_DAMAGE, CastSpellExtraArgs(TRIGGERED_FULL_MASK).AddSpellBP0(bp));
     }
 
     void Register() override
