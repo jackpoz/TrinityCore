@@ -59,9 +59,7 @@ TC_COMMON_API int32 MoneyStringToMoney(std::string const& moneyString);
 
 TC_COMMON_API struct tm* localtime_r(time_t const* time, struct tm *result);
 TC_COMMON_API struct tm* gmtime_r(time_t const* time, struct tm* result);
-#ifndef timegm
-    #define timegm _mkgmtime
-#endif
+TC_COMMON_API time_t timegm(struct tm* tm);
 
 TC_COMMON_API std::string secsToTimeString(uint64 timeInSecs, bool shortText = false, bool hoursOnly = false);
 TC_COMMON_API uint32 TimeStringToSecs(std::string const& timestring);

@@ -80,6 +80,10 @@ struct tm* gmtime_r(time_t const* time, struct tm* result)
     gmtime_s(result, time);
     return result;
 }
+time_t timegm(struct tm* tm)
+{
+    return _mkgmtime(tm);
+}
 #endif
 
 std::string secsToTimeString(uint64 timeInSecs, bool shortText, bool hoursOnly)
