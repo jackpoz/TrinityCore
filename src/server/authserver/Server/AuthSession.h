@@ -103,6 +103,7 @@ private:
     std::string _localizationName;
     std::string _os;
     std::string _ipCountry;
+    int32 _timezone_bias;
     uint16 _build;
     uint8 _expversion;
 

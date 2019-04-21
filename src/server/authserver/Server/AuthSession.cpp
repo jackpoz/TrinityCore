@@ -159,7 +159,7 @@ void AccountInfo::LoadResult(Field* fields)
 }
 
 AuthSession::AuthSession(tcp::socket&& socket) : Socket(std::move(socket)),
-_status(STATUS_CHALLENGE), _build(0), _expversion(0)
+_status(STATUS_CHALLENGE), _timezone_bias(0), _build(0), _expversion(0)
 {
     N.SetHexStr("894B645E89E1535BBDAD5B8B290650530801B18EBFBF5E8FAB3C82872A3E9BB7");
     g.SetDword(7);
@@ -288,6 +288,8 @@ bool AuthSession::HandleLogonChallenge()
     std::string login((char const*)challenge->I, challenge->I_len);
     TC_LOG_DEBUG("server.authserver", "[AuthChallenge] '%s'", login.c_str());
 
+    // challenge->timezone_bias is in minutes but we convert it in seconds for semplicity and keep it in seconds everywhere
+    _timezone_bias = challenge->timezone_bias * 60;
     _build = challenge->build;
     _expversion = uint8(AuthHelper::IsPostBCAcceptedClientBuild(_build) ? POST_BC_EXP_FLAG : (AuthHelper::IsPreBCAcceptedClientBuild(_build) ? PRE_BC_EXP_FLAG : NO_VALID_EXP_FLAG));
     std::array<char, 5> os;
@@ -586,7 +588,8 @@ bool AuthSession::HandleLogonProof()
         stmt->setString(1, GetRemoteIpAddress().to_string());
         stmt->setUInt32(2, GetLocaleByName(_localizationName));
         stmt->setString(3, _os);
-        stmt->setString(4, _accountInfo.Login);
+        stmt->setInt32(4, _timezone_bias);
+        stmt->setString(5, _accountInfo.Login);
         LoginDatabase.DirectExecute(stmt);
 
         // Finish SRP6 and send the final result to the client
