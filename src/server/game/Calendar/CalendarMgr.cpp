@@ -578,7 +578,7 @@ void CalendarMgr::SendCalendarEvent(ObjectGuid guid, CalendarEvent const& calend
     data << uint32(CALENDAR_MAX_INVITES);
     data << int32(calendarEvent.GetDungeonId());
     data << uint32(calendarEvent.GetFlags());
-    data.AppendPackedTime(calendarEvent.GetEventTime());
+    data.AppendPackedTimeWithTimezone(calendarEvent.GetEventTime(), player->GetSession()->GetTimezoneBias());
     data.AppendPackedTime(calendarEvent.GetTimeZoneTime());
     data << uint32(calendarEvent.GetGuildId());
 

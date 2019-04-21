@@ -93,7 +93,7 @@ void WorldSession::HandleCalendarGetCalendar(WorldPacket& /*recvData*/)
         data << uint64(calendarEvent->GetEventId());
         data << calendarEvent->GetTitle();
         data << uint32(calendarEvent->GetType());
-        data.AppendPackedTime(calendarEvent->GetEventTime());
+        data.AppendPackedTimeWithTimezone(calendarEvent->GetEventTime(), GetTimezoneBias());
         data << uint32(calendarEvent->GetFlags());
         data << int32(calendarEvent->GetDungeonId());
         data << calendarEvent->GetCreatorGUID().WriteAsPacked();
@@ -234,11 +234,9 @@ void WorldSession::HandleCalendarAddEvent(WorldPacket& recvData)
     uint32 flags;
 
     recvData >> title >> description >> type >> repeatable >> maxInvites >> dungeonId;
-    recvData.ReadPackedTime(eventPackedTime);
+    recvData.ReadPackedTimeWithTimezone(eventPackedTime, GetTimezoneBias());
     recvData.ReadPackedTime(unkPackedTime);
     recvData >> flags;
-
-    eventPackedTime = uint32(LocalTimeToUTCTime(eventPackedTime));
 
     // prevent events in the past
     // To Do: properly handle timezones and remove the "- time_t(86400L)" hack
@@ -329,11 +327,9 @@ void WorldSession::HandleCalendarUpdateEvent(WorldPacket& recvData)
     uint32 flags;
 
     recvData >> eventId >> inviteId >> title >> description >> type >> repetitionType >> maxInvites >> dungeonId;
-    recvData.ReadPackedTime(eventPackedTime);
+    recvData.ReadPackedTimeWithTimezone(eventPackedTime, GetTimezoneBias());
     recvData.ReadPackedTime(timeZoneTime);
     recvData >> flags;
-
-    eventPackedTime = uint32(LocalTimeToUTCTime(eventPackedTime));
 
     // prevent events in the past
     // To Do: properly handle timezones and remove the "- time_t(86400L)" hack
@@ -388,11 +384,9 @@ void WorldSession::HandleCalendarCopyEvent(WorldPacket& recvData)
     uint32 eventTime;
 
     recvData >> eventId >> inviteId;
-    recvData.ReadPackedTime(eventTime);
+    recvData.ReadPackedTimeWithTimezone(eventTime, GetTimezoneBias());
     TC_LOG_DEBUG("network", "CMSG_CALENDAR_COPY_EVENT [%s], EventId [" UI64FMTD
         "] inviteId [" UI64FMTD "] Time: %u", guid.ToString().c_str(), eventId, inviteId, eventTime);
-
-    eventTime = uint32(LocalTimeToUTCTime(eventTime));
 
     // prevent events in the past
     // To Do: properly handle timezones and remove the "- time_t(86400L)" hack

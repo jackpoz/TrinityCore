@@ -75,16 +75,12 @@ struct tm* localtime_r(time_t const* time, struct tm *result)
     localtime_s(result, time);
     return result;
 }
-#endif
-
-time_t LocalTimeToUTCTime(time_t time)
+struct tm* gmtime_r(time_t const* time, struct tm* result)
 {
-#if (defined(WIN32) || defined(_WIN32) || defined(__WIN32__))
-    return time + _timezone;
-#else
-    return time + timezone;
-#endif
+    gmtime_s(result, time);
+    return result;
 }
+#endif
 
 std::string secsToTimeString(uint64 timeInSecs, bool shortText, bool hoursOnly)
 {
@@ -560,3 +556,4 @@ bool StringContainsStringI(std::string const& haystack, std::string const& needl
     return haystack.end() !=
         std::search(haystack.begin(), haystack.end(), needle.begin(), needle.end(), [](char c1, char c2) { return std::toupper(c1) == std::toupper(c2); });
 }
+
