@@ -83,6 +83,20 @@ uint32 ByteBuffer::ReadPackedTime()
 
     return uint32(mktime(&lt));
 }
+uint32 ByteBuffer::ReadPackedTimeWithTimezone(time_t timezoneBias)
+{
+    uint32 packedDate = read<uint32>();
+    tm lt = tm();
+
+    lt.tm_min = packedDate & 0x3F;
+    lt.tm_hour = (packedDate >> 6) & 0x1F;
+    //lt.tm_wday = (packedDate >> 11) & 7;
+    lt.tm_mday = ((packedDate >> 14) & 0x3F) + 1;
+    lt.tm_mon = (packedDate >> 20) & 0xF;
+    lt.tm_year = ((packedDate >> 24) & 0x1F) + 100;
+
+    return uint32(timegm(&lt) - timezoneBias);
+}
 
 void ByteBuffer::append(uint8 const* src, size_t cnt)
 {
@@ -113,6 +127,13 @@ void ByteBuffer::AppendPackedTime(time_t time)
 {
     tm lt;
     localtime_r(&time, &lt);
+    append<uint32>((lt.tm_year - 100) << 24 | lt.tm_mon << 20 | (lt.tm_mday - 1) << 14 | lt.tm_wday << 11 | lt.tm_hour << 6 | lt.tm_min);
+}
+void ByteBuffer::AppendPackedTimeWithTimezone(time_t time, time_t timezoneBias)
+{
+    time += timezoneBias;
+    tm lt;
+    gmtime_r(&time, &lt);
     append<uint32>((lt.tm_year - 100) << 24 | lt.tm_mon << 20 | (lt.tm_mday - 1) << 14 | lt.tm_wday << 11 | lt.tm_hour << 6 | lt.tm_min);
 }
 

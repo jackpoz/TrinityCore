@@ -376,10 +376,16 @@ class TC_SHARED_API ByteBuffer
         }
 
         uint32 ReadPackedTime();
+        uint32 ReadPackedTimeWithTimezone(time_t timezoneBias);
 
         ByteBuffer& ReadPackedTime(uint32& time)
         {
             time = ReadPackedTime();
+            return *this;
+        }
+        ByteBuffer& ReadPackedTimeWithTimezone(uint32& time, time_t timezoneBias)
+        {
+            time = ReadPackedTimeWithTimezone(timezoneBias);
             return *this;
         }
 
@@ -466,6 +472,7 @@ class TC_SHARED_API ByteBuffer
         }
 
         void AppendPackedTime(time_t time);
+        void AppendPackedTimeWithTimezone(time_t time, time_t timezoneBias);
 
         void put(size_t pos, const uint8 *src, size_t cnt);
 
