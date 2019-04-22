@@ -1586,7 +1586,7 @@ void WorldSession::SendTimeSync()
     _timeSyncNextCounter++;
 }
 
-time_t WorldSession::GetTimezoneBias()
+time_t WorldSession::GetTimezoneBias() const
 {
     return m_TimezoneBias;
 }

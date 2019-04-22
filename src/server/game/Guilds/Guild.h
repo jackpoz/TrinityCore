@@ -688,6 +688,7 @@ class TC_GAME_API Guild
         void BroadcastToGuild(WorldSession* session, bool officerOnly, std::string const& msg, uint32 language = LANG_UNIVERSAL) const;
         void BroadcastPacketToRank(WorldPacket* packet, uint8 rankId) const;
         void BroadcastPacket(WorldPacket* packet) const;
+        void BroadcastPacket(std::function<void(Player*)> builder) const;
 
         void MassInviteToEvent(WorldSession* session, uint32 minLevel, uint32 maxLevel, uint32 minRank);
 

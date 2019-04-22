@@ -331,6 +331,7 @@ class TC_GAME_API CalendarMgr
         void SendCalendarCommandResult(ObjectGuid guid, CalendarError err, char const* param = nullptr);
 
         void SendPacketToAllEventRelatives(WorldPacket& packet, CalendarEvent const& calendarEvent);
+        void SendPacketToAllEventRelatives(std::function<void(Player*)> builder, CalendarEvent const& calendarEvent);
 };
 
 #define sCalendarMgr CalendarMgr::instance()

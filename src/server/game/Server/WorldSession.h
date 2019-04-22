@@ -455,7 +455,7 @@ class TC_GAME_API WorldSession
         void ResetTimeSync();
         void SendTimeSync();
 
-        time_t GetTimezoneBias();
+        time_t GetTimezoneBias() const;
 
     public:                                                 // opcodes handlers
 

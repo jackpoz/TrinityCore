@@ -2148,6 +2148,8 @@ class TC_GAME_API Player : public Unit, public GridObject<Player>
 
         std::string GetDebugInfo() const override;
 
+        time_t GetTimezoneBias() const;
+
     protected:
         // Gamemaster whisper whitelist
         GuidList WhisperList;

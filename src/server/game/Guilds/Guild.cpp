@@ -2245,6 +2245,13 @@ void Guild::BroadcastPacket(WorldPacket* packet) const
             player->SendDirectMessage(packet);
 }
 
+void Guild::BroadcastPacket(std::function<void(Player*)> builder) const
+{
+    for (auto itr = m_members.begin(); itr != m_members.end(); ++itr)
+        if (Player * player = itr->second->FindPlayer())
+            builder(player);
+}
+
 void Guild::MassInviteToEvent(WorldSession* session, uint32 minLevel, uint32 maxLevel, uint32 minRank)
 {
     uint32 count = 0;

@@ -26676,3 +26676,8 @@ std::string Player::GetDebugInfo() const
     sstr << Unit::GetDebugInfo();
     return sstr.str();
 }
+
+time_t Player::GetTimezoneBias() const
+{
+    return m_session->GetTimezoneBias();
+}
