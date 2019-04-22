@@ -470,36 +470,44 @@ void CalendarMgr::SendCalendarEventInvite(CalendarInvite const& invite)
 
 void CalendarMgr::SendCalendarEventUpdateAlert(CalendarEvent const& calendarEvent, time_t oldEventTime)
 {
-    WorldPacket data(SMSG_CALENDAR_EVENT_UPDATED_ALERT, 1 + 8 + 4 + 4 + 4 + 1 + 4 +
-        calendarEvent.GetTitle().size() + calendarEvent.GetDescription().size() + 1 + 4 + 4);
-    data << uint8(1);       // unk
-    data << uint64(calendarEvent.GetEventId());
-    data.AppendPackedTime(oldEventTime);
-    data << uint32(calendarEvent.GetFlags());
-    data.AppendPackedTime(calendarEvent.GetEventTime());
-    data << uint8(calendarEvent.GetType());
-    data << int32(calendarEvent.GetDungeonId());
-    data << calendarEvent.GetTitle();
-    data << calendarEvent.GetDescription();
-    data << uint8(CALENDAR_REPEAT_NEVER);   // repeatable
-    data << uint32(CALENDAR_MAX_INVITES);
-    data << uint32(0);      // unk
+    std::function<void(Player*)> builder = [&calendarEvent, &oldEventTime](Player * player)
+    {
+        WorldPacket data(SMSG_CALENDAR_EVENT_UPDATED_ALERT, 1 + 8 + 4 + 4 + 4 + 1 + 4 +
+            calendarEvent.GetTitle().size() + calendarEvent.GetDescription().size() + 1 + 4 + 4);
+        data << uint8(1);       // unk
+        data << uint64(calendarEvent.GetEventId());
+        data.AppendPackedTimeWithTimezone(oldEventTime, player->GetTimezoneBias());
+        data << uint32(calendarEvent.GetFlags());
+        data.AppendPackedTimeWithTimezone(calendarEvent.GetEventTime(), player->GetTimezoneBias());
+        data << uint8(calendarEvent.GetType());
+        data << int32(calendarEvent.GetDungeonId());
+        data << calendarEvent.GetTitle();
+        data << calendarEvent.GetDescription();
+        data << uint8(CALENDAR_REPEAT_NEVER);   // repeatable
+        data << uint32(CALENDAR_MAX_INVITES);
+        data << uint32(0);      // unk
+        player->SendDirectMessage(&data);
+    };
 
-    SendPacketToAllEventRelatives(data, calendarEvent);
+    SendPacketToAllEventRelatives(builder, calendarEvent);
 }
 
 void CalendarMgr::SendCalendarEventStatus(CalendarEvent const& calendarEvent, CalendarInvite const& invite)
 {
-    WorldPacket data(SMSG_CALENDAR_EVENT_STATUS, 8 + 8 + 4 + 4 + 1 + 1 + 4);
-    data << invite.GetInviteeGUID().WriteAsPacked();
-    data << uint64(calendarEvent.GetEventId());
-    data.AppendPackedTime(calendarEvent.GetEventTime());
-    data << uint32(calendarEvent.GetFlags());
-    data << uint8(invite.GetStatus());
-    data << uint8(invite.GetRank());
-    data.AppendPackedTime(invite.GetStatusTime());
+    std::function<void(Player*)> builder = [&calendarEvent, &invite](Player * player)
+    {
+        WorldPacket data(SMSG_CALENDAR_EVENT_STATUS, 8 + 8 + 4 + 4 + 1 + 1 + 4);
+        data << invite.GetInviteeGUID().WriteAsPacked();
+        data << uint64(calendarEvent.GetEventId());
+        data.AppendPackedTimeWithTimezone(calendarEvent.GetEventTime(), player->GetTimezoneBias());
+        data << uint32(calendarEvent.GetFlags());
+        data << uint8(invite.GetStatus());
+        data << uint8(invite.GetRank());
+        data.AppendPackedTime(invite.GetStatusTime());
+        player->SendDirectMessage(&data);
+    };
 
-    SendPacketToAllEventRelatives(data, calendarEvent);
+    SendPacketToAllEventRelatives(builder, calendarEvent);
 }
 
 void CalendarMgr::SendCalendarEventRemovedAlert(CalendarEvent const& calendarEvent)
@@ -511,7 +519,7 @@ void CalendarMgr::SendCalendarEventRemovedAlert(CalendarEvent const& calendarEve
         data << uint64(calendarEvent.GetEventId());
         data.AppendPackedTimeWithTimezone(calendarEvent.GetEventTime(), player->GetTimezoneBias());
         player->SendDirectMessage(&data);
-    };    
+    };
 
     SendPacketToAllEventRelatives(builder, calendarEvent);
 }
@@ -540,27 +548,31 @@ void CalendarMgr::SendCalendarEventModeratorStatusAlert(CalendarEvent const& cal
 
 void CalendarMgr::SendCalendarEventInviteAlert(CalendarEvent const& calendarEvent, CalendarInvite const& invite)
 {
-    WorldPacket data(SMSG_CALENDAR_EVENT_INVITE_ALERT);
-    data << uint64(calendarEvent.GetEventId());
-    data << calendarEvent.GetTitle();
-    data.AppendPackedTime(calendarEvent.GetEventTime());
-    data << uint32(calendarEvent.GetFlags());
-    data << uint32(calendarEvent.GetType());
-    data << int32(calendarEvent.GetDungeonId());
-    data << uint64(invite.GetInviteId());
-    data << uint8(invite.GetStatus());
-    data << uint8(invite.GetRank());
-    data << calendarEvent.GetCreatorGUID().WriteAsPacked();
-    data << invite.GetSenderGUID().WriteAsPacked();
+    std::function<void(Player*)> builder = [&calendarEvent, &invite](Player * player)
+    {
+        WorldPacket data(SMSG_CALENDAR_EVENT_INVITE_ALERT);
+        data << uint64(calendarEvent.GetEventId());
+        data << calendarEvent.GetTitle();
+        data.AppendPackedTimeWithTimezone(calendarEvent.GetEventTime(), player->GetTimezoneBias());
+        data << uint32(calendarEvent.GetFlags());
+        data << uint32(calendarEvent.GetType());
+        data << int32(calendarEvent.GetDungeonId());
+        data << uint64(invite.GetInviteId());
+        data << uint8(invite.GetStatus());
+        data << uint8(invite.GetRank());
+        data << calendarEvent.GetCreatorGUID().WriteAsPacked();
+        data << invite.GetSenderGUID().WriteAsPacked();
+        player->SendDirectMessage(&data);
+    };
 
     if (calendarEvent.IsGuildEvent() || calendarEvent.IsGuildAnnouncement())
     {
         if (Guild* guild = sGuildMgr->GetGuildById(calendarEvent.GetGuildId()))
-            guild->BroadcastPacket(&data);
+            guild->BroadcastPacket(builder);
     }
     else
         if (Player* player = ObjectAccessor::FindConnectedPlayer(invite.GetInviteeGUID()))
-            player->SendDirectMessage(&data);
+            builder(player);
 }
 
 void CalendarMgr::SendCalendarEvent(ObjectGuid guid, CalendarEvent const& calendarEvent, CalendarSendEventType sendType)
