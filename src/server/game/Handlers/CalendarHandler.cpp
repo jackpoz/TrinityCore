@@ -165,7 +165,7 @@ void WorldSession::HandleCalendarGetCalendar(WorldPacket& /*recvData*/)
         data << uint32(holiday->CalendarFilterType);        // m_calendarFilterType
 
         for (uint8 j = 0; j < MAX_HOLIDAY_DATES; ++j)
-            data << uint32(holiday->Date[j]);               // 26 * m_date -- WritePackedTime ?
+            data.AppendPackedTimeWithTimezone(ByteBuffer::PackedTimeToTimeT(holiday->Date[j]), GetTimezoneBias());               // 26 * m_date -- WritePackedTime ?
 
         for (uint8 j = 0; j < MAX_HOLIDAY_DURATIONS; ++j)
             data << uint32(holiday->Duration[j]);           // 10 * m_duration

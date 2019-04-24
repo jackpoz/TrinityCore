@@ -389,6 +389,8 @@ class TC_SHARED_API ByteBuffer
             return *this;
         }
 
+        static time_t PackedTimeToTimeT(uint32 packedDate);
+
         uint8* contents()
         {
             if (_storage.empty())
