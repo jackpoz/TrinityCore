@@ -742,7 +742,7 @@ bool PathGenerator::GetSteerTarget(float const* startPos, float const* endPos,
     dtPolyRef steerPathPolys[MAX_STEER_POINTS];
     uint32 nsteerPath = 0;
     dtStatus dtResult = _navMeshQuery->findStraightPath(startPos, endPos, path, pathSize,
-                                                steerPath, steerPathFlags, steerPathPolys, (int*)&nsteerPath, MAX_STEER_POINTS);
+                                                steerPath, steerPathFlags, steerPathPolys, (int*)&nsteerPath, MAX_STEER_POINTS, DT_STRAIGHTPATH_ALL_CROSSINGS);
     if (!nsteerPath || dtStatusFailed(dtResult))
         return false;
 
@@ -823,7 +823,7 @@ dtStatus PathGenerator::FindSmoothPath(float const* startPos, float const* endPo
         if ((endOfPath || offMeshConnection) && len < SMOOTH_PATH_STEP_SIZE)
             len = 1.0f;
         else
-            len = SMOOTH_PATH_STEP_SIZE / len;
+            len = dtMin(1.f, SMOOTH_PATH_STEP_SIZE / len);
 
         float moveTgt[VERTEX_SIZE];
         dtVmad(moveTgt, iterPos, delta, len);
