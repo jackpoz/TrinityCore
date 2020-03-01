@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -78,11 +78,11 @@ class DuelResetScript : public PlayerScript
                     loser->RestoreHealthAfterDuel();
 
                     // check if player1 class uses mana
-                    if (winner->GetPowerType() == POWER_MANA || winner->getClass() == CLASS_DRUID)
+                    if (winner->GetPowerType() == POWER_MANA || winner->GetClass() == CLASS_DRUID)
                         winner->RestoreManaAfterDuel();
 
                     // check if player2 class uses mana
-                    if (loser->GetPowerType() == POWER_MANA || loser->getClass() == CLASS_DRUID)
+                    if (loser->GetPowerType() == POWER_MANA || loser->GetClass() == CLASS_DRUID)
                         loser->RestoreManaAfterDuel();
                 }
             }

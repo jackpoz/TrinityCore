@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -22,7 +22,8 @@
 enum Spells
 {
     SPELL_CURSE_OF_BLOOD        = 24673,
-    SPELL_ILLUSION              = 17773
+    SPELL_ILLUSION              = 17773,
+    SPELL_DROP_JOURNAL          = 26096
 };
 
 enum Events
@@ -67,6 +68,7 @@ public:
         void JustDied(Unit* /*killer*/) override
         {
             Summons.DespawnAll();
+            DoCastSelf(SPELL_DROP_JOURNAL, true);
         }
 
         void UpdateAI(uint32 diff) override

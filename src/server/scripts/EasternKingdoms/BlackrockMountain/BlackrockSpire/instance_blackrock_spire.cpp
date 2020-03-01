@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -597,7 +597,7 @@ public:
             {
                 if (Creature* infiltrator = ObjectAccessor::GetCreature(*player, instance->GetGuidData(DATA_SCARSHIELD_INFILTRATOR)))
                 {
-                    if (player->getLevel() >= 57)
+                    if (player->GetLevel() >= 57)
                         infiltrator->AI()->SetData(1, 1);
                     else if (infiltrator->GetEntry() == NPC_SCARSHIELD_INFILTRATOR)
                         infiltrator->AI()->Talk(0, player);

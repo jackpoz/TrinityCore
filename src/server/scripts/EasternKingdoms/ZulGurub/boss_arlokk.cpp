@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -15,24 +15,15 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* ScriptData
-TCName: Boss_Arlokk
-TC%Complete: 95
-TCComment: Wrong cleave and red aura is missing not yet added.
-TCComment: Prowlers moving through wall hopefully mmaps will fix.
-TCComment: Can't test LOS until mmaps.
-TCCategory: Zul'Gurub
-EndScriptData */
-
-#include "ScriptMgr.h"
+#include "zulgurub.h"
 #include "GameObject.h"
 #include "GameObjectAI.h"
 #include "InstanceScript.h"
-#include "ObjectAccessor.h"
 #include "MotionMaster.h"
+#include "ObjectAccessor.h"
 #include "ScriptedCreature.h"
+#include "ScriptMgr.h"
 #include "SpellInfo.h"
-#include "zulgurub.h"
 
 enum Says
 {
@@ -133,9 +124,9 @@ class boss_arlokk : public CreatureScript
                 Talk(SAY_DEATH);
             }
 
-            void JustEngagedWith(Unit* /*who*/) override
+            void JustEngagedWith(Unit* who) override
             {
-                _JustEngagedWith();
+                BossAI::JustEngagedWith(who);
                 events.ScheduleEvent(EVENT_SHADOW_WORD_PAIN, urand(7000, 9000), 0, PHASE_ONE);
                 events.ScheduleEvent(EVENT_GOUGE, urand(12000, 15000), 0, PHASE_ONE);
                 events.ScheduleEvent(EVENT_SUMMON_PROWLERS, 6s, 0, PHASE_ALL);
@@ -172,7 +163,7 @@ class boss_arlokk : public CreatureScript
             void EnterEvadeMode(EvadeReason why) override
             {
                 BossAI::EnterEvadeMode(why);
-                if (GameObject* object = ObjectAccessor::GetGameObject(*me, instance->GetGuidData(GO_GONG_OF_BETHEKK)))
+                if (GameObject* object = instance->GetGameObject(DATA_GONG_BETHEKK))
                     object->RemoveFlag(GAMEOBJECT_FLAGS, GO_FLAG_NOT_SELECTABLE);
                 me->DespawnOrUnsummon(4000);
             }
@@ -370,8 +361,10 @@ class npc_zulian_prowler : public CreatureScript
                 DoCast(me, SPELL_SNEAK_RANK_1_1);
                 DoCast(me, SPELL_SNEAK_RANK_1_2);
 
-                if (Unit* arlokk = ObjectAccessor::GetUnit(*me, _instance->GetGuidData(NPC_ARLOKK)))
-                    me->GetMotionMaster()->MovePoint(0, arlokk->GetPositionX(), arlokk->GetPositionY(), arlokk->GetPositionZ());
+                if (Creature* arlokk = _instance->GetCreature(DATA_ARLOKK))
+                    if (arlokk->IsAlive())
+                        me->GetMotionMaster()->MovePoint(0, arlokk->GetPosition());
+
                 _events.ScheduleEvent(EVENT_ATTACK, 6s);
             }
 
@@ -390,7 +383,7 @@ class npc_zulian_prowler : public CreatureScript
 
             void JustDied(Unit* /*killer*/) override
             {
-                if (Unit* arlokk = ObjectAccessor::GetUnit(*me, _instance->GetGuidData(NPC_ARLOKK)))
+                if (Creature* arlokk = _instance->GetCreature(DATA_ARLOKK))
                 {
                     if (arlokk->IsAlive())
                         arlokk->GetAI()->SetData(_sideData, 0);

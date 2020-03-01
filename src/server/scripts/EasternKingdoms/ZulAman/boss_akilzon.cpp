@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -28,6 +27,7 @@ EndScriptData */
 #include "ScriptMgr.h"
 #include "CellImpl.h"
 #include "GridNotifiersImpl.h"
+#include "MiscPackets.h"
 #include "MotionMaster.h"
 #include "ObjectAccessor.h"
 #include "ScriptedCreature.h"
@@ -113,9 +113,9 @@ class boss_akilzon : public CreatureScript
                 SetWeather(WEATHER_STATE_FINE, 0.0f);
             }
 
-            void JustEngagedWith(Unit* /*who*/) override
+            void JustEngagedWith(Unit* who) override
             {
-                _JustEngagedWith();
+                BossAI::JustEngagedWith(who);
 
                 events.ScheduleEvent(EVENT_STATIC_DISRUPTION, 10s, 20s); // 10 to 20 seconds (bosskillers)
                 events.ScheduleEvent(EVENT_GUST_OF_WIND, 20s, 30s);      // 20 to 30 seconds(bosskillers)
@@ -139,16 +139,13 @@ class boss_akilzon : public CreatureScript
                     Talk(SAY_KILL);
             }
 
-            void SetWeather(uint32 weather, float grade)
+            void SetWeather(WeatherState weather, float grade)
             {
                 Map* map = me->GetMap();
                 if (!map->IsDungeon())
                     return;
 
-                WorldPacket data(SMSG_WEATHER, (4+4+4));
-                data << uint32(weather) << float(grade) << uint8(0);
-
-                map->SendToPlayers(&data);
+                map->SendToPlayers(WorldPackets::Misc::Weather(weather, grade).Write());
             }
 
             void HandleStormSequence(Unit* Cloud) // 1: begin, 2-9: tick, 10: end

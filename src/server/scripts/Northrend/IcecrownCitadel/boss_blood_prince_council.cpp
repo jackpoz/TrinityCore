@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -91,7 +91,7 @@ enum Spells
     SPELL_CONJURE_EMPOWERED_FLAME       = 72040,
 
     // Ball of Flame
-    SPELL_FLAME_SPHERE_SPAWN_EFFECT     = 55891, // cast from creature_template_addon (needed cast before entering world)
+    SPELL_FLAME_SPHERE_SPAWN_EFFECT     = 55891,
     SPELL_BALL_OF_FLAMES_VISUAL         = 71706,
     SPELL_BALL_OF_FLAMES                = 71714,
     SPELL_FLAMES                        = 71393,
@@ -107,6 +107,7 @@ enum Spells
     SPELL_KINETIC_BOMB                  = 72080,
     SPELL_SHOCK_VORTEX                  = 72037,
     SPELL_EMPOWERED_SHOCK_VORTEX        = 72039,
+    SPELL_REMOVE_EMPOWERED_BLOOD        = 72131,
 
     // Kinetic Bomb
     SPELL_UNSTABLE                      = 72059,
@@ -247,7 +248,10 @@ class boss_blood_council_controller : public CreatureScript
                             prince->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
                             prince->SetImmuneToPC(false);
                             if (bossData == DATA_PRINCE_VALANAR)
+                            {
                                 prince->SetHealth(prince->GetMaxHealth());
+                                prince->CastSpell(prince, SPELL_REMOVE_EMPOWERED_BLOOD, true);
+                            }
                         }
             }
 
@@ -972,6 +976,7 @@ class npc_ball_of_flame : public CreatureScript
 
             void Reset() override
             {
+                DoCastSelf(SPELL_FLAME_SPHERE_SPAWN_EFFECT, true);
                 DoCastSelf(SPELL_BALL_OF_FLAMES_VISUAL, true);
                 if (me->GetEntry() == NPC_BALL_OF_INFERNO_FLAME)
                 {
@@ -1152,7 +1157,7 @@ class npc_dark_nucleus : public CreatureScript
                 if (attacker == me)
                     return;
 
-                me->GetThreatManager().ClearAllThreat();
+                me->GetThreatManager().ResetAllThreat();
                 AddThreat(attacker, 500000000.0f);
             }
 
@@ -1406,15 +1411,18 @@ class spell_valanar_kinetic_bomb_knockback : public SpellScriptLoader
         {
             PrepareSpellScript(spell_valanar_kinetic_bomb_knockback_SpellScript);
 
-            void KnockIntoAir()
+            void KnockIntoAir(SpellMissInfo missInfo)
             {
+                if (missInfo != SPELL_MISS_NONE)
+                    return;
+
                 if (Creature* target = GetHitCreature())
                     target->AI()->DoAction(ACTION_KINETIC_BOMB_JUMP);
             }
 
             void Register() override
             {
-                BeforeHit += SpellHitFn(spell_valanar_kinetic_bomb_knockback_SpellScript::KnockIntoAir);
+                BeforeHit += BeforeSpellHitFn(spell_valanar_kinetic_bomb_knockback_SpellScript::KnockIntoAir);
             }
         };
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <http://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -140,6 +140,15 @@ void CombatManager::Update(uint32 tdiff)
         else
             ++it;
     }
+}
+
+bool CombatManager::HasPvECombatWithPlayers() const
+{
+    for (std::pair<ObjectGuid const, CombatReference*> const& reference : _pveRefs)
+        if (reference.second->GetOther(_owner)->GetTypeId() == TYPEID_PLAYER)
+            return true;
+
+    return false;
 }
 
 bool CombatManager::HasPvPCombat() const
@@ -294,13 +303,8 @@ void CombatManager::EndAllPvPCombat()
 
 /*static*/ void CombatManager::NotifyAICombat(Unit* me, Unit* other)
 {
-    if (!me->IsAIEnabled())
-        return;
-    me->GetAI()->JustEnteredCombat(other);
-
-    if (Creature* cMe = me->ToCreature())
-        if (!cMe->CanHaveThreatList())
-            cMe->AI()->JustEngagedWith(other);
+    if (UnitAI* ai = me->GetAI())
+        ai->JustEnteredCombat(other);
 }
 
 void CombatManager::PutReference(ObjectGuid const& guid, CombatReference* ref)
@@ -337,11 +341,15 @@ bool CombatManager::UpdateOwnerCombatState() const
     {
         _owner->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IN_COMBAT);
         _owner->AtEnterCombat();
+        if (_owner->GetTypeId() != TYPEID_UNIT)
+            _owner->AtEngage(GetAnyTarget());
     }
     else
     {
         _owner->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IN_COMBAT);
         _owner->AtExitCombat();
+        if (_owner->GetTypeId() != TYPEID_UNIT)
+            _owner->AtDisengage();
     }
 
     if (Unit* master = _owner->GetCharmerOrOwner())

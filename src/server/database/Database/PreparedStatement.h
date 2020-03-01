@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -22,26 +22,11 @@
 #include "SQLOperation.h"
 #include <future>
 #include <vector>
+#include <variant>
 
 #ifdef __APPLE__
 #undef TYPE_BOOL
 #endif
-
-//- Union for data buffer (upper-level bind -> queue -> lower-level bind)
-union PreparedStatementDataUnion
-{
-    bool boolean;
-    uint8 ui8;
-    int8 i8;
-    uint16 ui16;
-    int16 i16;
-    uint32 ui32;
-    int32 i32;
-    uint64 ui64;
-    int64 i64;
-    float f;
-    double d;
-};
 
 //- This enum helps us differ data held in above union
 enum PreparedStatementValueType
@@ -64,9 +49,22 @@ enum PreparedStatementValueType
 
 struct PreparedStatementData
 {
-    PreparedStatementDataUnion data;
+    std::variant<
+    bool,               // TYPE_BOOL
+    uint8,              // TYPE_UI8
+    uint16,             // TYPE_UI16
+    uint32,             // TYPE_UI32
+    uint64,             // TYPE_UI64
+    int8,               // TYPE_I8
+    int16,              // TYPE_I16
+    int32,              // TYPE_UI32
+    int64,              // TYPE_UI64
+    float,              // TYPE_FLOAT
+    double,             // TYPE_DOUBLE
+    std::string,        // TYPE_STRING
+    std::vector<uint8>> // TYPE_BINARY
+    data;
     PreparedStatementValueType type;
-    std::vector<uint8> binary;
 };
 
 //- Forward declare
@@ -98,6 +96,8 @@ class TC_DATABASE_API PreparedStatement
         void setString(const uint8 index, const std::string& value);
         void setBinary(const uint8 index, const std::vector<uint8>& value);
 
+        uint32 GetIndex() const { return m_index; }
+
     protected:
         void BindParameters(MySQLPreparedStatement* stmt);
 
@@ -110,53 +110,6 @@ class TC_DATABASE_API PreparedStatement
 
         PreparedStatement(PreparedStatement const& right) = delete;
         PreparedStatement& operator=(PreparedStatement const& right) = delete;
-};
-
-//- Class of which the instances are unique per MySQLConnection
-//- access to these class objects is only done when a prepared statement task
-//- is executed.
-class TC_DATABASE_API MySQLPreparedStatement
-{
-    friend class MySQLConnection;
-    friend class PreparedStatement;
-
-    public:
-        MySQLPreparedStatement(MYSQL_STMT* stmt, std::string queryString);
-        ~MySQLPreparedStatement();
-
-        void setBool(const uint8 index, const bool value);
-        void setUInt8(const uint8 index, const uint8 value);
-        void setUInt16(const uint8 index, const uint16 value);
-        void setUInt32(const uint8 index, const uint32 value);
-        void setUInt64(const uint8 index, const uint64 value);
-        void setInt8(const uint8 index, const int8 value);
-        void setInt16(const uint8 index, const int16 value);
-        void setInt32(const uint8 index, const int32 value);
-        void setInt64(const uint8 index, const int64 value);
-        void setFloat(const uint8 index, const float value);
-        void setDouble(const uint8 index, const double value);
-        void setBinary(const uint8 index, const std::vector<uint8>& value, bool isString);
-        void setNull(const uint8 index);
-
-        uint32 GetParameterCount() const { return m_paramCount; }
-
-    protected:
-        MYSQL_STMT* GetSTMT() { return m_Mstmt; }
-        MYSQL_BIND* GetBind() { return m_bind; }
-        PreparedStatement* m_stmt;
-        void ClearParameters();
-        void AssertValidIndex(uint8 index);
-        std::string getQueryString() const;
-
-    private:
-        MYSQL_STMT* m_Mstmt;
-        uint32 m_paramCount;
-        std::vector<bool> m_paramsSet;
-        MYSQL_BIND* m_bind;
-        std::string const m_queryString;
-
-        MySQLPreparedStatement(MySQLPreparedStatement const& right) = delete;
-        MySQLPreparedStatement& operator=(MySQLPreparedStatement const& right) = delete;
 };
 
 //- Lower-level class, enqueuable operation

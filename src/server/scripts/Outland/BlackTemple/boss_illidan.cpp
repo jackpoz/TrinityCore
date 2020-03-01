@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -450,7 +450,7 @@ private:
     Unit* _owner;
 };
 
-class ChargeTargetSelector : public std::unary_function<Unit*, bool>
+class ChargeTargetSelector
 {
 public:
     ChargeTargetSelector() { }
@@ -487,9 +487,9 @@ struct boss_illidan_stormrage : public BossAI
                 akama->AI()->DoAction(ACTION_ACTIVE_AKAMA_INTRO);
     }
 
-    void JustEngagedWith(Unit* /*who*/) override
+    void JustEngagedWith(Unit* who) override
     {
-        _JustEngagedWith();
+        BossAI::JustEngagedWith(who);
         me->SetCanDualWield(true);
         if (GameObject* musicController = instance->GetGameObject(DATA_ILLIDAN_MUSIC_CONTROLLER))
             musicController->PlayDirectMusic(EVENT_BT_SUMMIT_WALK_3_SOUND_ID);
@@ -1937,6 +1937,28 @@ class spell_illidan_parasitic_shadowfiend : public AuraScript
     }
 };
 
+// 41913 - Parasitic Shadowfiend Passive
+class spell_illidan_parasitic_shadowfiend_proc : public AuraScript
+{
+    PrepareAuraScript(spell_illidan_parasitic_shadowfiend_proc);
+
+    bool Validate(SpellInfo const* /*spellInfo*/) override
+    {
+        return ValidateSpellInfo({ SPELL_PARASITIC_SHADOWFIEND, SPELL_PARASITIC_SHADOWFIEND_2 });
+    }
+
+    bool CheckProc(ProcEventInfo& eventInfo)
+    {
+        Unit* target = eventInfo.GetProcTarget();
+        return target && !target->HasAura(SPELL_PARASITIC_SHADOWFIEND) && !target->HasAura(SPELL_PARASITIC_SHADOWFIEND_2);
+    }
+
+    void Register() override
+    {
+        DoCheckProc += AuraCheckProcFn(spell_illidan_parasitic_shadowfiend_proc::CheckProc);
+    }
+};
+
 // 41923 - Remove Parasitic Shadowfiends (SERVERSIDE)
 class spell_illidan_remove_parasitic_shadowfiend : public AuraScript
 {
@@ -2298,7 +2320,7 @@ class spell_maiev_down : public AuraScript
     }
 };
 
-//  40693 - Cage Trap
+// 40693 - Cage Trap
 class spell_illidan_cage_teleport : public SpellScript
 {
     PrepareSpellScript(spell_illidan_cage_teleport);
@@ -2349,6 +2371,7 @@ void AddSC_boss_illidan()
     RegisterAuraScript(spell_illidan_akama_door_channel);
     RegisterSpellScript(spell_illidan_draw_soul);
     RegisterAuraScript(spell_illidan_parasitic_shadowfiend);
+    RegisterAuraScript(spell_illidan_parasitic_shadowfiend_proc);
     RegisterAuraScript(spell_illidan_remove_parasitic_shadowfiend);
     RegisterSpellScript(spell_illidan_throw_warglaive);
     RegisterAuraScript(spell_illidan_tear_of_azzinoth_channel);

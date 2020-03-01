@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -745,12 +745,12 @@ class boss_four_horsemen_sir : public CreatureScript
      void HandleDamageCalc(SpellEffIndex /*effIndex*/)
      {
          uint32 damage = GetCaster()->GetMap()->IsHeroic() ? 4250 : 2750;
-         SetHitDamage(damage);
+         SetEffectValue(damage);
      }
 
      void Register() override
      {
-         OnEffectHitTarget += SpellEffectFn(spell_four_horsemen_consumption::HandleDamageCalc, EFFECT_0, SPELL_EFFECT_SCHOOL_DAMAGE);
+         OnEffectLaunchTarget += SpellEffectFn(spell_four_horsemen_consumption::HandleDamageCalc, EFFECT_0, SPELL_EFFECT_SCHOOL_DAMAGE);
      }
  };
 
