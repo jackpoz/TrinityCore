@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -259,8 +258,8 @@ class GuildBankRightsAndSlots
         int8 GetRights() const { return rights; }
 
     private:
-        uint8  tabId;
-        uint8  rights;
+        uint8 tabId;
+        uint8 rights;
         uint32 slots;
 };
 
@@ -381,7 +380,7 @@ class TC_GAME_API Guild
                 GuildEventLogTypes m_eventType;
                 ObjectGuid::LowType m_playerGuid1;
                 ObjectGuid::LowType m_playerGuid2;
-                uint8  m_newRank;
+                uint8 m_newRank;
         };
 
         // Bank event log entry

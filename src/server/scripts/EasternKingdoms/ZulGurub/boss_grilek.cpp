@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -16,27 +15,20 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* ScriptData
-SDName: Boss_Grilek
-SD%Complete: 100
-SDComment:
-SDCategory: Zul'Gurub
-EndScriptData */
-
-#include "ScriptMgr.h"
-#include "ScriptedCreature.h"
 #include "zulgurub.h"
+#include "ScriptedCreature.h"
+#include "ScriptMgr.h"
 
 enum Spells
 {
-    SPELL_AVATAR                    = 24646, // Enrage Spell
-    SPELL_GROUND_TREMOR             = 6524
+    SPELL_AVATAR = 24646, // Enrage Spell
+    SPELL_GROUND_TREMOR = 6524
 };
 
 enum Events
 {
-    EVENT_AVATAR                    = 1,
-    EVENT_GROUND_TREMOR             = 2
+    EVENT_AVATAR = 1,
+    EVENT_GROUND_TREMOR = 2
 };
 
 class boss_grilek : public CreatureScript // grilek
@@ -58,9 +50,9 @@ class boss_grilek : public CreatureScript // grilek
                 _JustDied();
             }
 
-            void JustEngagedWith(Unit* /*who*/) override
+            void JustEngagedWith(Unit* who) override
             {
-                _JustEngagedWith();
+                BossAI::JustEngagedWith(who);
                 events.ScheduleEvent(EVENT_AVATAR, 15s, 25s);
                 events.ScheduleEvent(EVENT_GROUND_TREMOR, 15s, 25s);
             }

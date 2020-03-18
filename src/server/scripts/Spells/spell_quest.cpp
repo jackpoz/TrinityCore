@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -85,6 +85,33 @@ class spell_q55_sacred_cleansing : public SpellScriptLoader
         {
             return new spell_generic_quest_update_entry_SpellScript(SPELL_EFFECT_DUMMY, EFFECT_1, NPC_MORBENT, NPC_WEAKENED_MORBENT, true);
         }
+};
+
+enum BendingShinbone
+{
+    SPELL_BENDING_SHINBONE1 = 8854,
+    SPELL_BENDING_SHINBONE2 = 8855
+};
+
+class spell_q1846_bending_shinbone : public SpellScript
+{
+    PrepareSpellScript(spell_q1846_bending_shinbone);
+
+    void HandleScriptEffect(SpellEffIndex /* effIndex */)
+    {
+        Item* target = GetHitItem();
+        Unit* caster = GetCaster();
+        if (!target && caster->GetTypeId() != TYPEID_PLAYER)
+            return;
+
+        uint32 const spellId = roll_chance_i(20) ? SPELL_BENDING_SHINBONE1 : SPELL_BENDING_SHINBONE2;
+        caster->CastSpell(caster, spellId, true);
+    }
+
+    void Register() override
+    {
+        OnEffectHitTarget += SpellEffectFn(spell_q1846_bending_shinbone::HandleScriptEffect, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
+    }
 };
 
 // 9712 - Thaumaturgy Channel
@@ -796,7 +823,7 @@ class spell_q10041_q10040_who_are_they : public SpellScriptLoader
                 PreventHitDefaultEffect(effIndex);
                 if (Player* target = GetHitPlayer())
                 {
-                    target->CastSpell(target, target->getGender() == GENDER_MALE ? SPELL_MALE_DISGUISE : SPELL_FEMALE_DISGUISE, true);
+                    target->CastSpell(target, target->GetNativeGender() == GENDER_MALE ? SPELL_MALE_DISGUISE : SPELL_FEMALE_DISGUISE, true);
                     target->CastSpell(target, SPELL_GENERIC_DISGUISE, true);
                 }
             }
@@ -1160,7 +1187,7 @@ class spell_q14076_14092_pound_drum : public SpellScriptLoader
             {
                 Unit* caster = GetCaster();
 
-                if (roll_chance_i(80))
+                if (roll_chance_i(50))
                     caster->CastSpell(caster, SPELL_SUMMON_DEEP_JORMUNGAR, true);
                 else
                     caster->CastSpell(caster, SPELL_STORMFORGED_MOLE_MACHINE, true);
@@ -2866,9 +2893,31 @@ public:
     }
 };
 
+class spell_q11896_weakness_to_lightning_46444 : public SpellScript
+{
+    PrepareSpellScript(spell_q11896_weakness_to_lightning_46444);
+
+    void HandleScript(SpellEffIndex /*effIndex*/)
+    {
+        if (Unit* target = GetHitUnit())
+        {
+            if (Unit* owner = target->GetOwner())
+            {
+                target->CastSpell(owner, GetEffectValue(), true);
+            }
+        }
+    }
+
+    void Register() override
+    {
+        OnEffectHitTarget += SpellEffectFn(spell_q11896_weakness_to_lightning_46444::HandleScript, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
+    }
+};
+
 void AddSC_quest_spell_scripts()
 {
     new spell_q55_sacred_cleansing();
+    RegisterSpellScript(spell_q1846_bending_shinbone);
     new spell_q2203_thaumaturgy_channel();
     new spell_q5206_test_fetid_skull();
     new spell_q6124_6129_apply_salve();
@@ -2921,6 +2970,7 @@ void AddSC_quest_spell_scripts()
     RegisterSpellScript(spell_q13264_q13276_q13288_q13289_area_restrict_abom);
     RegisterSpellScript(spell_q13264_q13276_q13288_q13289_assign_credit_to_master);
     RegisterSpellScript(spell_q12690_burst_at_the_seams_52510);
+    RegisterSpellScript(spell_q11896_weakness_to_lightning_46444);
     new spell_q12308_escape_from_silverbrook_summon_worgen();
     new spell_q12308_escape_from_silverbrook();
     new spell_q12641_death_comes_from_on_high();

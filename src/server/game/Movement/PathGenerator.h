@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -26,8 +25,9 @@
 #include <G3D/Vector3.h>
 
 class Unit;
+class WorldObject;
 
-// 74*4.0f=296y  number_of_points*interval = max_path_len
+// 74*4.0f=296y number_of_points*interval = max_path_len
 // this is way more than actual evade range
 // I think we can safely cut those down even more
 #define MAX_PATH_LENGTH         74
@@ -48,12 +48,13 @@ enum PathType
     PATHFIND_NOPATH         = 0x08,   // no valid path at all or error in generating one
     PATHFIND_NOT_USING_PATH = 0x10,   // used when we are either flying/swiming or on map w/o mmaps
     PATHFIND_SHORT          = 0x20,   // path is longer or equal to its limited path length
+    PATHFIND_FARFROMPOLY    = 0x40,   // start of end positions are far from the mmap poligon
 };
 
 class TC_GAME_API PathGenerator
 {
     public:
-        explicit PathGenerator(Unit const* owner);
+        explicit PathGenerator(WorldObject const* owner);
         ~PathGenerator();
 
         // Calculate the path from owner to given destination
@@ -94,7 +95,7 @@ class TC_GAME_API PathGenerator
         G3D::Vector3 _endPosition;          // {x, y, z} of the destination
         G3D::Vector3 _actualEndPosition;    // {x, y, z} of the closest possible point to given destination
 
-        Unit const* const _sourceUnit;          // the unit that is moving
+        WorldObject const* const _source;       // the object that is moving
         dtNavMesh const* _navMesh;              // the nav mesh
         dtNavMeshQuery const* _navMeshQuery;    // the nav mesh query used to find the path
 

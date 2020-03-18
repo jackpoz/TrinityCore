@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -150,6 +149,7 @@ TC_GAME_API extern DBCStorage <ItemRandomPropertiesEntry>    sItemRandomProperti
 TC_GAME_API extern DBCStorage <ItemRandomSuffixEntry>        sItemRandomSuffixStore;
 TC_GAME_API extern DBCStorage <ItemSetEntry>                 sItemSetStore;
 TC_GAME_API extern DBCStorage <LFGDungeonEntry>              sLFGDungeonStore;
+TC_GAME_API extern DBCStorage <LightEntry>                   sLightStore;
 TC_GAME_API extern DBCStorage <LiquidTypeEntry>              sLiquidTypeStore;
 TC_GAME_API extern DBCStorage <LockEntry>                    sLockStore;
 TC_GAME_API extern DBCStorage <MailTemplateEntry>            sMailTemplateStore;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -756,9 +756,9 @@ class npc_acolyte_of_vesperon : public CreatureScript
                         i->GetSource()->RemoveAurasDueToSpell(SPELL_TWILIGHT_TORMENT_VESP);
                 }
 
-                instance->DoRemoveAurasDueToSpellOnPlayers(SPELL_TWILIGHT_TORMENT_VESP_ACO);
-                instance->DoRemoveAurasDueToSpellOnPlayers(57935);
-                instance->DoRemoveAurasDueToSpellOnPlayers(58835); // Components of spell Twilight Torment
+                instance->DoRemoveAurasDueToSpellOnPlayers(SPELL_TWILIGHT_TORMENT_VESP_ACO, true, true);
+                instance->DoRemoveAurasDueToSpellOnPlayers(57935, true, true);
+                instance->DoRemoveAurasDueToSpellOnPlayers(58835, true, true); // Components of spell Twilight Torment
             }
 
             void UpdateAI(uint32 /*diff*/) override

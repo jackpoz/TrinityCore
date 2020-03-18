@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -146,16 +146,16 @@ class spell_pet_dk_gargoyle_strike : public SpellScript
         int32 damage = 60;
         if (Unit* caster = GetCaster())
         {
-            if (caster->getLevel() >= 60)
-                damage += (caster->getLevel() - 60) * 4;
+            if (caster->GetLevel() >= 60)
+                damage += (caster->GetLevel() - 60) * 4;
         }
 
-        SetHitDamage(damage);
+        SetEffectValue(damage);
     }
 
     void Register() override
     {
-        OnEffectHitTarget += SpellEffectFn(spell_pet_dk_gargoyle_strike::HandleDamageCalc, EFFECT_0, SPELL_EFFECT_SCHOOL_DAMAGE);
+        OnEffectLaunchTarget += SpellEffectFn(spell_pet_dk_gargoyle_strike::HandleDamageCalc, EFFECT_0, SPELL_EFFECT_SCHOOL_DAMAGE);
     }
 };
 

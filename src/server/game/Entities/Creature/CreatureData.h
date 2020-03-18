@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -113,9 +113,8 @@ enum class CreatureRandomMovementType : uint8
 
 struct TC_GAME_API CreatureMovementData
 {
-    CreatureMovementData() : Ground(CreatureGroundMovementType::Run), Flight(CreatureFlightMovementType::None),
-                             Swim(true), Rooted(false), Chase(CreatureChaseMovementType::Run),
-                             Random(CreatureRandomMovementType::Walk) { }
+    CreatureMovementData() : Ground(CreatureGroundMovementType::Run), Flight(CreatureFlightMovementType::None), Swim(true), Rooted(false), Chase(CreatureChaseMovementType::Run),
+        Random(CreatureRandomMovementType::Walk) { }
 
     CreatureGroundMovementType Ground;
     CreatureFlightMovementType Flight;
@@ -299,7 +298,7 @@ struct CreatureData : public SpawnData
     CreatureData() : SpawnData(SPAWN_TYPE_CREATURE) { }
     uint32 displayid = 0;
     int8 equipmentId = 0;
-    float spawndist = 0.0f;
+    float wander_distance = 0.0f;
     uint32 currentwaypoint = 0;
     uint32 curhealth = 0;
     uint32 curmana = 0;

@@ -3,7 +3,7 @@ from os import walk, getcwd
 from datetime import datetime
 
 notice = ('''/*
- * Copyright (C) 2008-%d TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -27,9 +27,10 @@ if not getcwd().endswith('src'):
     exit(1)
 
 EnumPattern = compile(r'//\s*EnumUtils: DESCRIBE THIS\s+enum\s+([0-9A-Za-z]+)[^\n]*\s*{([^}]+)};')
-EnumValuesPattern = compile(r'\s+[^,]+[^\n]*')
+EnumValuesPattern = compile(r'\s+.+?(,|$)[^\n]*')
 EnumValueNamePattern = compile(r'^\s*([a-zA-Z0-9_]+)', flags=MULTILINE)
-EnumValueCommentPattern = compile(r'//[ \t]*([^\n]+)$')
+EnumValueSkipLinePattern = compile(r'^\s*//')
+EnumValueCommentPattern = compile(r'//,?[ \t]*([^\n]+)$')
 CommentMatchFormat = compile(r'^(((TITLE +(.+?))|(DESCRIPTION +(.+?))) *){1,2}$')
 CommentSkipFormat = compile(r'^SKIP *$')
 
@@ -59,7 +60,8 @@ def processFile(path, filename):
             
             valueNameMatch = EnumValueNamePattern.search(valueData)
             if valueNameMatch is None:
-                print('Name of value not found: %s' % repr(valueData))
+                if EnumValueSkipLinePattern.search(valueData) is None:
+                    print('Name of value not found: %s' % repr(valueData))
                 continue
             valueName = valueNameMatch.group(1)
                 

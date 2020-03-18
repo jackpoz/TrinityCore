@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -19,6 +18,7 @@
 #define __BATTLEGROUNDRL_H
 
 #include "Arena.h"
+#include "EventMap.h"
 
 enum BattlegroundRLObjectTypes
 {
@@ -37,6 +37,16 @@ enum BattlegroundRLGameObjects
     BG_RL_OBJECT_TYPE_BUFF_2    = 184664
 };
 
+enum BattlegroundRLData
+{
+    BG_RL_REMOVE_DOORS_TIMER    = 5000
+};
+
+enum BattlegroundRLEvents
+{
+    BG_RL_EVENT_REMOVE_DOORS    = 1
+};
+
 class BattlegroundRL : public Arena
 {
     public:
@@ -49,5 +59,10 @@ class BattlegroundRL : public Arena
 
         void HandleAreaTrigger(Player* Source, uint32 Trigger) override;
         bool SetupBattleground() override;
+
+    private:
+        void PostUpdateImpl(uint32 diff) override;
+
+        EventMap _events;
 };
 #endif

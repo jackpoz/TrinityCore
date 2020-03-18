@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -676,7 +675,7 @@ namespace Trinity
                 if (!go->isSpawned())
                     return false;
 
-                float const dist = go->GetGOInfo()->spellFocus.dist / 2.f;
+                float const dist = go->GetGOInfo()->spellFocus.dist;
                 return go->IsWithinDistInMap(_caster, dist);
             }
 
@@ -740,7 +739,7 @@ namespace Trinity
 
             bool operator()(GameObject* go)
             {
-                if (go->GetEntry() == i_entry && i_obj.IsWithinDistInMap(go, i_range))
+                if (go->isSpawned() && go->GetEntry() == i_entry && go->GetGUID() != i_obj.GetGUID() && i_obj.IsWithinDistInMap(go, i_range))
                 {
                     i_range = i_obj.GetDistance(go);        // use found GO range as new range limit for next check
                     return true;
@@ -776,7 +775,7 @@ namespace Trinity
         private:
             WorldObject const& i_obj;
             GameobjectTypes i_type;
-            float  i_range;
+            float i_range;
 
             // prevent clone this object
             NearestGameObjectTypeInObjectRangeCheck(NearestGameObjectTypeInObjectRangeCheck const&) = delete;
@@ -1181,7 +1180,7 @@ namespace Trinity
     class NearestHostileUnitInAggroRangeCheck
     {
         public:
-            explicit NearestHostileUnitInAggroRangeCheck(Creature const* creature, bool useLOS = false) : _me(creature), _useLOS(useLOS) { }
+            explicit NearestHostileUnitInAggroRangeCheck(Creature const* creature, bool useLOS = false, bool ignoreCivilians = false) : _me(creature), _useLOS(useLOS), _ignoreCivilians(ignoreCivilians) { }
 
             bool operator()(Unit* u) const
             {
@@ -1197,12 +1196,19 @@ namespace Trinity
                 if (_useLOS && !u->IsWithinLOSInMap(_me))
                     return false;
 
+                // pets in aggressive do not attack civilians
+                if (_ignoreCivilians)
+                    if (Creature* c = u->ToCreature())
+                        if (c->IsCivilian())
+                            return false;
+
                 return true;
             }
 
         private:
             Creature const* _me;
             bool _useLOS;
+            bool _ignoreCivilians;
             NearestHostileUnitInAggroRangeCheck(NearestHostileUnitInAggroRangeCheck const&) = delete;
     };
 
@@ -1263,7 +1269,7 @@ namespace Trinity
         private:
             Creature* const i_obj;
             Unit* const i_enemy;
-            float  i_range;
+            float i_range;
 
             // prevent clone this object
             NearestAssistCreatureInCreatureRangeCheck(NearestAssistCreatureInCreatureRangeCheck const&) = delete;
@@ -1278,7 +1284,7 @@ namespace Trinity
 
             bool operator()(Creature* u)
             {
-                if (u->getDeathState() != DEAD && u->GetEntry() == i_entry && u->IsAlive() == i_alive && i_obj.IsWithinDistInMap(u, i_range))
+                if (u->getDeathState() != DEAD && u->GetEntry() == i_entry && u->IsAlive() == i_alive && u->GetGUID() != i_obj.GetGUID() && i_obj.IsWithinDistInMap(u, i_range))
                 {
                     i_range = i_obj.GetDistance(u);         // use found unit range as new range limit for next check
                     return true;
@@ -1400,14 +1406,25 @@ namespace Trinity
     class AllCreaturesOfEntryInRange
     {
         public:
-            AllCreaturesOfEntryInRange(WorldObject const* object, uint32 entry, float maxRange) : m_pObject(object), m_uiEntry(entry), m_fRange(maxRange) { }
+            AllCreaturesOfEntryInRange(WorldObject const* object, uint32 entry, float maxRange = 0.0f) : m_pObject(object), m_uiEntry(entry), m_fRange(maxRange) { }
 
             bool operator()(Unit* unit) const
             {
-                if ((!m_uiEntry || unit->GetEntry() == m_uiEntry) && m_pObject->IsWithinDist(unit, m_fRange, false))
-                    return true;
+                if (m_uiEntry)
+                {
+                    if (unit->GetEntry() != m_uiEntry)
+                        return false;
+                }
 
-                return false;
+                if (m_fRange)
+                {
+                    if (m_fRange > 0.0f && !m_pObject->IsWithinDist(unit, m_fRange, false))
+                        return false;
+                    if (m_fRange < 0.0f && m_pObject->IsWithinDist(unit, m_fRange, false))
+                        return false;
+                }
+
+                return true;
             }
 
         private:

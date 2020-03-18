@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -259,8 +259,11 @@ class npc_little_ooze : public CreatureScript
             {
             }
 
-            void IsSummonedBy(Unit* summoner) override
+            void IsSummonedBy(WorldObject* summonerWO) override
             {
+                Unit* summoner = summonerWO->ToUnit();
+                if (!summoner)
+                    return;
                 DoCast(me, SPELL_LITTLE_OOZE_COMBINE, true);
                 DoCast(me, SPELL_WEAK_RADIATING_OOZE, true);
                 DoCast(me, SPELL_GREEN_ABOMINATION_HITTIN__YA_PROC, true);
@@ -310,7 +313,7 @@ class npc_big_ooze : public CreatureScript
             {
             }
 
-            void IsSummonedBy(Unit* /*summoner*/) override
+            void IsSummonedBy(WorldObject* /*summoner*/) override
             {
                 DoCast(me, SPELL_LARGE_OOZE_COMBINE, true);
                 DoCast(me, SPELL_LARGE_OOZE_BUFF_COMBINE, true);
@@ -588,13 +591,15 @@ class spell_rotface_little_ooze_combine : public SpellScriptLoader
 
             void HandleScript(SpellEffIndex /*effIndex*/)
             {
-                if (!(GetHitCreature() && GetHitUnit()->IsAlive()))
+                Creature* caster = GetCaster()->ToCreature();
+                if (!(GetHitCreature() && GetHitUnit()->IsAlive()) || !caster)
                     return;
 
-                GetCaster()->RemoveAurasDueToSpell(SPELL_LITTLE_OOZE_COMBINE);
+                caster->RemoveAurasDueToSpell(SPELL_LITTLE_OOZE_COMBINE);
                 GetHitCreature()->RemoveAurasDueToSpell(SPELL_LITTLE_OOZE_COMBINE);
-                GetHitCreature()->CastSpell(GetCaster(), SPELL_OOZE_MERGE, true);
+                GetHitCreature()->CastSpell(caster, SPELL_OOZE_MERGE, true);
                 GetHitCreature()->DespawnOrUnsummon();
+                caster->DespawnOrUnsummon();
             }
 
             void Register() override
@@ -620,23 +625,37 @@ class spell_rotface_large_ooze_combine : public SpellScriptLoader
 
             void HandleScript(SpellEffIndex /*effIndex*/)
             {
-                if (!(GetHitCreature() && GetHitCreature()->IsAlive()))
+                Creature* caster = GetCaster()->ToCreature();
+                Creature* target = GetHitCreature();
+                if (!(target && target->IsAlive()) || !caster)
                     return;
 
-                if (Aura* unstable = GetCaster()->GetAura(SPELL_UNSTABLE_OOZE))
+                if (Aura* unstable = caster->GetAura(SPELL_UNSTABLE_OOZE))
                 {
-                    if (Aura* targetAura = GetHitCreature()->GetAura(SPELL_UNSTABLE_OOZE))
+                    if (Aura* targetAura = target->GetAura(SPELL_UNSTABLE_OOZE))
                         unstable->ModStackAmount(targetAura->GetStackAmount());
                     else
                         unstable->ModStackAmount(1);
 
-                    // no idea why, but this does not trigger explosion on retail (only small+large do)
-                }
+                    if (unstable->GetStackAmount() >= 5)
+                    {
+                        caster->RemoveAurasDueToSpell(SPELL_LARGE_OOZE_BUFF_COMBINE);
+                        caster->RemoveAurasDueToSpell(SPELL_LARGE_OOZE_COMBINE);
+                        if (InstanceScript* instance = caster->GetInstanceScript())
+                        {
+                            if (Creature* rotface = ObjectAccessor::GetCreature(*caster, instance->GetGuidData(DATA_ROTFACE)))
+                            {
+                                instance->SetData(DATA_OOZE_DANCE_ACHIEVEMENT, uint32(false));
+                                if (rotface->IsAlive())
+                                    rotface->AI()->Talk(SAY_UNSTABLE_EXPLOSION);
+                            }
+                        }
 
-                // just for safety
-                GetHitCreature()->RemoveAurasDueToSpell(SPELL_LARGE_OOZE_BUFF_COMBINE);
-                GetHitCreature()->RemoveAurasDueToSpell(SPELL_LARGE_OOZE_COMBINE);
-                GetHitCreature()->DespawnOrUnsummon();
+                        caster->AI()->DoAction(EVENT_STICKY_OOZE);
+                        caster->CastSpell(caster, SPELL_UNSTABLE_OOZE_EXPLOSION, CastSpellExtraArgs().SetOriginalCaster(caster->GetGUID()));
+                    }
+                }
+                target->DespawnOrUnsummon();
             }
 
             void Register() override

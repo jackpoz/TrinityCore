@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -360,7 +360,7 @@ class boss_deathbringer_saurfang : public CreatureScript
                 if (!_frenzied && HealthBelowPct(31)) // AT 30%, not below
                 {
                     _frenzied = true;
-                    DoCast(me, SPELL_FRENZY);
+                    DoCast(me, SPELL_FRENZY, true);
                     Talk(SAY_FRENZY);
                 }
 

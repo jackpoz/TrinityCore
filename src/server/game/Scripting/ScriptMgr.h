@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -70,6 +69,7 @@ struct CreatureTemplate;
 struct CreatureData;
 struct ItemTemplate;
 struct MapEntry;
+struct Position;
 
 enum BattlegroundTypeId : uint32;
 enum ContentLevels : uint8;
@@ -407,6 +407,9 @@ class TC_GAME_API UnitScript : public ScriptObject
 
         // Called when Spell Damage is being Dealt
         virtual void ModifySpellDamageTaken(Unit* /*target*/, Unit* /*attacker*/, int32& /*damage*/) { }
+
+        // Called when an unit exits a vehicle
+        virtual void ModifyVehiclePassengerExitPos(Unit* /*passenger*/, Vehicle* /*vehicle*/, Position& /*pos*/) { }
 };
 
 class TC_GAME_API CreatureScript : public ScriptObject
@@ -416,6 +419,8 @@ class TC_GAME_API CreatureScript : public ScriptObject
         CreatureScript(char const* name);
 
     public:
+        // Called when an unit exits a vehicle
+        virtual void ModifyVehiclePassengerExitPos(Unit* /*passenger*/, Vehicle* /*vehicle*/, Position& /*pos*/) { }
 
         // Called when a CreatureAI object is needed for the creature.
         virtual CreatureAI* GetAI(Creature* /*creature*/) const = 0;
@@ -699,8 +704,14 @@ class TC_GAME_API PlayerScript : public ScriptObject
         // Called when a player changes to a new map (after moving to new map)
         virtual void OnMapChanged(Player* /*player*/) { }
 
+        // Called when a player obtains progress on a quest's objective
+        virtual void OnQuestObjectiveProgress(Player* /*player*/, Quest const* /*quest*/, uint32 /*objectiveIndex*/, uint16 /*progress*/) { }
+
         // Called after a player's quest status has been changed
         virtual void OnQuestStatusChange(Player* /*player*/, uint32 /*questId*/) { }
+
+        // Called when a player completes a movie
+        virtual void OnMovieComplete(Player* /*player*/, uint32 /*movieId*/) { }
 
         // Called when a player presses release when he died
         virtual void OnPlayerRepop(Player* /*player*/) { }
@@ -1011,7 +1022,9 @@ class TC_GAME_API ScriptMgr
         void OnPlayerSave(Player* player);
         void OnPlayerBindToInstance(Player* player, Difficulty difficulty, uint32 mapid, bool permanent, uint8 extendState);
         void OnPlayerUpdateZone(Player* player, uint32 newZone, uint32 newArea);
+        void OnQuestObjectiveProgress(Player* player, Quest const* quest, uint32 objectiveIndex, uint16 progress);
         void OnQuestStatusChange(Player* player, uint32 questId);
+        void OnMovieComplete(Player* player, uint32 movieId);
         void OnPlayerRepop(Player* player);
 
     public: /* AccountScript */
@@ -1053,6 +1066,7 @@ class TC_GAME_API ScriptMgr
         void ModifyPeriodicDamageAurasTick(Unit* target, Unit* attacker, uint32& damage);
         void ModifyMeleeDamage(Unit* target, Unit* attacker, uint32& damage);
         void ModifySpellDamageTaken(Unit* target, Unit* attacker, int32& damage);
+        void ModifyVehiclePassengerExitPos(Unit* passenger, Vehicle* vehicle, Position& pos);
 
     private:
         uint32 _scriptCount;
@@ -1099,7 +1113,7 @@ class GenericCreatureScript : public CreatureScript
 };
 #define RegisterCreatureAI(ai_name) new GenericCreatureScript<ai_name>(#ai_name)
 
-template <class AI, AI*(*AIFactory)(Creature*)>
+template <class AI, AI* (*AIFactory)(Creature*)>
 class FactoryCreatureScript : public CreatureScript
 {
     public:
@@ -1116,6 +1130,15 @@ class GenericGameObjectScript : public GameObjectScript
         GameObjectAI* GetAI(GameObject* go) const override { return new AI(go); }
 };
 #define RegisterGameObjectAI(ai_name) new GenericGameObjectScript<ai_name>(#ai_name)
+
+template <class AI, AI* (*AIFactory)(GameObject*)>
+class FactoryGameObjectScript : public GameObjectScript
+{
+    public:
+        FactoryGameObjectScript(char const* name) : GameObjectScript(name) { }
+        GameObjectAI* GetAI(GameObject* me) const override { return AIFactory(me); }
+};
+#define RegisterGameObjectAIWithFactory(ai_name, factory_fn) new FactoryGameObjectScript<ai_name, &factory_fn>(#ai_name)
 
 #define sScriptMgr ScriptMgr::instance()
 

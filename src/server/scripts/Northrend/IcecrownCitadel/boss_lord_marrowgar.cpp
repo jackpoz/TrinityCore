@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -104,7 +104,7 @@ enum Actions
     ACTION_TALK_ENTER_ZONE        = 2
 };
 
-class BoneSpikeTargetSelector : public std::unary_function<Unit*, bool>
+class BoneSpikeTargetSelector
 {
     public:
         BoneSpikeTargetSelector(UnitAI* ai) : _ai(ai) { }
@@ -340,6 +340,7 @@ class boss_lord_marrowgar : public CreatureScript
                         _boneSpikeImmune.clear();
                         break;
                     case ACTION_TALK_ENTER_ZONE:
+                        if (me->IsAlive())
                             Talk(SAY_ENTER_ZONE);
                         break;
                     default:
@@ -375,9 +376,10 @@ class npc_coldflame : public CreatureScript
             {
             }
 
-            void IsSummonedBy(Unit* owner) override
+            void IsSummonedBy(WorldObject* ownerWO) override
             {
-                if (owner->GetTypeId() != TYPEID_UNIT)
+                Creature* owner = ownerWO->ToCreature();
+                if (!owner)
                     return;
 
                 Position pos;
@@ -451,7 +453,7 @@ class npc_bone_spike : public CreatureScript
             void JustDied(Unit* /*killer*/) override
             {
                 if (TempSummon* summ = me->ToTempSummon())
-                    if (Unit* trapped = summ->GetSummoner())
+                    if (Unit* trapped = summ->GetSummonerUnit())
                         trapped->RemoveAurasDueToSpell(SPELL_IMPALED);
 
                 me->DespawnOrUnsummon();
@@ -463,8 +465,11 @@ class npc_bone_spike : public CreatureScript
                 victim->RemoveAurasDueToSpell(SPELL_IMPALED);
             }
 
-            void IsSummonedBy(Unit* summoner) override
+            void IsSummonedBy(WorldObject* summonerWO) override
             {
+                Unit* summoner = summonerWO->ToUnit();
+                if (!summoner)
+                    return;
                 DoCast(summoner, SPELL_IMPALED);
                 summoner->CastSpell(me, SPELL_RIDE_VEHICLE, true);
                 _events.ScheduleEvent(EVENT_FAIL_BONED, 8s);

@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -16,29 +15,22 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* ScriptData
-SDName: Boss_Gahz'ranka
-SD%Complete: 85
-SDComment: Massive Geyser with knockback not working. Spell buggy.
-SDCategory: Zul'Gurub
-EndScriptData */
-
-#include "ScriptMgr.h"
-#include "ScriptedCreature.h"
 #include "zulgurub.h"
+#include "ScriptedCreature.h"
+#include "ScriptMgr.h"
 
 enum Spells
 {
-    SPELL_FROSTBREATH               = 16099,
-    SPELL_MASSIVEGEYSER             = 22421, // Not working. (summon)
-    SPELL_SLAM                      = 24326
+    SPELL_FROSTBREATH = 16099,
+    SPELL_MASSIVEGEYSER = 22421, // Not working. (summon)
+    SPELL_SLAM = 24326
 };
 
 enum Events
 {
-    EVENT_FROSTBREATH               = 1,
-    EVENT_MASSIVEGEYSER             = 2,
-    EVENT_SLAM                      = 3
+    EVENT_FROSTBREATH = 1,
+    EVENT_MASSIVEGEYSER = 2,
+    EVENT_SLAM = 3
 };
 
 class boss_gahzranka : public CreatureScript // gahzranka
@@ -60,9 +52,9 @@ class boss_gahzranka : public CreatureScript // gahzranka
                 _JustDied();
             }
 
-            void JustEngagedWith(Unit* /*who*/) override
+            void JustEngagedWith(Unit* who) override
             {
-                _JustEngagedWith();
+                BossAI::JustEngagedWith(who);
                 events.ScheduleEvent(EVENT_FROSTBREATH, 8s);
                 events.ScheduleEvent(EVENT_MASSIVEGEYSER, 25s);
                 events.ScheduleEvent(EVENT_SLAM, 15s);

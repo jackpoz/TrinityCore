@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -104,11 +103,13 @@ class TC_GAME_API GameObject : public WorldObject, public GridObject<GameObject>
         ObjectGuid::LowType GetSpawnId() const { return m_spawnId; }
 
          // z_rot, y_rot, x_rot - rotation angles around z, y and x axes
-        void SetWorldRotationAngles(float z_rot, float y_rot, float x_rot);
-        void SetWorldRotation(float qx, float qy, float qz, float qw);
+        void SetLocalRotationAngles(float z_rot, float y_rot, float x_rot);
+        void SetLocalRotation(float qx, float qy, float qz, float qw);
         void SetParentRotation(QuaternionData const& rotation);      // transforms(rotates) transport's path
-        QuaternionData const& GetWorldRotation() const { return m_worldRotation; }
-        int64 GetPackedWorldRotation() const { return m_packedRotation; }
+        QuaternionData const& GetLocalRotation() const { return m_localRotation; }
+        int64 GetPackedLocalRotation() const { return m_packedRotation; }
+
+        QuaternionData GetWorldRotation() const;
 
         // overwrite WorldObject function for proper name localization
         std::string const& GetNameForLocaleIdx(LocaleConstant locale_idx) const override;
@@ -116,7 +117,7 @@ class TC_GAME_API GameObject : public WorldObject, public GridObject<GameObject>
         void SaveToDB();
         void SaveToDB(uint32 mapid, uint8 spawnMask, uint32 phaseMask);
         bool LoadFromDB(ObjectGuid::LowType spawnId, Map* map, bool addToMap, bool = true); // arg4 is unused, only present to match the signature on Creature
-        void DeleteFromDB();
+        static bool DeleteFromDB(ObjectGuid::LowType spawnId);
 
         void SetOwnerGUID(ObjectGuid owner)
         {
@@ -202,7 +203,7 @@ class TC_GAME_API GameObject : public WorldObject, public GridObject<GameObject>
         uint32 GetUseCount() const { return m_usetimes; }
         uint32 GetUniqueUseCount() const { return m_unique_users.size(); }
 
-        void SaveRespawnTime(uint32 forceDelay = 0, bool savetodb = true) override;
+        void SaveRespawnTime(uint32 forceDelay = 0);
 
         Loot        loot;
 
@@ -231,7 +232,7 @@ class TC_GAME_API GameObject : public WorldObject, public GridObject<GameObject>
         bool IsAlwaysVisibleFor(WorldObject const* seer) const override;
         bool IsInvisibleDueToDespawn() const override;
 
-        uint8 getLevelForTarget(WorldObject const* target) const override;
+        uint8 GetLevelForTarget(WorldObject const* target) const override;
 
         GameObject* LookupFishingHoleAround(float range);
 
@@ -282,6 +283,14 @@ class TC_GAME_API GameObject : public WorldObject, public GridObject<GameObject>
 
         void UpdateModelPosition();
 
+        bool IsAtInteractDistance(Position const& pos, float radius) const;
+        bool IsAtInteractDistance(Player const* player, SpellInfo const* spell = nullptr) const;
+
+        bool IsWithinDistInMap(Player const* player) const;
+        using WorldObject::IsWithinDistInMap;
+
+        SpellInfo const* GetSpellForLock(Player const* player) const;
+
         void AIM_Destroy();
         bool AIM_Initialize();
 
@@ -298,6 +307,7 @@ class TC_GAME_API GameObject : public WorldObject, public GridObject<GameObject>
         LootState   m_lootState;
         ObjectGuid  m_lootStateUnitGUID;                    // GUID of the unit passed with SetLootState(LootState, Unit*)
         bool        m_spawnedByDefault;
+        time_t      m_restockTime;
         time_t      m_cooldownTime;                         // used as internal reaction delay time store (not state change reaction).
                                                             // For traps this: spell casting cooldown, for doors/buttons: reset time.
         GOState     m_prevGoState;                          // What state to set whenever resetting
@@ -318,7 +328,7 @@ class TC_GAME_API GameObject : public WorldObject, public GridObject<GameObject>
         GameObjectValue m_goValue;
 
         int64 m_packedRotation;
-        QuaternionData m_worldRotation;
+        QuaternionData m_localRotation;
         Position m_stationaryPosition;
 
         ObjectGuid m_lootRecipient;

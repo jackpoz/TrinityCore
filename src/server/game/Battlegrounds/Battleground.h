@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -185,8 +184,8 @@ enum BattlegroundStatus
 
 struct BattlegroundPlayer
 {
-    time_t  OfflineRemoveTime;                              // for tracking and removing offline players from queue after 5 minutes
-    uint32  Team;                                           // Player's team
+    time_t OfflineRemoveTime;                              // for tracking and removing offline players from queue after 5 minutes
+    uint32 Team;                                           // Player's team
 };
 
 struct BattlegroundObjectInfo
@@ -380,8 +379,8 @@ class TC_GAME_API Battleground
         template<class Do>
         void BroadcastWorker(Do& _do);
 
-        void PlaySoundToTeam(uint32 SoundID, uint32 TeamID);
-        void PlaySoundToAll(uint32 SoundID);
+        void PlaySoundToTeam(uint32 soundID, uint32 teamID);
+        void PlaySoundToAll(uint32 soundID);
         void CastSpellOnTeam(uint32 SpellID, uint32 TeamID);
         void RemoveAuraOnTeam(uint32 SpellID, uint32 TeamID);
         void RewardHonorToTeam(uint32 Honor, uint32 TeamID);
@@ -524,7 +523,7 @@ class TC_GAME_API Battleground
 
         // these are important variables used for starting messages
         uint8 m_Events;
-        BattlegroundStartTimeIntervals  StartDelayTimes[BG_STARTING_EVENT_COUNT];
+        BattlegroundStartTimeIntervals StartDelayTimes[BG_STARTING_EVENT_COUNT];
         // this must be filled in constructors!
         uint32 StartMessageIds[BG_STARTING_EVENT_COUNT];
 

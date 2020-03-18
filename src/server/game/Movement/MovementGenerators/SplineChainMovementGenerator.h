@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -47,7 +47,7 @@ class TC_GAME_API SplineChainMovementGenerator : public MovementGenerator
 
     private:
         void SendSplineFor(Unit* owner, uint32 index, uint32& duration);
-        uint32 SendPathSpline(Unit* owner, Movement::PointsArray const& path) const;
+        uint32 SendPathSpline(Unit* owner, float velocity, Movement::PointsArray const& path) const;
 
         uint32 const _id;
         std::vector<SplineChainLink> const& _chain;

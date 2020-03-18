@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -23,6 +23,7 @@
 #include "Implementation/WorldDatabase.h"
 #include "Implementation/CharacterDatabase.h"
 #include "Log.h"
+#include "MySQLPreparedStatement.h"
 #include "PreparedStatement.h"
 #include "ProducerConsumerQueue.h"
 #include "QueryCallback.h"
@@ -30,10 +31,7 @@
 #include "QueryResult.h"
 #include "SQLOperation.h"
 #include "Transaction.h"
-#ifdef _WIN32 // hack for broken mysql.h not including the correct winsock header for SOCKET definition, fixed in 5.7
-#include <winsock2.h>
-#endif
-#include <mysql.h>
+#include "MySQLWorkaround.h"
 #include <mysqld_error.h>
 
 #define MIN_MYSQL_SERVER_VERSION 50100u
@@ -56,8 +54,8 @@ DatabaseWorkerPool<T>::DatabaseWorkerPool()
 {
     WPFatal(mysql_thread_safe(), "Used MySQL library isn't thread-safe.");
     WPFatal(mysql_get_client_version() >= MIN_MYSQL_CLIENT_VERSION, "TrinityCore does not support MySQL versions below 5.1");
-    WPFatal(mysql_get_client_version() == MYSQL_VERSION_ID, "Used MySQL library version (%s) does not match the version used to compile TrinityCore (%s). Search on forum for TCE00011.",
-        mysql_get_client_info(), MYSQL_SERVER_VERSION);
+    WPFatal(mysql_get_client_version() == MYSQL_VERSION_ID, "Used MySQL library version (%s id %lu) does not match the version id used to compile TrinityCore (id %u). Search on forum for TCE00011.",
+        mysql_get_client_info(), mysql_get_client_version(), MYSQL_VERSION_ID);
 }
 
 template <class T>
@@ -355,7 +353,7 @@ uint32 DatabaseWorkerPool<T>::OpenConnections(InternalIndex type, uint8 numConne
             _connections[type].clear();
             return error;
         }
-        else if (mysql_get_server_version(connection->GetHandle()) < MIN_MYSQL_SERVER_VERSION)
+        else if (connection->GetServerVersion() < MIN_MYSQL_SERVER_VERSION)
         {
             TC_LOG_ERROR("sql.driver", "TrinityCore does not support MySQL versions below 5.1");
             return 1;
@@ -376,8 +374,7 @@ unsigned long DatabaseWorkerPool<T>::EscapeString(char* to, char const* from, un
     if (!to || !from || !length)
         return 0;
 
-    return mysql_real_escape_string(
-        _connections[IDX_SYNCH].front()->GetHandle(), to, from, length);
+    return _connections[IDX_SYNCH].front()->EscapeString(to, from, length);
 }
 
 template <class T>

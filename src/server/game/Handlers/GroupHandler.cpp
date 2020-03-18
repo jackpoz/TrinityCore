@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -123,7 +122,7 @@ void WorldSession::HandleGroupInviteOpcode(WorldPacket& recvData)
         return;
     }
 
-    if (!invitedPlayer->GetSocial()->HasFriend(invitingPlayer->GetGUID()) && invitingPlayer->getLevel() < sWorld->getIntConfig(CONFIG_PARTY_LEVEL_REQ))
+    if (!invitedPlayer->GetSocial()->HasFriend(invitingPlayer->GetGUID()) && invitingPlayer->GetLevel() < sWorld->getIntConfig(CONFIG_PARTY_LEVEL_REQ))
     {
         SendPartyResult(PARTY_OP_INVITE, membername, ERR_INVITE_RESTRICTED);
         return;
@@ -445,6 +444,9 @@ void WorldSession::HandleLootMethodOpcode(WorldPacket& recvData)
 
     /** error handling **/
     if (!group->IsLeader(GetPlayer()->GetGUID()))
+        return;
+
+    if (group->isLFGGroup())
         return;
 
     if (lootMethod > NEED_BEFORE_GREED)
@@ -792,7 +794,7 @@ void WorldSession::BuildPartyMemberStatsChangedPacket(Player* player, WorldPacke
         *data << uint16(player->GetMaxPower(powerType));
 
     if (mask & GROUP_UPDATE_FLAG_LEVEL)
-        *data << uint16(player->getLevel());
+        *data << uint16(player->GetLevel());
 
     if (mask & GROUP_UPDATE_FLAG_ZONE)
         *data << uint16(player->GetZoneId());
@@ -983,7 +985,7 @@ void WorldSession::HandleRequestPartyMemberStatsOpcode(WorldPacket &recvData)
 
     data << uint16(player->GetPower(powerType));            // GROUP_UPDATE_FLAG_CUR_POWER
     data << uint16(player->GetMaxPower(powerType));         // GROUP_UPDATE_FLAG_MAX_POWER
-    data << uint16(player->getLevel());                     // GROUP_UPDATE_FLAG_LEVEL
+    data << uint16(player->GetLevel());                     // GROUP_UPDATE_FLAG_LEVEL
     data << uint16(player->GetZoneId());                    // GROUP_UPDATE_FLAG_ZONE
     data << uint16(player->GetPositionX());                 // GROUP_UPDATE_FLAG_POSITION
     data << uint16(player->GetPositionY());                 // GROUP_UPDATE_FLAG_POSITION

@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -878,16 +877,8 @@ namespace MMAP
             return static_cast<uint32>(m_mapid) != mapID;
 
         if (m_skipContinents)
-            switch (mapID)
-            {
-                case 0:
-                case 1:
-                case 530:
-                case 571:
-                    return true;
-                default:
-                    break;
-            }
+            if (isContinentMap(mapID))
+                return true;
 
         if (m_skipJunkMaps)
             switch (mapID)
@@ -967,6 +958,20 @@ namespace MMAP
         }
     }
 
+    bool MapBuilder::isContinentMap(uint32 mapID)
+    {
+        switch (mapID)
+        {
+            case 0:
+            case 1:
+            case 530:
+            case 571:
+                return true;
+            default:
+                return false;
+        }
+    }
+
     /**************************************************************************/
     bool MapBuilder::shouldSkipTile(uint32 mapID, uint32 tileX, uint32 tileY)
     {
@@ -1021,7 +1026,13 @@ namespace MMAP
         {
             // Blade's Edge Arena
             case 562:
+                // This allows to walk on the ropes to the pillars
                 config.walkableRadius = 0;
+                break;
+            // Blackfathom Deeps
+            case 48:
+                // Reduce the chance to have underground levels
+                config.ch *= 2;
                 break;
             default:
                 break;

@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -986,8 +985,8 @@ private:
 
 struct TSpellSummary
 {
-    uint8 Targets;                                          // set of enum SelectTarget
-    uint8 Effects;                                          // set of enum SelectEffect
+    uint8 Targets; // set of enum SelectTarget
+    uint8 Effects; // set of enum SelectEffect
 } *SpellSummary;
 
 ScriptObject::ScriptObject(char const* name) : _name(name)
@@ -1001,7 +1000,7 @@ ScriptObject::~ScriptObject()
 }
 
 ScriptMgr::ScriptMgr()
-  : _scriptCount(0), _script_loader_callback(nullptr)
+    : _scriptCount(0), _script_loader_callback(nullptr)
 {
 }
 
@@ -1961,6 +1960,16 @@ void ScriptMgr::OnPlayerRepop(Player* player)
     FOREACH_SCRIPT(PlayerScript)->OnPlayerRepop(player);
 }
 
+void ScriptMgr::OnQuestObjectiveProgress(Player* player, Quest const* quest, uint32 objectiveIndex, uint16 progress)
+{
+    FOREACH_SCRIPT(PlayerScript)->OnQuestObjectiveProgress(player, quest, objectiveIndex, progress);
+}
+
+void ScriptMgr::OnMovieComplete(Player* player, uint32 movieId)
+{
+    FOREACH_SCRIPT(PlayerScript)->OnMovieComplete(player, movieId);
+}
+
 // Account
 void ScriptMgr::OnAccountLogin(uint32 accountId)
 {
@@ -2104,6 +2113,12 @@ void ScriptMgr::ModifyMeleeDamage(Unit* target, Unit* attacker, uint32& damage)
 void ScriptMgr::ModifySpellDamageTaken(Unit* target, Unit* attacker, int32& damage)
 {
     FOREACH_SCRIPT(UnitScript)->ModifySpellDamageTaken(target, attacker, damage);
+}
+
+void ScriptMgr::ModifyVehiclePassengerExitPos(Unit* passenger, Vehicle* vehicle, Position& pos)
+{
+    FOREACH_SCRIPT(UnitScript)->ModifyVehiclePassengerExitPos(passenger, vehicle, pos);
+    FOREACH_SCRIPT(CreatureScript)->ModifyVehiclePassengerExitPos(passenger, vehicle, pos);
 }
 
 SpellScriptLoader::SpellScriptLoader(char const* name)

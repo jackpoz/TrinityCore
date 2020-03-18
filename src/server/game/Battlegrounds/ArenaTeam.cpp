@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -33,7 +32,7 @@
 
 ArenaTeam::ArenaTeam()
     : TeamId(0), Type(0), TeamName(), CaptainGuid(), BackgroundColor(0), EmblemStyle(0), EmblemColor(0),
-    BorderStyle(0), BorderColor(0)
+    BorderStyle(0), BorderColor(0), PreviousOpponents(0)
 {
     Stats.WeekGames   = 0;
     Stats.SeasonGames = 0;
@@ -104,7 +103,7 @@ bool ArenaTeam::AddMember(ObjectGuid playerGuid)
     Player* player = ObjectAccessor::FindPlayer(playerGuid);
     if (player)
     {
-        playerClass = player->getClass();
+        playerClass = player->GetClass();
         playerName = player->GetName();
     }
     else
@@ -446,7 +445,7 @@ void ArenaTeam::Roster(WorldSession* session)
         data << uint8((player ? 1 : 0));                        // online flag
         data << itr->Name;                                      // member name
         data << uint32((itr->Guid == GetCaptain() ? 0 : 1));    // captain flag 0 captain 1 member
-        data << uint8((player ? player->getLevel() : 0));       // unknown, level?
+        data << uint8((player ? player->GetLevel() : 0));       // unknown, level?
         data << uint8(itr->Class);                              // class
         data << uint32(itr->WeekGames);                         // played this week
         data << uint32(itr->WeekWins);                          // wins this week

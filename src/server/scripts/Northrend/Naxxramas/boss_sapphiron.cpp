@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -155,7 +155,7 @@ class boss_sapphiron : public CreatureScript
             {
                 if (events.IsInPhase(PHASE_FLIGHT))
                 {
-                    instance->DoRemoveAurasDueToSpellOnPlayers(SPELL_ICEBOLT);
+                    instance->DoRemoveAurasDueToSpellOnPlayers(SPELL_ICEBOLT, true, true);
                     me->SetReactState(REACT_AGGRESSIVE);
                     if (me->IsHovering())
                     {
@@ -175,9 +175,9 @@ class boss_sapphiron : public CreatureScript
                 damage = me->GetHealth()-1; // don't die during air phase
             }
 
-            void JustEngagedWith(Unit* /*who*/) override
+            void JustEngagedWith(Unit* who) override
             {
-                _JustEngagedWith();
+                BossAI::JustEngagedWith(who);
 
                 me->CastSpell(me, SPELL_FROST_AURA, true);
 
@@ -379,7 +379,7 @@ class boss_sapphiron : public CreatureScript
                             case EVENT_EXPLOSION:
                                 DoCastAOE(SPELL_FROST_BREATH);
                                 DoCastAOE(SPELL_FROST_BREATH_ANTICHEAT);
-                                instance->DoRemoveAurasDueToSpellOnPlayers(SPELL_ICEBOLT);
+                                instance->DoRemoveAurasDueToSpellOnPlayers(SPELL_ICEBOLT, true, true);
                                 events.ScheduleEvent(EVENT_LAND, Seconds(3) + Milliseconds(500), 0, PHASE_FLIGHT);
                                 return;
                             case EVENT_LAND:

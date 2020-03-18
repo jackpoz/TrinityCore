@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -57,11 +57,11 @@ void SQLQueryHolder::SetPreparedResult(size_t index, PreparedResultSet* result)
 
 SQLQueryHolder::~SQLQueryHolder()
 {
-    for (size_t i = 0; i < m_queries.size(); i++)
+    for (std::pair<PreparedStatement*, PreparedQueryResult>& query : m_queries)
     {
         /// if the result was never used, free the resources
         /// results used already (getresult called) are expected to be deleted
-        delete m_queries[i].first;
+        delete query.first;
     }
 }
 
