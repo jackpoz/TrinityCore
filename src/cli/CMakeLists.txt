@@ -48,23 +48,23 @@ add_library(cli SHARED ${cli_sources}
   ${CMAKE_SOURCE_DIR}/src/server/shared/DataStores/DBCDatabaseLoader.cpp)
 
 target_link_libraries(cli
-  common
-  format
-  g3dlib
-  Recast
-  Detour
-  ${BZIP2_LIBRARIES}
-  ${ZLIB_LIBRARIES}
-  ${CMAKE_THREAD_LIBS_INIT}
-  ${Boost_SYSTEM_LIBRARY}
-  ${Boost_REGEX_LIBRARY}
-  ${Boost_IOSTREAMS_LIBRARY}
+  PRIVATE
+    trinity-dependency-interface
+  PUBLIC
+    common
+    format
+    g3dlib
+    Recast
+    Detour
+    ${BZIP2_LIBRARIES}
+    ${ZLIB_LIBRARIES}
+    ${CMAKE_THREAD_LIBS_INIT}
+    ${Boost_SYSTEM_LIBRARY}
+    ${Boost_REGEX_LIBRARY}
+    ${Boost_IOSTREAMS_LIBRARY}
 )
 
 add_definitions( -D_UNICODE -DUNICODE -DLOCKEDQUEUE_H -D_DATABASEWORKERPOOL_H -D_WORLDDATABASE_H -DDATABASEENV_H -D_MUTEX_ -DTRANSPORTMGR_H)
-if(NOT CMAKE_CXX_FLAGS MATCHES "/clr")
-   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /clr /EHa")
-endif()
 
 if(CMAKE_CXX_FLAGS_DEBUG MATCHES "/RTC1")
    string(REPLACE "/RTC1" " " CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
@@ -80,4 +80,4 @@ elseif( WIN32 )
   install(TARGETS cli DESTINATION "${CMAKE_INSTALL_PREFIX}")
 endif()
 
-set_target_properties(cli PROPERTIES VS_DOTNET_TARGET_FRAMEWORK_VERSION "v4.6.1")
+set_target_properties(cli PROPERTIES VS_DOTNET_TARGET_FRAMEWORK_VERSION "v4.6.1" COMMON_LANGUAGE_RUNTIME "" LINKER_LANGUAGE CXX)
