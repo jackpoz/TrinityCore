@@ -51,6 +51,7 @@
 #include "World.h"
 #include "WorldPacket.h"
 #include "WorldSocket.h"
+#include <boost/stacktrace.hpp>
 #include <zlib.h>
 
 namespace {
@@ -616,8 +617,8 @@ void WorldSession::KickPlayer(std::string const& reason)
 {
     if (m_Socket)
     {
-        TC_LOG_INFO("network.kick", "Account: %u Character: '%s' %s kicked with reason: %s", GetAccountId(), _player ? _player->GetName().c_str() : "<none>",
-            _player ? _player->GetGUID().ToString().c_str() : "", reason.c_str());
+        TC_LOG_INFO("network.kick", "Account: %u Character: '%s' %s kicked with reason: %s\nStacktrace:\n%s", GetAccountId(), _player ? _player->GetName().c_str() : "<none>",
+            _player ? _player->GetGUID().ToString().c_str() : "", reason.c_str(), boost::stacktrace::to_string(boost::stacktrace::stacktrace()).c_str());
 
         m_Socket->CloseSocket();
         forceExit = true;
