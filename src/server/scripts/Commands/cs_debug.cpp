@@ -44,6 +44,7 @@ EndScriptData */
 #include "SpellMgr.h"
 #include "Transport.h"
 #include "World.h"
+#include <boost/stacktrace.hpp>
 #include <fstream>
 #include <limits>
 #include <map>
@@ -120,7 +121,8 @@ public:
             { "dummy",         rbac::RBAC_PERM_COMMAND_DEBUG_DUMMY,         false, &HandleDebugDummyCommand,            "" },
             { "asan",          rbac::RBAC_PERM_COMMAND_DEBUG_ASAN,          true,  nullptr,                             "", debugAsanCommandTable },
             { "guidlimits",    rbac::RBAC_PERM_COMMAND_DEBUG,               true,  &HandleDebugGuidLimitsCommand,       "" },
-            { "questreset",    rbac::RBAC_PERM_COMMAND_DEBUG_QUESTRESET,    true,  &HandleDebugQuestResetCommand,       "" }
+            { "questreset",    rbac::RBAC_PERM_COMMAND_DEBUG_QUESTRESET,    true,  &HandleDebugQuestResetCommand,       "" },
+            { "stacktrace",    rbac::RBAC_PERM_COMMAND_DEBUG,               true,  &HandleDebugStacktraceCommand,       "" }
         };
         static std::vector<ChatCommand> commandTable =
         {
@@ -1942,6 +1944,12 @@ public:
     {
         handler->PSendSysMessage("Map Id: %u Name: '%s' Instance Id: %u Highest Guid Creature: " UI64FMTD " GameObject: " UI64FMTD,
             map->GetId(), map->GetMapName(), map->GetInstanceId(), uint64(map->GetMaxLowGuid<HighGuid::Unit>()), uint64(map->GetMaxLowGuid<HighGuid::GameObject>()));
+    }
+
+    static bool HandleDebugStacktraceCommand(ChatHandler* handler, CommandArgs* /*args*/)
+    {
+        handler->PSendSysMessage("Stacktrace:\n%s", boost::stacktrace::to_string(boost::stacktrace::stacktrace()).c_str());
+        return true;
     }
 
     static bool HandleDebugDummyCommand(ChatHandler* handler, CommandArgs* /*args*/)
