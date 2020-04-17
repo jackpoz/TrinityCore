@@ -1948,7 +1948,9 @@ public:
 
     static bool HandleDebugStacktraceCommand(ChatHandler* handler, CommandArgs* /*args*/)
     {
-        handler->PSendSysMessage("Stacktrace:\n%s", boost::stacktrace::to_string(boost::stacktrace::stacktrace()).c_str());
+        std::ostringstream ss;
+        ss << boost::stacktrace::stacktrace();
+        handler->PSendSysMessage("Stacktrace:\n%s", ss.str().c_str());
         return true;
     }
 

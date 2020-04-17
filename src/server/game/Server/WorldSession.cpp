@@ -617,8 +617,10 @@ void WorldSession::KickPlayer(std::string const& reason)
 {
     if (m_Socket)
     {
+        std::ostringstream ss;
+        ss << boost::stacktrace::stacktrace();
         TC_LOG_INFO("network.kick", "Account: %u Character: '%s' %s kicked with reason: %s\nStacktrace:\n%s", GetAccountId(), _player ? _player->GetName().c_str() : "<none>",
-            _player ? _player->GetGUID().ToString().c_str() : "", reason.c_str(), boost::stacktrace::to_string(boost::stacktrace::stacktrace()).c_str());
+            _player ? _player->GetGUID().ToString().c_str() : "", reason.c_str(), ss.str().c_str());
 
         m_Socket->CloseSocket();
         forceExit = true;
