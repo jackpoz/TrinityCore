@@ -89,6 +89,7 @@ namespace WorldPackets
         }
 
     private:
+#ifndef COVERITY_CPP14_COMPATIBLE
         bool Validate() const
         {
             return ValidateNth(std::make_index_sequence<std::tuple_size_v<ValidatorList>>{});
@@ -99,6 +100,13 @@ namespace WorldPackets
         {
             return (std::tuple_element_t<indexes, ValidatorList>::Validate(_storage) && ...);
         }
+#else
+        bool Validate() const
+        {
+            // not implemented in C++14
+            return true;
+        }
+#endif
 
         std::string _storage;
     };

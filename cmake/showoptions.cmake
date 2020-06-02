@@ -119,6 +119,12 @@ if ( PERFORMANCE_PROFILING )
   add_definitions(-DPERFORMANCE_PROFILING)
 endif()
 
+if ( COVERITY_CPP14_COMPATIBLE )
+  message(" *** COVERITY_CPP14_COMPATIBLE - WARNING!")
+  message(" *** Please note that this is for COVERITY SCAN STATIC ANALYSIS only!")
+  add_definitions(-DCOVERITY_CPP14_COMPATIBLE)
+endif()
+
 if( WITH_STRICT_DATABASE_TYPE_CHECKS )
   message("")
   message(" *** WITH_STRICT_DATABASE_TYPE_CHECKS - WARNING!")

@@ -1265,7 +1265,12 @@ void Guild::HandleRoster(WorldSession* session)
 
     for (RankInfo const& rank : m_ranks)
     {
+#ifndef COVERITY_CPP14_COMPATIBLE
         WorldPackets::Guild::GuildRankData& rankData =  roster.RankData.emplace_back();
+#else
+        roster.RankData.emplace_back();
+        WorldPackets::Guild::GuildRankData& rankData = roster.RankData.back();
+#endif
 
         rankData.Flags = rank.GetRights();
         rankData.WithdrawGoldLimit = rank.GetBankMoneyPerDay();
@@ -1281,7 +1286,12 @@ void Guild::HandleRoster(WorldSession* session)
     {
         Member* member = itr.second;
 
+#ifndef COVERITY_CPP14_COMPATIBLE
         WorldPackets::Guild::GuildRosterMemberData& memberData = roster.MemberData.emplace_back();
+#else
+        roster.MemberData.emplace_back();
+        WorldPackets::Guild::GuildRosterMemberData& memberData = roster.MemberData.back();
+#endif
 
         memberData.Guid = member->GetGUID();
         memberData.RankID = int32(member->GetRankId());

@@ -4669,7 +4669,12 @@ void Map::SetZoneOverrideLight(uint32 zoneId, uint32 areaLightId, uint32 overrid
     // set new override (if any)
     if (overrideLightId)
     {
+#ifndef COVERITY_CPP14_COMPATIBLE
         ZoneDynamicInfo::LightOverride& lightOverride = info.LightOverrides.emplace_back();
+#else
+        info.LightOverrides.emplace_back();
+        ZoneDynamicInfo::LightOverride& lightOverride = info.LightOverrides.back();
+#endif
         lightOverride.AreaLightId = areaLightId;
         lightOverride.OverrideLightId = overrideLightId;
         lightOverride.TransitionMilliseconds = transitionMilliseconds;

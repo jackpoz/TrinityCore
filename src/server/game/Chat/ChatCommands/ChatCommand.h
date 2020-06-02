@@ -45,6 +45,7 @@ struct CommandArgsConsumerSingle
 
 struct CommandArgsVariantConsumer
 {
+#ifndef COVERITY_CPP14_COMPATIBLE
     template <typename V, typename T1, typename... Ts>
     static char const* TryConsumeTo(V& val, char const* args)
     {
@@ -59,6 +60,14 @@ struct CommandArgsVariantConsumer
         else
             return nullptr;
     }
+#else
+    template <typename V, typename T1, typename... Ts>
+    static char const* TryConsumeTo(V& /*val*/, char const* /*args*/)
+    {
+        // not implemented in C++14
+        return nullptr;
+    }
+#endif
 };
 
 template <typename... Ts>

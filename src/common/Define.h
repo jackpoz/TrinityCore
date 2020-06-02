@@ -144,4 +144,113 @@ typedef uint32_t uint32;
 typedef uint16_t uint16;
 typedef uint8_t uint8;
 
+#ifdef COVERITY_CPP14_COMPATIBLE
+/* C++17 missing bits required for Coverity */
+#include <string>
+#include <type_traits>
+#include <utility>
+
+namespace std
+{
+    template< class M, class N>
+    constexpr std::common_type_t<M, N> lcm(M m, N /*n*/)
+    {
+        // not implemented in C++14
+        return m;
+    }
+
+    template <class... Types>
+    class variant
+    {
+    public:
+        template <class _Ty>
+        variant& operator =(_Ty&& /*other*/)
+        {
+            // not implemented in C++14
+            return *this;
+        }
+    };
+
+    template <class Visitor, class... Variants>
+    std::string visit(Visitor&& /*vis*/, Variants&&... /*vars*/)
+    {
+        // not implemented in C++14
+        return "";
+    }
+
+    template<class T>
+    constexpr const T& clamp(const T& v, const T& lo, const T& hi)
+    {
+        return (v < lo) ? lo : (hi < v) ? hi : v;
+    }
+
+    template <class F, class Tuple>
+    constexpr decltype(auto) apply(F&& /*f*/, Tuple&& /*t*/)
+    {
+        // not implemented in C++14
+        return false;
+    }
+
+#ifndef WIN32
+    template <class C>
+    constexpr auto size(const C& c) -> decltype(c.size())
+    {
+        return c.size();
+    }
+
+    template <class T, std::size_t N>
+    constexpr std::size_t size(const T(&array)[N]) noexcept
+    {
+        (void)array;
+        return N;
+    }
+
+    template <class C>
+    constexpr auto data(const C& c) -> decltype(c.data())
+    {
+        return c.data();
+    }
+
+    template <class C>
+    constexpr auto data(C & c) -> decltype(c.data())
+    {
+        return c.data();
+    }
+
+    template<class...> struct disjunction : std::false_type { };
+    template<class B1> struct disjunction<B1> : B1 { };
+    template<class B1, class... Bn>
+    struct disjunction<B1, Bn...>
+        : std::conditional_t<bool(B1::value), B1, disjunction<Bn...>> { };
+
+    template< class Base, class Derived >
+    constexpr bool is_base_of_v = is_base_of<Base, Derived>::value;
+
+    template< class T >
+    constexpr bool is_move_assignable_v = is_move_assignable<T>::value;
+
+    template< class T >
+    constexpr bool is_unsigned_v = is_unsigned<T>::value;
+
+    template< class T >
+    constexpr bool is_signed_v = is_signed<T>::value;
+
+    template< class T, class U >
+    constexpr bool is_assignable_v = is_assignable<T, U>::value;
+
+    template< class T >
+    constexpr std::size_t tuple_size_v = tuple_size<T>::value;
+
+    template< class T >
+    constexpr bool is_integral_v = is_integral<T>::value;
+
+    template< class T, class U >
+    constexpr bool is_same_v = is_same<T, U>::value;
+
+    template< class T >
+    constexpr bool is_floating_point_v = is_floating_point<T>::value;
+#endif
+}
+#endif
+
 #endif //TRINITY_DEFINE_H
