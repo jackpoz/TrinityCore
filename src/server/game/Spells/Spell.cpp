@@ -919,7 +919,7 @@ void Spell::SelectEffectImplicitTargets(SpellEffIndex effIndex, SpellImplicitTar
                             m_targets.SetSrc(*m_caster);
                             break;
                         default:
-                            ASSERT(false && "Spell::SelectEffectImplicitTargets: received not implemented select target reference type for TARGET_TYPE_OBJECT_SRC");
+                            ABORT_MSG("Spell::SelectEffectImplicitTargets: received not implemented select target reference type for TARGET_TYPE_OBJECT_SRC");
                             break;
                     }
                     break;
@@ -936,7 +936,7 @@ void Spell::SelectEffectImplicitTargets(SpellEffIndex effIndex, SpellImplicitTar
                              SelectImplicitDestDestTargets(effIndex, targetType);
                              break;
                          default:
-                             ASSERT(false && "Spell::SelectEffectImplicitTargets: received not implemented select target reference type for TARGET_TYPE_OBJECT_DEST");
+                             ABORT_MSG("Spell::SelectEffectImplicitTargets: received not implemented select target reference type for TARGET_TYPE_OBJECT_DEST");
                              break;
                      }
                      break;
@@ -950,7 +950,7 @@ void Spell::SelectEffectImplicitTargets(SpellEffIndex effIndex, SpellImplicitTar
                             SelectImplicitTargetObjectTargets(effIndex, targetType);
                             break;
                         default:
-                            ASSERT(false && "Spell::SelectEffectImplicitTargets: received not implemented select target reference type for TARGET_TYPE_OBJECT");
+                            ABORT_MSG("Spell::SelectEffectImplicitTargets: received not implemented select target reference type for TARGET_TYPE_OBJECT");
                             break;
                     }
                     break;
@@ -960,7 +960,7 @@ void Spell::SelectEffectImplicitTargets(SpellEffIndex effIndex, SpellImplicitTar
             TC_LOG_DEBUG("spells", "SPELL: target type %u, found in spellID %u, effect %u is not implemented yet!", m_spellInfo->Id, effIndex, targetType.GetTarget());
             break;
         default:
-            ASSERT(false && "Spell::SelectEffectImplicitTargets: received not implemented select target category");
+            ABORT_MSG("Spell::SelectEffectImplicitTargets: received not implemented select target category");
             break;
     }
 }
@@ -969,7 +969,7 @@ void Spell::SelectImplicitChannelTargets(SpellEffIndex effIndex, SpellImplicitTa
 {
     if (targetType.GetReferenceType() != TARGET_REFERENCE_TYPE_CASTER)
     {
-        ASSERT(false && "Spell::SelectImplicitChannelTargets: received not implemented target reference type");
+        ABORT_MSG("Spell::SelectImplicitChannelTargets: received not implemented target reference type");
         return;
     }
 
@@ -1016,7 +1016,7 @@ void Spell::SelectImplicitChannelTargets(SpellEffIndex effIndex, SpellImplicitTa
             break;
         }
         default:
-            ASSERT(false && "Spell::SelectImplicitChannelTargets: received not implemented target type");
+            ABORT_MSG("Spell::SelectImplicitChannelTargets: received not implemented target type");
             break;
     }
 }
@@ -1025,7 +1025,7 @@ void Spell::SelectImplicitNearbyTargets(SpellEffIndex effIndex, SpellImplicitTar
 {
     if (targetType.GetReferenceType() != TARGET_REFERENCE_TYPE_CASTER)
     {
-        ASSERT(false && "Spell::SelectImplicitNearbyTargets: received not implemented target reference type");
+        ABORT_MSG("Spell::SelectImplicitNearbyTargets: received not implemented target reference type");
         return;
     }
 
@@ -1046,7 +1046,7 @@ void Spell::SelectImplicitNearbyTargets(SpellEffIndex effIndex, SpellImplicitTar
             range = m_spellInfo->GetMaxRange(IsPositive(), m_caster, this);
             break;
         default:
-            ASSERT(false && "Spell::SelectImplicitNearbyTargets: received not implemented selection check type");
+            ABORT_MSG("Spell::SelectImplicitNearbyTargets: received not implemented selection check type");
             break;
     }
 
@@ -1143,7 +1143,7 @@ void Spell::SelectImplicitNearbyTargets(SpellEffIndex effIndex, SpellImplicitTar
             break;
         }
         default:
-            ASSERT(false && "Spell::SelectImplicitNearbyTargets: received not implemented target object type");
+            ABORT_MSG("Spell::SelectImplicitNearbyTargets: received not implemented target object type");
             break;
     }
 
@@ -1154,7 +1154,7 @@ void Spell::SelectImplicitConeTargets(SpellEffIndex effIndex, SpellImplicitTarge
 {
     if (targetType.GetReferenceType() != TARGET_REFERENCE_TYPE_CASTER)
     {
-        ASSERT(false && "Spell::SelectImplicitConeTargets: received not implemented target reference type");
+        ABORT_MSG("Spell::SelectImplicitConeTargets: received not implemented target reference type");
         return;
     }
     std::list<WorldObject*> targets;
@@ -1226,7 +1226,7 @@ void Spell::SelectImplicitAreaTargets(SpellEffIndex effIndex, SpellImplicitTarge
             break;
         }
         default:
-            ASSERT(false && "Spell::SelectImplicitAreaTargets: received not implemented target reference type");
+            ABORT_MSG("Spell::SelectImplicitAreaTargets: received not implemented target reference type");
             return;
     }
     if (!referer)
@@ -1247,7 +1247,7 @@ void Spell::SelectImplicitAreaTargets(SpellEffIndex effIndex, SpellImplicitTarge
             center = referer;
             break;
          default:
-             ASSERT(false && "Spell::SelectImplicitAreaTargets: received not implemented target reference type");
+             ABORT_MSG("Spell::SelectImplicitAreaTargets: received not implemented target reference type");
              return;
     }
     std::list<WorldObject*> targets;
@@ -5505,7 +5505,7 @@ SpellCastResult Spell::CheckCast(bool strict, uint32* param1 /*= nullptr*/, uint
                     float objSize = target->GetCombatReach();
                     float range = m_spellInfo->GetMaxRange(true, unitCaster, this) * 1.5f + objSize; // can't be overly strict
 
-                    m_preGeneratedPath = Trinity::make_unique<PathGenerator>(unitCaster);
+                    m_preGeneratedPath = std::make_unique<PathGenerator>(unitCaster);
                     m_preGeneratedPath->SetPathLengthLimit(range);
 
                     // first try with raycast, if it fails fall back to normal path
@@ -7458,23 +7458,22 @@ void Spell::HandleLaunchPhase()
         HandleEffects(nullptr, nullptr, nullptr, i, SPELL_EFFECT_HANDLE_LAUNCH);
     }
 
-    bool usesAmmo;
+    PrepareTargetProcessing();
+
+    // Take ammunition if the ranged attack requires ammunition
     if (Player* player = m_caster->ToPlayer())
     {
-        usesAmmo = m_spellInfo->HasAttribute(SPELL_ATTR0_CU_DIRECT_DAMAGE);
+        bool usesAmmo = m_spellInfo->HasAttribute(SPELL_ATTR0_REQ_AMMO);
         if (player->HasAuraTypeWithAffectMask(SPELL_AURA_ABILITY_CONSUME_NO_AMMO, m_spellInfo))
             usesAmmo = false;
 
-        // do not consume ammo anymore for Hunter's volley spell
+        // Do not consume ammo for the triggered AoE ticks of Volley (Hunter spell)
         if (IsTriggered() && m_spellInfo->SpellFamilyName == SPELLFAMILY_HUNTER && m_spellInfo->IsTargetingArea())
             usesAmmo = false;
+
+        if (usesAmmo)
+            TakeAmmo();
     }
-    else
-        usesAmmo = false;
-
-    PrepareTargetProcessing();
-
-    bool ammoTaken = false;
 
     for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
     {
@@ -7487,32 +7486,6 @@ void Spell::HandleLaunchPhase()
             uint32 mask = target.EffectMask;
             if (!(mask & (1 << i)))
                 continue;
-
-            if (usesAmmo && !ammoTaken)
-            {
-                for (uint8 j = 0; j < MAX_SPELL_EFFECTS; ++j)
-                {
-                    if (!(mask & 1 << j))
-                        continue;
-
-                    switch (m_spellInfo->Effects[j].Effect)
-                    {
-                        case SPELL_EFFECT_SCHOOL_DAMAGE:
-                        case SPELL_EFFECT_WEAPON_DAMAGE:
-                        case SPELL_EFFECT_WEAPON_DAMAGE_NOSCHOOL:
-                        case SPELL_EFFECT_NORMALIZED_WEAPON_DMG:
-                        case SPELL_EFFECT_WEAPON_PERCENT_DAMAGE:
-                            ammoTaken = true;
-                            TakeAmmo();
-                            break;
-                        default:
-                            break;
-                    }
-
-                    if (ammoTaken)
-                        break;
-                }
-            }
 
             DoEffectOnLaunchTarget(target, multiplier, i);
         }
@@ -8090,7 +8063,7 @@ WorldObjectSpellTargetCheck::WorldObjectSpellTargetCheck(WorldObject* caster, Wo
     _targetSelectionType(selectionType), _condSrcInfo(nullptr), _condList(condList)
 {
     if (condList)
-        _condSrcInfo = Trinity::make_unique<ConditionSourceInfo>(nullptr, caster);
+        _condSrcInfo = std::make_unique<ConditionSourceInfo>(nullptr, caster);
 }
 
 WorldObjectSpellTargetCheck::~WorldObjectSpellTargetCheck()

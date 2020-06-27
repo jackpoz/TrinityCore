@@ -31,6 +31,7 @@
 #include "Log.h"
 #include "MapInstanced.h"
 #include "MapManager.h"
+#include "Metric.h"
 #include "MiscPackets.h"
 #include "MMapFactory.h"
 #include "MotionMaster.h"
@@ -879,6 +880,14 @@ void Map::Update(uint32 t_diff)
         ProcessRelocationNotifies(t_diff);
 
     sScriptMgr->OnMapUpdate(this, t_diff);
+
+    TC_METRIC_VALUE("map_creatures", uint64(GetObjectsStore().Size<Creature>()),
+        TC_METRIC_TAG("map_id", std::to_string(GetId())),
+        TC_METRIC_TAG("map_instanceid", std::to_string(GetInstanceId())));
+
+    TC_METRIC_VALUE("map_gameobjects", uint64(GetObjectsStore().Size<GameObject>()),
+        TC_METRIC_TAG("map_id", std::to_string(GetId())),
+        TC_METRIC_TAG("map_instanceid", std::to_string(GetInstanceId())));
 }
 
 struct ResetNotifier
@@ -2982,7 +2991,7 @@ bool Map::CheckRespawn(RespawnInfo* info)
                     doDelete = true;
                 break;
             default:
-                ASSERT(false, "Invalid spawn type %u with spawnId %u on map %u", uint32(info->type), info->spawnId, GetId());
+                ABORT_MSG("Invalid spawn type %u with spawnId %u on map %u", uint32(info->type), info->spawnId, GetId());
                 return true;
         }
         if (doDelete)
@@ -3017,7 +3026,7 @@ bool Map::CheckRespawn(RespawnInfo* info)
         else if (info->type == SPAWN_TYPE_CREATURE)
             sPoolMgr->UpdatePool<Creature>(poolId, info->spawnId);
         else
-            ASSERT(false, "Invalid spawn type %u (spawnid %u) on map %u", uint32(info->type), info->spawnId, GetId());
+            ABORT_MSG("Invalid spawn type %u (spawnid %u) on map %u", uint32(info->type), info->spawnId, GetId());
         info->respawnTime = 0;
         return false;
     }
@@ -3080,7 +3089,7 @@ bool Map::AddRespawnInfo(RespawnInfo const& info)
         ASSERT(bySpawnIdMap.find(info.spawnId) == bySpawnIdMap.end(), "Insertion of respawn info with id (%u,%u) into spawn id map failed - state desync.", uint32(info.type), info.spawnId);
     }
     else
-        ASSERT(false, "Invalid respawn info for spawn id (%u,%u) being inserted", uint32(info.type), info.spawnId);
+        ABORT_MSG("Invalid respawn info for spawn id (%u,%u) being inserted", uint32(info.type), info.spawnId);
 
     RespawnInfo * ri = new RespawnInfo(info);
     ri->handle = _respawnTimes.push(ri);
@@ -3175,7 +3184,7 @@ void Map::DoRespawn(SpawnObjectType type, ObjectGuid::LowType spawnId, uint32 gr
             break;
         }
         default:
-            ASSERT(false, "Invalid spawn type %u (spawnid %u) on map %u", uint32(type), spawnId, GetId());
+            ABORT_MSG("Invalid spawn type %u (spawnid %u) on map %u", uint32(type), spawnId, GetId());
     }
 }
 
@@ -3345,7 +3354,7 @@ bool Map::SpawnGroupSpawn(uint32 groupId, bool ignoreRespawn, bool force, std::v
                 break;
             }
             default:
-                ASSERT(false, "Invalid spawn type %u with spawnId %u", uint32(data->type), data->spawnId);
+                ABORT_MSG("Invalid spawn type %u with spawnId %u", uint32(data->type), data->spawnId);
                 return false;
         }
     }
@@ -4630,7 +4639,7 @@ Weather* Map::GetOrGenerateZoneDefaultWeather(uint32 zoneId)
     ZoneDynamicInfo& info = _zoneDynamicInfo[zoneId];
     if (!info.DefaultWeather)
     {
-        info.DefaultWeather = Trinity::make_unique<Weather>(zoneId, weatherData);
+        info.DefaultWeather = std::make_unique<Weather>(zoneId, weatherData);
         info.DefaultWeather->ReGenerate();
         info.DefaultWeather->UpdateWeather();
     }
