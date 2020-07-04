@@ -1363,7 +1363,7 @@ class spell_mage_missile_barrage_proc : public AuraScript
         Unit* caster = GetTarget();
         if (caster->HasAura(SPELL_MAGE_T10_2P_BONUS))
             if (Aura* aura = caster->GetAuraOfRankedSpell(SPELL_MAGE_ARCANE_MISSILES_R1))
-                if (spell_mage_arcane_missiles* missiles = aura->GetScript<spell_mage_arcane_missiles>(ScriptName))
+                if (spell_mage_arcane_missiles* missiles = aura->GetScript<spell_mage_arcane_missiles>("spell_mage_arcane_missiles"))
                     missiles->AllowT10Proc();
     }
 
