@@ -125,6 +125,7 @@ void OpcodeTable::Initialize()
 #define DEFINE_HANDLER(opcode, status, processing, handler) \
     ValidateAndSetClientOpcode<decltype(handler), handler>(opcode, #opcode, status, processing)
 
+//-V:DEFINE_SERVER_OPCODE_HANDLER:501
 #define DEFINE_SERVER_OPCODE_HANDLER(opcode, status) \
     static_assert(status == STATUS_NEVER || status == STATUS_UNHANDLED, "Invalid status for server opcode"); \
     ValidateAndSetServerOpcode(opcode, #opcode, status)
