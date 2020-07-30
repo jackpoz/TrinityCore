@@ -1992,7 +1992,7 @@ class spell_pal_sacred_shield_dummy : public SpellScriptLoader
                 if (!caster)
                     return;
 
-                std::chrono::steady_clock::time_point now = GameTime::GetGameTimeSteadyPoint();
+                TimePoint now = GameTime::Now();
                 if (_cooldownEnd > now)
                     return;
 
@@ -2010,7 +2010,7 @@ class spell_pal_sacred_shield_dummy : public SpellScriptLoader
             }
 
             // Cooldown tracking can't be done in DB because of T8 bonus
-            std::chrono::steady_clock::time_point _cooldownEnd = std::chrono::steady_clock::time_point::min();
+            TimePoint _cooldownEnd = std::chrono::steady_clock::time_point::min();
         };
 
         AuraScript* GetAuraScript() const override
@@ -2054,7 +2054,7 @@ class spell_pal_seal_of_righteousness : public SpellScriptLoader
                 float mws = GetTarget()->GetAttackTime(BASE_ATTACK);
                 mws /= 1000.0f;
 
-                int32 bp = int32(mws * (0.022f * ap + 0.044f * sph));
+                int32 bp = std::lroundf(mws * (0.022f * ap + 0.044f * sph));
                 CastSpellExtraArgs args(aurEff);
                 args.AddSpellBP0(bp);
                 GetTarget()->CastSpell(victim, SPELL_PALADIN_SEAL_OF_RIGHTEOUSNESS, args);

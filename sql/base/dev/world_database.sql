@@ -1,8 +1,8 @@
--- MySQL dump 10.13  Distrib 5.7.25, for Linux (x86_64)
+-- MySQL dump 10.13  Distrib 5.7.29, for Linux (x86_64)
 --
 -- Host: localhost    Database: world
 -- ------------------------------------------------------
--- Server version	5.7.25-0ubuntu0.16.04.2
+-- Server version	5.7.29-0ubuntu0.18.04.1
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -175,6 +175,20 @@ CREATE TABLE `areatrigger_teleport` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `battlefield_template`
+--
+
+DROP TABLE IF EXISTS `battlefield_template`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `battlefield_template` (
+  `TypeId` tinyint(3) unsigned NOT NULL,
+  `ScriptName` varchar(64) NOT NULL DEFAULT '',
+  `comment` text
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `battleground_template`
 --
 
@@ -320,7 +334,7 @@ CREATE TABLE `creature` (
   `position_z` float NOT NULL DEFAULT '0',
   `orientation` float NOT NULL DEFAULT '0',
   `spawntimesecs` int(10) unsigned NOT NULL DEFAULT '120',
-  `spawndist` float NOT NULL DEFAULT '0',
+  `wander_distance` float NOT NULL DEFAULT '0',
   `currentwaypoint` mediumint(8) unsigned NOT NULL DEFAULT '0',
   `curhealth` int(10) unsigned NOT NULL DEFAULT '1',
   `curmana` int(10) unsigned NOT NULL DEFAULT '0',
@@ -573,7 +587,8 @@ CREATE TABLE `creature_summon_groups` (
   `position_z` float NOT NULL DEFAULT '0',
   `orientation` float NOT NULL DEFAULT '0',
   `summonType` tinyint(3) unsigned NOT NULL DEFAULT '0',
-  `summonTime` int(10) unsigned NOT NULL DEFAULT '0'
+  `summonTime` int(10) unsigned NOT NULL DEFAULT '0',
+  `Comment` varchar(255) NOT NULL DEFAULT ''
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -774,7 +789,7 @@ CREATE TABLE `creature_text_locale` (
   `ID` tinyint(3) unsigned NOT NULL DEFAULT '0',
   `Locale` varchar(4) NOT NULL,
   `Text` text,
-  PRIMARY KEY (`CreatureID`,`GroupID`,`ID`)
+  PRIMARY KEY (`CreatureID`,`GroupID`,`ID`,`Locale`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -835,7 +850,8 @@ CREATE TABLE `event_scripts` (
   `x` float NOT NULL DEFAULT '0',
   `y` float NOT NULL DEFAULT '0',
   `z` float NOT NULL DEFAULT '0',
-  `o` float NOT NULL DEFAULT '0'
+  `o` float NOT NULL DEFAULT '0',
+  `Comment` varchar(255) NOT NULL DEFAULT ''
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -919,9 +935,9 @@ DROP TABLE IF EXISTS `game_event_battleground_holiday`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `game_event_battleground_holiday` (
-  `eventEntry` tinyint(3) unsigned NOT NULL COMMENT 'Entry of the game event',
-  `bgflag` int(10) unsigned NOT NULL DEFAULT '0',
-  PRIMARY KEY (`eventEntry`)
+  `EventEntry` tinyint(3) unsigned NOT NULL COMMENT 'game_event EventEntry identifier',
+  `BattlegroundID` int(3) unsigned NOT NULL DEFAULT '0',
+  PRIMARY KEY (`EventEntry`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -1349,6 +1365,10 @@ CREATE TABLE `gameobject_template_addon` (
   `flags` int(10) unsigned NOT NULL DEFAULT '0',
   `mingold` mediumint(8) unsigned NOT NULL DEFAULT '0',
   `maxgold` mediumint(8) unsigned NOT NULL DEFAULT '0',
+  `artkit0` int(11) NOT NULL DEFAULT '0',
+  `artkit1` int(11) NOT NULL DEFAULT '0',
+  `artkit2` int(11) NOT NULL DEFAULT '0',
+  `artkit3` int(11) NOT NULL DEFAULT '0',
   PRIMARY KEY (`entry`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -2441,7 +2461,7 @@ CREATE TABLE `pool_members` (
   `type` smallint(10) unsigned NOT NULL,
   `spawnId` int(10) unsigned NOT NULL,
   `poolSpawnId` int(10) unsigned NOT NULL,
-  `chance` double unsigned NOT NULL,
+  `chance` float NOT NULL,
   `description` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`type`,`spawnId`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
@@ -3515,7 +3535,8 @@ CREATE TABLE `spell_scripts` (
   `x` float NOT NULL DEFAULT '0',
   `y` float NOT NULL DEFAULT '0',
   `z` float NOT NULL DEFAULT '0',
-  `o` float NOT NULL DEFAULT '0'
+  `o` float NOT NULL DEFAULT '0',
+  `Comment` varchar(255) NOT NULL DEFAULT ''
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -3832,6 +3853,7 @@ CREATE TABLE `waypoint_scripts` (
   `z` float NOT NULL DEFAULT '0',
   `o` float NOT NULL DEFAULT '0',
   `guid` int(11) NOT NULL DEFAULT '0',
+  `Comment` varchar(255) NOT NULL DEFAULT '',
   PRIMARY KEY (`guid`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -3863,4 +3885,4 @@ CREATE TABLE `waypoints` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2020-02-15 17:36:07
+-- Dump completed on 2020-07-15 10:35:48

@@ -84,7 +84,6 @@ public:
 
         static std::vector<ChatCommand> serverSetCommandTable =
         {
-            { "difftime", rbac::RBAC_PERM_COMMAND_SERVER_SET_DIFFTIME, true, &HandleServerSetDiffTimeCommand, "" },
             { "loglevel", rbac::RBAC_PERM_COMMAND_SERVER_SET_LOGLEVEL, true, &HandleServerSetLogLevelCommand, "" },
             { "motd",     rbac::RBAC_PERM_COMMAND_SERVER_SET_MOTD,     true, &HandleServerSetMotdCommand,     "" },
             { "closed",   rbac::RBAC_PERM_COMMAND_SERVER_SET_CLOSED,   true, &HandleServerSetClosedCommand,   "" },
@@ -138,7 +137,7 @@ public:
         handler->PSendSysMessage("%s", GitRevision::GetFullVersion());
         handler->PSendSysMessage("Using SSL version: %s (library: %s)", OPENSSL_VERSION_TEXT, SSLeay_version(SSLEAY_VERSION));
         handler->PSendSysMessage("Using Boost version: %i.%i.%i", BOOST_VERSION / 100000, BOOST_VERSION / 100 % 1000, BOOST_VERSION % 100);
-        handler->PSendSysMessage("Using MySQL version: %s", MySQL::GetLibraryVersion());
+        handler->PSendSysMessage("Using MySQL version: %u", MySQL::GetLibraryVersion());
         handler->PSendSysMessage("Using CMake version: %s", GitRevision::GetCMakeVersion());
 
         handler->PSendSysMessage("Compiled on: %s", GitRevision::GetHostOSVersion());
@@ -436,26 +435,6 @@ public:
             return false;
 
         sLog->SetLogLevel(name, level, *type == 'l');
-        return true;
-    }
-
-    // set diff time record interval
-    static bool HandleServerSetDiffTimeCommand(ChatHandler* /*handler*/, char const* args)
-    {
-        if (!*args)
-            return false;
-
-        char* newTimeStr = strtok((char*)args, " ");
-        if (!newTimeStr)
-            return false;
-
-        int32 newTime = atoi(newTimeStr);
-        if (newTime < 0)
-            return false;
-
-        sWorldUpdateTime.SetRecordUpdateTimeInterval(newTime);
-        printf("Record diff every %i ms\n", newTime);
-
         return true;
     }
 

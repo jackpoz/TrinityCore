@@ -20,6 +20,7 @@
 
 #include "Define.h"
 #include "ByteConverter.h"
+#include <array>
 #include <string>
 #include <vector>
 #include <cstring>
@@ -30,12 +31,12 @@ class MessageBuffer;
 class TC_SHARED_API ByteBufferException : public std::exception
 {
 public:
-    ~ByteBufferException() throw() { }
+    ~ByteBufferException() noexcept = default;
 
-    char const* what() const throw() override { return msg_.c_str(); }
+    char const* what() const noexcept override { return msg_.c_str(); }
 
 protected:
-    std::string & message() throw() { return msg_; }
+    std::string & message() noexcept { return msg_; }
 
 private:
     std::string msg_;
@@ -46,7 +47,7 @@ class TC_SHARED_API ByteBufferPositionException : public ByteBufferException
 public:
     ByteBufferPositionException(bool add, size_t pos, size_t size, size_t valueSize);
 
-    ~ByteBufferPositionException() throw() { }
+    ~ByteBufferPositionException() noexcept = default;
 };
 
 class TC_SHARED_API ByteBufferSourceException : public ByteBufferException
@@ -54,13 +55,21 @@ class TC_SHARED_API ByteBufferSourceException : public ByteBufferException
 public:
     ByteBufferSourceException(size_t pos, size_t size, size_t valueSize);
 
-    ~ByteBufferSourceException() throw() { }
+    ~ByteBufferSourceException() noexcept = default;
+};
+
+class TC_SHARED_API ByteBufferInvalidValueException : public ByteBufferException
+{
+public:
+    ByteBufferInvalidValueException(char const* type, char const* value);
+
+    ~ByteBufferInvalidValueException() noexcept = default;
 };
 
 class TC_SHARED_API ByteBuffer
 {
     public:
-        const static size_t DEFAULT_SIZE = 0x1000;
+        constexpr static size_t DEFAULT_SIZE = 0x1000;
 
         // constructor
         ByteBuffer() : _rpos(0), _wpos(0)
@@ -73,13 +82,13 @@ class TC_SHARED_API ByteBuffer
             _storage.reserve(reserve);
         }
 
-        ByteBuffer(ByteBuffer&& buf) : _rpos(buf._rpos), _wpos(buf._wpos), _storage(std::move(buf._storage))
+        ByteBuffer(ByteBuffer&& buf) noexcept : _rpos(buf._rpos), _wpos(buf._wpos), _storage(std::move(buf._storage))
         {
             buf._rpos = 0;
             buf._wpos = 0;
         }
 
-        ByteBuffer(ByteBuffer const& right) : _rpos(right._rpos), _wpos(right._wpos), _storage(right._storage) { }
+        ByteBuffer(ByteBuffer const& right) = default;
 
         ByteBuffer(MessageBuffer&& buffer);
 
@@ -95,7 +104,7 @@ class TC_SHARED_API ByteBuffer
             return *this;
         }
 
-        ByteBuffer& operator=(ByteBuffer&& right)
+        ByteBuffer& operator=(ByteBuffer&& right) noexcept
         {
             if (this != &right)
             {
@@ -109,7 +118,7 @@ class TC_SHARED_API ByteBuffer
             return *this;
         }
 
-        virtual ~ByteBuffer() { }
+        virtual ~ByteBuffer() = default;
 
         void clear()
         {
@@ -268,16 +277,9 @@ class TC_SHARED_API ByteBuffer
         ByteBuffer &operator>>(float &value);
         ByteBuffer &operator>>(double &value);
 
-        ByteBuffer &operator>>(std::string& value)
+        ByteBuffer& operator>>(std::string& value)
         {
-            value.clear();
-            while (rpos() < size())                         // prevent crash at wrong string format in packet
-            {
-                char c = read<char>();
-                if (c == 0)
-                    break;
-                value += c;
-            }
+            value = ReadCString(true);
             return *this;
         }
 
@@ -350,6 +352,12 @@ class TC_SHARED_API ByteBuffer
             _rpos += len;
         }
 
+        template <size_t Size>
+        void read(std::array<uint8, Size>& arr)
+        {
+            read(arr.data(), Size);
+        }
+
         void readPackGUID(uint64& guid)
         {
             if (rpos() + 1 > size())
@@ -373,6 +381,8 @@ class TC_SHARED_API ByteBuffer
                 }
             }
         }
+
+        std::string ReadCString(bool requireValidUtf8 = true);
 
         uint32 ReadPackedTime();
 
@@ -433,6 +443,12 @@ class TC_SHARED_API ByteBuffer
         {
             if (buffer.wpos())
                 append(buffer.contents(), buffer.wpos());
+        }
+
+        template <size_t Size>
+        void append(std::array<uint8, Size> const& arr)
+        {
+            append(arr.data(), Size);
         }
 
         // can be used in SMSG_MONSTER_MOVE opcode

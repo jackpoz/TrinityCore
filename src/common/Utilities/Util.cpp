@@ -283,9 +283,7 @@ std::string TimeToTimestampStr(time_t t)
     //       HH     hour (2 digits 00-23)
     //       MM     minutes (2 digits 00-59)
     //       SS     seconds (2 digits 00-59)
-    char buf[20];
-    snprintf(buf, 20, "%04d-%02d-%02d_%02d-%02d-%02d", aTm.tm_year+1900, aTm.tm_mon+1, aTm.tm_mday, aTm.tm_hour, aTm.tm_min, aTm.tm_sec);
-    return std::string(buf);
+    return Trinity::StringFormat("%04d-%02d-%02d_%02d-%02d-%02d", aTm.tm_year + 1900, aTm.tm_mon + 1, aTm.tm_mday, aTm.tm_hour, aTm.tm_min, aTm.tm_sec);
 }
 
 std::string TimeToHumanReadable(time_t t)
@@ -418,7 +416,7 @@ bool Utf8toWStr(const std::string& utf8str, std::wstring& wstr)
     return true;
 }
 
-bool WStrToUtf8(wchar_t* wstr, size_t size, std::string& utf8str)
+bool WStrToUtf8(wchar_t const* wstr, size_t size, std::string& utf8str)
 {
     try
     {
@@ -613,7 +611,7 @@ bool Utf8ToUpperOnlyLatin(std::string& utf8String)
     return WStrToUtf8(wstr, utf8String);
 }
 
-std::string ByteArrayToHexStr(uint8 const* bytes, uint32 arrayLen, bool reverse /* = false */)
+std::string ByteArrayToHexStr(uint8 const* bytes, size_t arrayLen, bool reverse /* = false */)
 {
     int32 init = 0;
     int32 end = arrayLen;

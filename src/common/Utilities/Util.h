@@ -21,6 +21,7 @@
 #include "Define.h"
 #include "Errors.h"
 
+#include <array>
 #include <string>
 #include <sstream>
 #include <utility>
@@ -114,7 +115,7 @@ inline bool Utf8toWStr(const std::string& utf8str, wchar_t* wstr, size_t& wsize)
 
 TC_COMMON_API bool WStrToUtf8(std::wstring const& wstr, std::string& utf8str);
 // size==real string size
-TC_COMMON_API bool WStrToUtf8(wchar_t* wstr, size_t size, std::string& utf8str);
+TC_COMMON_API bool WStrToUtf8(wchar_t const* wstr, size_t size, std::string& utf8str);
 
 // set string to "" if invalid utf8 sequence
 TC_COMMON_API size_t utf8length(std::string& utf8str);
@@ -304,8 +305,23 @@ TC_COMMON_API bool IsIPAddress(char const* ipaddress);
 TC_COMMON_API uint32 CreatePIDFile(std::string const& filename);
 TC_COMMON_API uint32 GetPID();
 
-TC_COMMON_API std::string ByteArrayToHexStr(uint8 const* bytes, uint32 length, bool reverse = false);
+TC_COMMON_API std::string ByteArrayToHexStr(uint8 const* bytes, size_t length, bool reverse = false);
+template <typename Container>
+std::string ByteArrayToHexStr(Container const& c, bool reverse = false) { return ByteArrayToHexStr(std::data(c), std::size(c), reverse); }
 TC_COMMON_API void HexStrToByteArray(std::string const& str, uint8* out, bool reverse = false);
+template <size_t Size>
+void HexStrToByteArray(std::string const& str, std::array<uint8, Size>& buf, bool reverse = false)
+{
+    ASSERT(str.size() == (2 * Size));
+    HexStrToByteArray(str, buf.data(), reverse);
+}
+template <size_t Size>
+std::array<uint8, Size> HexStrToByteArray(std::string const& str, bool reverse = false)
+{
+    std::array<uint8, Size> arr;
+    HexStrToByteArray(str, arr, reverse);
+    return arr;
+}
 
 TC_COMMON_API bool StringToBool(std::string const& str);
 
@@ -405,14 +421,6 @@ public:
     inline bool operator!=(flag96 const& right) const
     {
         return !(*this == right);
-    }
-
-    inline flag96& operator=(flag96 const& right)
-    {
-        part[0] = right.part[0];
-        part[1] = right.part[1];
-        part[2] = right.part[2];
-        return *this;
     }
 
     inline flag96 operator&(flag96 const& right) const
@@ -517,6 +525,18 @@ constexpr typename std::underlying_type<E>::type AsUnderlyingType(E enumValue)
 {
     static_assert(std::is_enum<E>::value, "AsUnderlyingType can only be used with enums");
     return static_cast<typename std::underlying_type<E>::type>(enumValue);
+}
+
+template<typename Ret, typename Only>
+Ret* Coalesce(Only* arg)
+{
+    return arg;
+}
+
+template<typename Ret, typename T1, typename... T>
+Ret* Coalesce(T1* first, T*... rest)
+{
+    return static_cast<Ret*>(first ? static_cast<Ret*>(first) : Coalesce<Ret>(rest...));
 }
 
 #endif

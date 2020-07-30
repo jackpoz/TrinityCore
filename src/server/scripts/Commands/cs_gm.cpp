@@ -33,8 +33,6 @@ EndScriptData */
 #include "Realm.h"
 #include "World.h"
 #include "WorldSession.h"
-#include <boost/thread/locks.hpp>
-#include <boost/thread/shared_mutex.hpp>
 
 class gm_commandscript : public CommandScript
 {
@@ -126,7 +124,7 @@ public:
         bool first = true;
         bool footer = false;
 
-        boost::shared_lock<boost::shared_mutex> lock(*HashMapHolder<Player>::GetLock());
+        std::shared_lock<std::shared_mutex> lock(*HashMapHolder<Player>::GetLock());
         HashMapHolder<Player>::MapType const& m = ObjectAccessor::GetPlayers();
         for (HashMapHolder<Player>::MapType::const_iterator itr = m.begin(); itr != m.end(); ++itr)
         {
@@ -167,7 +165,7 @@ public:
     static bool HandleGMListFullCommand(ChatHandler* handler, char const* /*args*/)
     {
         ///- Get the accounts with GM Level >0
-        PreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_SEL_GM_ACCOUNTS);
+        LoginDatabasePreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_SEL_GM_ACCOUNTS);
         stmt->setUInt8(0, uint8(SEC_MODERATOR));
         stmt->setInt32(1, int32(realm.Id.Realm));
         PreparedQueryResult result = LoginDatabase.Query(stmt);
