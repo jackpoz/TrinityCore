@@ -681,7 +681,7 @@ public:
     static char const* GetZoneName(uint32 zoneId, LocaleConstant locale)
     {
         AreaTableEntry const* zoneEntry = sAreaTableStore.LookupEntry(zoneId);
-        return zoneEntry ? zoneEntry->area_name[locale] : "<unknown zone>";
+        return zoneEntry ? zoneEntry->AreaName[locale] : "<unknown zone>";
     }
 
     static bool HandleListRespawnsCommand(ChatHandler* handler, char const* args)
@@ -716,7 +716,7 @@ public:
                 uint32 respawnZoneId = 0;
                 if (SpawnData const* edata = data->ToSpawnData())
                 {
-                    respawnZoneId = map->GetZoneId(edata->spawnPoint);
+                    respawnZoneId = map->GetZoneId(edata->phaseMask, edata->spawnPoint);
                     if (range)
                     {
                         if (!player->IsInDist(edata->spawnPoint, range))
