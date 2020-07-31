@@ -26697,7 +26697,7 @@ Pet* Player::SummonPet(uint32 entry, float x, float y, float z, float ang, PetTy
         {
             pet->DespawnOrUnsummon();
             SendTameFailure(PETTAME_DEAD);
-            return nullptr;
+            return nullptr; //-V773
         }
 
         // Remove Demonic Sacrifice auras (known pet)

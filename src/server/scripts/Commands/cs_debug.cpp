@@ -1901,7 +1901,7 @@ public:
         uint8 stack_array[10] = {};
         int size = 10;
 
-        handler->PSendSysMessage("Triggered an array out of bounds read at address %p, value %u", stack_array + size, stack_array[size]);
+        handler->PSendSysMessage("Triggered an array out of bounds read at address %p, value %u", stack_array + size, stack_array[size]); //-V557
         return true;
     }
 

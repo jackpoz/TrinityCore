@@ -392,7 +392,7 @@ Aura* Aura::Create(AuraCreateInfo& createInfo)
 
             // aura can be removed in Unit::_AddAura call
             if (aura->IsRemoved())
-                return nullptr;
+                return nullptr; //-V773
 
             // add owner
             uint8 effMask = createInfo._auraEffectMask;

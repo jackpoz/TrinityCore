@@ -858,7 +858,7 @@ public:
 
     void JustEngagedWith(Unit* /*target*/) override
     {
-        me->SetHomePosition(*me);
+        me->SetHomePosition(*me); //-V678
         if (IsUndead)
             DoZoneInCombat();
     }

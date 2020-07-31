@@ -44,7 +44,7 @@ class TC_COMMON_API BigNumber
         void SetQword(uint64);
         void SetBinary(uint8 const* bytes, int32 len, bool littleEndian = true);
         template <typename Container>
-        auto SetBinary(Container const& c, bool littleEndian = true) -> std::enable_if_t<!std::is_pointer_v<std::decay_t<Container>>> { SetBinary(std::data(c), std::size(c), littleEndian); }
+        auto SetBinary(Container const& c, bool littleEndian = true) -> std::enable_if_t<!std::is_pointer_v<std::decay_t<Container>>> { SetBinary(std::data(c), std::size(c), littleEndian); } //-V591
         bool SetHexStr(char const* str);
         bool SetHexStr(std::string const& str) { return SetHexStr(str.c_str()); }
 

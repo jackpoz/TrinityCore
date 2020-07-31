@@ -11503,7 +11503,7 @@ bool Unit::SetCharmedBy(Unit* charmer, CharmType type, AuraApplication const* au
     {
         InitCharmInfo();
         if (type == CHARM_TYPE_POSSESS)
-            GetCharmInfo()->InitPossessCreateSpells();
+            GetCharmInfo()->InitPossessCreateSpells(); //-V522
         else
             GetCharmInfo()->InitCharmCreateSpells();
     }
