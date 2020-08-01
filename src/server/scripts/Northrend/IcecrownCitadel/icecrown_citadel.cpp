@@ -701,7 +701,7 @@ struct npc_icc_orb_controller : public ScriptedAI
             Trinity::CreatureListSearcher<ICCOrbControllerMinionSearch> searcher(me, creatures, check);
             Cell::VisitGridObjects(me, searcher, 10.0f);
 
-            if (creatures.empty())
+            if (creatures.empty()) //-V547
                 return;
 
             for (Creature* creature : creatures)
@@ -827,7 +827,7 @@ struct DarkFallenAI : public ScriptedAI
                 ICCOrbControllerMinionSearch check(me, true);
                 Trinity::CreatureListSearcher<ICCOrbControllerMinionSearch> searcher(me, creatures, check);
                 Cell::VisitGridObjects(me, searcher, 10.0f);
-                if (!creatures.empty())
+                if (!creatures.empty()) //-V547
                 {
                     Creature* friendly = Trinity::Containers::SelectRandomContainerElement(creatures);
                     DoCast(friendly, SPELL_POLYMORPH_ALLY);

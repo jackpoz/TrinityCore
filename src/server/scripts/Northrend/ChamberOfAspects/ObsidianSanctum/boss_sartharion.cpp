@@ -400,7 +400,7 @@ public:
             Trinity::CreatureListSearcher<Trinity::AllCreaturesOfEntryInRange> searcher(me, fireCyclonesList, checker);
             Cell::VisitAllObjects(me, searcher, 200.0f);
 
-            if (fireCyclonesList.empty())
+            if (fireCyclonesList.empty()) //-V547
                 return;
 
             Trinity::Containers::SelectRandomContainerElement(fireCyclonesList)->CastSpell(target, SPELL_LAVA_STRIKE, true);

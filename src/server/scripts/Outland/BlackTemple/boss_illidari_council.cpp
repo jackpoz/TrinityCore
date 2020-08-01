@@ -334,7 +334,7 @@ struct boss_gathios_the_shatterer : public IllidariCouncilBossAI
                 Trinity::UnitListSearcher<Trinity::AnyFriendlyUnitInObjectRangeCheck> searcher(me, TargetList, checker);
                 Cell::VisitAllObjects(me, searcher, 100.0f);
 
-                if (!TargetList.empty())
+                if (!TargetList.empty()) //-V547
                 {
                     Unit* target = Trinity::Containers::SelectRandomContainerElement(TargetList);
                     DoCast(target, RAND(SPELL_BLESS_PROTECTION, SPELL_BLESS_SPELL_WARDING));

@@ -915,7 +915,7 @@ void hyjalAI::HideNearPos(float x, float y)
     Trinity::CreatureListSearcher<Trinity::AllFriendlyCreaturesInGrid> creature_searcher(me, creatures, creature_check);
     Cell::VisitGridObjects(x, y, me->GetMap(), creature_searcher, me->GetGridActivationRange());
 
-    if (!creatures.empty())
+    if (!creatures.empty()) //-V547
     {
         for (std::list<Creature*>::const_iterator itr = creatures.begin(); itr != creatures.end(); ++itr)
         {
@@ -959,7 +959,7 @@ void hyjalAI::WaypointReached(uint32 waypointId, uint32 /*pathId*/)
         Trinity::CreatureListSearcher<Trinity::AllFriendlyCreaturesInGrid> creature_searcher(me, creatures, creature_check);
         Cell::VisitGridObjects(me, creature_searcher, me->GetGridActivationRange());
 
-        if (!creatures.empty())
+        if (!creatures.empty()) //-V547
         {
             for (std::list<Creature*>::const_iterator itr = creatures.begin(); itr != creatures.end(); ++itr)
             {
@@ -991,7 +991,7 @@ void hyjalAI::DoOverrun(uint32 faction, const uint32 diff)
             Trinity::CreatureListSearcher<Trinity::AllFriendlyCreaturesInGrid> creature_searcher(me, creatures, creature_check);
             Cell::VisitGridObjects(me, creature_searcher, me->GetGridActivationRange());
 
-            if (!creatures.empty())
+            if (!creatures.empty()) //-V547
             {
                 for (std::list<Creature*>::const_iterator itr = creatures.begin(); itr != creatures.end(); ++itr)
                 {

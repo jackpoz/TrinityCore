@@ -2098,7 +2098,7 @@ class spell_thorim_activate_lightning_orb_periodic : public SpellScriptLoader
                 Trinity::CreatureListSearcher<UpperOrbCheck> searcher(caster, triggers, check);
                 Cell::VisitGridObjects(caster, searcher, 100.f);
 
-                if (!triggers.empty())
+                if (!triggers.empty()) //-V547
                 {
                     Creature* target = Trinity::Containers::SelectRandomContainerElement(triggers);
                     if (Creature* thorim = instance->GetCreature(BOSS_THORIM))

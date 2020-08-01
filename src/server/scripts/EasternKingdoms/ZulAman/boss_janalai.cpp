@@ -242,7 +242,7 @@ class boss_janalai : public CreatureScript
                 Cell::VisitGridObjects(me, searcher, me->GetGridActivationRange());
 
                 //TC_LOG_ERROR("scripts", "Eggs %d at middle", templist.size());
-                if (templist.empty())
+                if (templist.empty()) //-V547
                     return false;
 
                 for (std::list<Creature*>::const_iterator i = templist.begin(); i != templist.end(); ++i)

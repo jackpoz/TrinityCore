@@ -266,7 +266,7 @@ public:
         Trinity::CreatureListSearcher<Trinity::AnyUnitInObjectRangeCheck> go_search(object, creatureList, go_check);
         Cell::VisitGridObjects(object, go_search, radius);
 
-        if (!creatureList.empty())
+        if (!creatureList.empty()) //-V547
         {
             handler->PSendSysMessage("Found %zu Creatures.", creatureList.size());
 

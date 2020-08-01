@@ -1473,7 +1473,7 @@ struct npc_gunship_boarding_addAI : public gunship_npc_AI
                 return !me->_IsTargetAcceptable(player) || !me->CanStartAttack(player, true);
             });
 
-            if (!players.empty())
+            if (!players.empty()) //-V547
             {
                 players.sort(Trinity::ObjectDistanceOrderPred(me));
                 for (std::list<Player*>::iterator itr = players.begin(); itr != players.end(); ++itr)
@@ -1537,7 +1537,7 @@ struct npc_gunship_boarding_addAI : public gunship_npc_AI
             return !me->_IsTargetAcceptable(player) || !me->CanStartAttack(player, true);
         });
 
-        return !players.empty();
+        return !players.empty(); //-V547
     }
 
 private:

@@ -2292,7 +2292,7 @@ void Creature::CallAssistance()
             Trinity::CreatureListSearcher<Trinity::AnyAssistCreatureInRangeCheck> searcher(this, assistList, u_check);
             Cell::VisitGridObjects(this, searcher, radius);
 
-            if (!assistList.empty())
+            if (!assistList.empty()) //-V547
             {
                 AssistDelayEvent* e = new AssistDelayEvent(EnsureVictim()->GetGUID(), *this);
                 while (!assistList.empty())

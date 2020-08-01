@@ -4287,7 +4287,7 @@ class spell_corrupting_plague_aura : public AuraScript
         Trinity::CreatureListSearcher<CorruptingPlagueSearcher> creature_searcher(owner, targets, creature_check);
         Cell::VisitGridObjects(owner, creature_searcher, 15.0f);
 
-        if (!targets.empty())
+        if (!targets.empty()) //-V547
             return;
 
         PreventDefaultAction();
@@ -4345,7 +4345,7 @@ class spell_stasis_field_aura : public AuraScript
         Trinity::CreatureListSearcher<StasisFieldSearcher> creature_searcher(owner, targets, creature_check);
         Cell::VisitGridObjects(owner, creature_searcher, 15.0f);
 
-        if (!targets.empty())
+        if (!targets.empty()) //-V547
             return;
 
         PreventDefaultAction();

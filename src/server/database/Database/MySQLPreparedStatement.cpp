@@ -156,7 +156,7 @@ void MySQLPreparedStatement::SetParameter(uint8 index, std::string const& value)
     param->buffer_length = len;
     param->is_null_value = 0;
     delete param->length;
-    param->length = new unsigned long(len);
+    param->length = new unsigned long(len); //-V508
 
     memcpy(param->buffer, value.c_str(), len);
 }
@@ -173,7 +173,7 @@ void MySQLPreparedStatement::SetParameter(uint8 index, std::vector<uint8> const&
     param->buffer_length = len;
     param->is_null_value = 0;
     delete param->length;
-    param->length = new unsigned long(len);
+    param->length = new unsigned long(len); //-V508
 
     memcpy(param->buffer, value.data(), len);
 }

@@ -47,7 +47,7 @@ inline bool isNasty(uint8 c)
 {
     if (c == '\t')
         return false;
-    if (c <= '\037') // ASCII control block
+    if (c <= '\037') // ASCII control block //-V536
         return true;
     return false;
 }
