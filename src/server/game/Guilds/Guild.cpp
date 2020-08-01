@@ -1836,7 +1836,7 @@ void Guild::SendEventLog(WorldSession* session) const
 {
     GuildLog* logs = m_eventLog->GetGuildLog();
 
-    if (!logs)
+    if (!logs) //-V547
         return;
 
     WorldPackets::Guild::GuildEventLogQueryResults packet;
@@ -1859,7 +1859,7 @@ void Guild::SendBankLog(WorldSession* session, uint8 tabId) const
     {
         GuildLog* logs = m_bankEventLog[tabId]->GetGuildLog();
 
-        if (!logs)
+        if (!logs) //-V547
             return;
 
         WorldPackets::Guild::GuildBankLogQueryResults packet;

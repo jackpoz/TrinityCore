@@ -893,7 +893,7 @@ dtStatus PathGenerator::FindSmoothPath(float const* startPos, float const* endPo
         {
             // Reached end of path.
             dtVcopy(iterPos, targetPos);
-            if (nsmoothPath < maxSmoothPathSize)
+            if (nsmoothPath < maxSmoothPathSize) //-V547
             {
                 dtVcopy(&smoothPath[nsmoothPath*VERTEX_SIZE], iterPos);
                 nsmoothPath++;
@@ -922,7 +922,7 @@ dtStatus PathGenerator::FindSmoothPath(float const* startPos, float const* endPo
             float connectionStartPos[VERTEX_SIZE], connectionEndPos[VERTEX_SIZE];
             if (dtStatusSucceed(_navMesh->getOffMeshConnectionPolyEndPoints(prevRef, polyRef, connectionStartPos, connectionEndPos)))
             {
-                if (nsmoothPath < maxSmoothPathSize)
+                if (nsmoothPath < maxSmoothPathSize) //-V547
                 {
                     dtVcopy(&smoothPath[nsmoothPath*VERTEX_SIZE], connectionStartPos);
                     nsmoothPath++;

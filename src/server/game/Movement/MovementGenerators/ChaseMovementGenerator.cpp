@@ -177,7 +177,7 @@ bool ChaseMovementGenerator::Update(Unit* owner, uint32 diff)
             float x, y, z;
             bool shortenPath;
             // if we want to move toward the target and there's no fixed angle...
-            if (moveToward && !angle)
+            if (moveToward && !angle) //-V560
             {
                 // ...we'll pathfind to the center, then shorten the path
                 target->GetPosition(x, y, z);
@@ -186,7 +186,7 @@ bool ChaseMovementGenerator::Update(Unit* owner, uint32 diff)
             else
             {
                 // otherwise, we fall back to nearpoint finding
-                target->GetNearPoint(owner, x, y, z, (moveToward ? maxTarget : minTarget) - hitboxSum, angle ? target->ToAbsoluteAngle(angle->RelativeAngle) : target->GetAbsoluteAngle(owner));
+                target->GetNearPoint(owner, x, y, z, (moveToward ? maxTarget : minTarget) - hitboxSum, angle ? target->ToAbsoluteAngle(angle->RelativeAngle) : target->GetAbsoluteAngle(owner)); //-V547
                 shortenPath = false;
             }
 
@@ -202,7 +202,7 @@ bool ChaseMovementGenerator::Update(Unit* owner, uint32 diff)
                 return true;
             }
 
-            if (shortenPath)
+            if (shortenPath) //-V547
                 _path->ShortenPathUntilDist(PositionToVector3(target), maxTarget);
 
             if (cOwner)
