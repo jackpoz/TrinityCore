@@ -104,7 +104,7 @@ public:
         if (autoUnlock)
             unlock();
 
-        return result;
+        return result; //-V1020
     }
 
     //! Cancels the queue.

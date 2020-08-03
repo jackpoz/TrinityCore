@@ -1157,7 +1157,7 @@ void Unit::CalculateMeleeDamage(Unit* victim, CalcDamageInfo* damageInfo, Weapon
     {
         damageInfo->HitInfo |= HITINFO_NORMALSWING;
         damageInfo->TargetState = VICTIMSTATE_IS_IMMUNE;
-        damageInfo->CleanDamage = 0;
+        damageInfo->CleanDamage = 0; //-V1048
         return;
     }
 
@@ -1207,7 +1207,7 @@ void Unit::CalculateMeleeDamage(Unit* victim, CalcDamageInfo* damageInfo, Weapon
             return;
         case MELEE_HIT_MISS:
             damageInfo->HitInfo        |= HITINFO_MISS;
-            damageInfo->TargetState     = VICTIMSTATE_INTACT;
+            damageInfo->TargetState     = VICTIMSTATE_INTACT; //-V1048
 
             for (uint8 i = 0; i < MAX_ITEM_PROTO_DAMAGES; ++i)
                 damageInfo->Damages[i].Damage = 0;

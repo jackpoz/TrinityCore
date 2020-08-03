@@ -2230,7 +2230,7 @@ void GameObject::ModifyHealth(int32 change, WorldObject* attackerOrHealer /*= nu
     {
         WorldPacket data(SMSG_DESTRUCTIBLE_BUILDING_DAMAGE, 8 + 8 + 8 + 4 + 4);
         data << GetPackGUID();
-        data << attackerOrHealer->GetPackGUID();
+        data << attackerOrHealer->GetPackGUID(); //-V1004
         data << player->GetPackGUID();
         data << uint32(-change);                    // change  < 0 triggers SPELL_BUILDING_HEAL combat log event
                                                     // change >= 0 triggers SPELL_BUILDING_DAMAGE event

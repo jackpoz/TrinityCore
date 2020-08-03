@@ -84,11 +84,11 @@ void BattlegroundDS::PostUpdateImpl(uint32 diff)
                     waterSpout->CastSpell(waterSpout, BG_DS_SPELL_FLUSH, true);
 
             ++_pipeKnockBackCount;
-            _pipeKnockBackTimer = BG_DS_PIPE_KNOCKBACK_DELAY;
+            _pipeKnockBackTimer = BG_DS_PIPE_KNOCKBACK_DELAY; //-V1020
         }
         else
-            _pipeKnockBackTimer -= diff;
-    }
+            _pipeKnockBackTimer -= diff; //-V1020
+    } //-V1020
 }
 
 void BattlegroundDS::StartingEventCloseDoors()
