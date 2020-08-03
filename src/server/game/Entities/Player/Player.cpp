@@ -10045,23 +10045,23 @@ bool Player::IsValidPos(uint8 bag, uint8 slot, bool explicit_pos) const
             return true;
 
         // bag equip slots
-        if (slot >= INVENTORY_SLOT_BAG_START && slot < INVENTORY_SLOT_BAG_END)
+        if (slot >= INVENTORY_SLOT_BAG_START && slot < INVENTORY_SLOT_BAG_END) //-V560
             return true;
 
         // backpack slots
-        if (slot >= INVENTORY_SLOT_ITEM_START && slot < INVENTORY_SLOT_ITEM_END)
+        if (slot >= INVENTORY_SLOT_ITEM_START && slot < INVENTORY_SLOT_ITEM_END) //-V560
             return true;
 
         // keyring slots
-        if (slot >= KEYRING_SLOT_START && slot < KEYRING_SLOT_END)
+        if (slot >= KEYRING_SLOT_START && slot < KEYRING_SLOT_END) //-V560
             return true;
 
         // bank main slots
-        if (slot >= BANK_SLOT_ITEM_START && slot < BANK_SLOT_ITEM_END)
+        if (slot >= BANK_SLOT_ITEM_START && slot < BANK_SLOT_ITEM_END) //-V560
             return true;
 
         // bank bag slots
-        if (slot >= BANK_SLOT_BAG_START && slot < BANK_SLOT_BAG_END)
+        if (slot >= BANK_SLOT_BAG_START && slot < BANK_SLOT_BAG_END) //-V560
             return true;
 
         return false;
