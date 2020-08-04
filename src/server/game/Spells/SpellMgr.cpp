@@ -889,7 +889,7 @@ void SpellMgr::LoadSpellRanks()
             Field* fields = result->Fetch();
 
             currentSpell = fields[0].GetUInt32();
-            if (lastSpell == -1)
+            if (lastSpell == -1) //-V1051
                 lastSpell = currentSpell;
             uint32 spell_id = fields[1].GetUInt32();
             uint32 rank = fields[2].GetUInt8();

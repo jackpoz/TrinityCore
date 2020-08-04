@@ -61,7 +61,7 @@ Quest::Quest(Field* questRecord)
         RewardItemId[i] = questRecord[27 + i * 2].GetUInt32();
         RewardItemIdCount[i] = questRecord[28 + i * 2].GetUInt16();
 
-        if (RewardItemId[i])
+        if (RewardItemId[i]) //-V1051
             ++_rewItemsCount;
     }
 
@@ -70,7 +70,7 @@ Quest::Quest(Field* questRecord)
         RewardChoiceItemId[i] = questRecord[35 + i * 2].GetUInt32();
         RewardChoiceItemCount[i] = questRecord[36 + i * 2].GetUInt16();
 
-        if (RewardChoiceItemId[i])
+        if (RewardChoiceItemId[i]) //-V1051
             ++_rewChoiceItemsCount;
     }
 
@@ -112,7 +112,7 @@ Quest::Quest(Field* questRecord)
         RequiredItemId[i] = questRecord[87+i].GetUInt32();
         RequiredItemCount[i] = questRecord[93+i].GetUInt16();
 
-        if (RequiredItemId[i])
+        if (RequiredItemId[i]) //-V1051
             ++_reqItemsCount;
     }
 

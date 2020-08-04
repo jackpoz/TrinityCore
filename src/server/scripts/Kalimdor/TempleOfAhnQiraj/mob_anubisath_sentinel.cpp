@@ -167,7 +167,7 @@ public:
 
         int pickAbilityRandom(bool *chosenAbilities)
         {
-            for (int t = 0; t < 2; ++t)
+            for (int t = 0; t < 2; ++t) //-V756
             {
                 for (int i = !t ? (rand32()%9) : 0; i < 9; ++i)
                 {

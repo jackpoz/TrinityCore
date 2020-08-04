@@ -865,7 +865,7 @@ public:
                             {
                                 temp->AI()->Talk(SAY_LIGHT_OF_DAWN43);
                                 uiLichKingGUID = temp->GetGUID();
-                                if (Unit* pAlex = ObjectAccessor::GetCreature(*me, uiAlexandrosGUID))
+                                if (Unit* pAlex = ObjectAccessor::GetCreature(*me, uiAlexandrosGUID)) //-V1051
                                     temp->CastSpell(pAlex, SPELL_SOUL_FEAST_ALEX, false);
                             }
                             JumpToNextStep(2000);

@@ -746,7 +746,7 @@ void LFGMgr::UpdateRoleCheck(ObjectGuid gguid, ObjectGuid guid /* = ObjectGuid::
         ObjectGuid pguid = it->first;
 
         if (sendRoleChosen)
-            SendLfgRoleChosen(pguid, guid, roles);
+            SendLfgRoleChosen(pguid, guid, roles); //-V764
 
         SendLfgRoleCheckUpdate(pguid, roleCheck);
         switch (roleCheck.state)

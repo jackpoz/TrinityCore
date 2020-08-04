@@ -2505,14 +2505,14 @@ SpellMissInfo WorldObject::MagicSpellHitResult(Unit* victim, SpellInfo const* sp
     }
 
     // Roll chance
-    if (resist_chance > 0 && rand < (tmp += resist_chance))
+    if (resist_chance > 0 && rand < (tmp += resist_chance)) //-V1019
         return SPELL_MISS_RESIST;
 
     // cast by caster in front of victim
     if (!victim->HasUnitState(UNIT_STATE_CONTROLLED) && (victim->HasInArc(float(M_PI), this) || victim->HasAuraType(SPELL_AURA_IGNORE_HIT_DIRECTION)))
     {
         int32 deflect_chance = victim->GetTotalAuraModifier(SPELL_AURA_DEFLECT_SPELLS) * 100;
-        if (deflect_chance > 0 && rand < (tmp += deflect_chance))
+        if (deflect_chance > 0 && rand < (tmp += deflect_chance)) //-V1019
             return SPELL_MISS_DEFLECT;
     }
 

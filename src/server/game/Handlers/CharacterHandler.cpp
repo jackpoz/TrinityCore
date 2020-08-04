@@ -521,7 +521,7 @@ void WorldSession::HandleCharCreateOpcode(WorldPacket& recvData)
                     field = result->Fetch();
                     accRace = field[1].GetUInt8();
 
-                    if (!haveSameRace)
+                    if (!haveSameRace) //-V1051
                         haveSameRace = createInfo->Race == accRace;
 
                     if (checkDeathKnightReqs)

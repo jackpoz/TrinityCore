@@ -725,7 +725,7 @@ void WorldSession::HandleBattlemasterJoinArena(WorldPacket& recvData)
         matchmakerRating = at->GetAverageMMR(grp);
         // the arenateam id must match for everyone in the group
 
-        if (arenaRating <= 0)
+        if (arenaRating <= 0) //-V1051
             arenaRating = 1;
 
         previousOpponents = at->GetPreviousOpponents();

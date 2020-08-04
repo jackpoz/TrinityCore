@@ -512,7 +512,7 @@ class spell_sapphiron_change_blizzard_target : public SpellScriptLoader
             TempSummon* me = GetTarget()->ToTempSummon();
             if (Creature* owner = me ? me->GetSummonerCreatureBase() : nullptr)
             {
-                me->GetAI()->SetGUID(ObjectGuid::Empty, DATA_BLIZZARD_TARGET);
+                me->GetAI()->SetGUID(ObjectGuid::Empty, DATA_BLIZZARD_TARGET); //-V1004
                 if (Unit* newTarget = ObjectAccessor::GetUnit(*owner, owner->AI()->GetGUID(DATA_BLIZZARD_TARGET)))
                 {
                     me->GetAI()->SetGUID(newTarget->GetGUID(), DATA_BLIZZARD_TARGET);

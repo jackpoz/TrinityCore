@@ -170,5 +170,5 @@ void BattlegroundRV::TogglePillarCollision()
         }
     }
 
-    _pillarCollision = !_pillarCollision;
+    _pillarCollision = !_pillarCollision; //-V1020
 }

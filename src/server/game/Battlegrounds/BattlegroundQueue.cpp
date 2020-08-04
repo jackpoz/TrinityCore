@@ -518,7 +518,7 @@ void BattlegroundQueue::FillPlayersToBG(Battleground* bg, BattlegroundBracketId 
             hordeExtra = std::max(hordeExtra, 0);
             aliExtra   = std::max(aliExtra, 0);
 
-            if (aliCount != hordeCount)
+            if (aliCount != hordeCount) //-V1051
             {
                 aliFree   -= aliExtra;
                 hordeFree -= hordeExtra;

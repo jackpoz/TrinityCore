@@ -419,7 +419,7 @@ namespace MMAP
         m_terrainBuilder->loadMap(mapID, tileX, tileY, meshData);
 
         // get model data
-        m_terrainBuilder->loadVMap(mapID, tileY, tileX, meshData);
+        m_terrainBuilder->loadVMap(mapID, tileY, tileX, meshData); //-V764
 
         // if there is no data, give up now
         if (!meshData.solidVerts.size() && !meshData.liquidVerts.size())

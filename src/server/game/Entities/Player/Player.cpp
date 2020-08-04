@@ -5113,7 +5113,7 @@ void Player::UpdateLocalChannels(uint32 newZone)
                     continue;                            // Already on the channel, as city channel names are not changing
 
                 joinChannel = cMgr->GetSystemChannel(channelEntry->ID, current_zone);
-                if (usedChannel)
+                if (usedChannel) //-V1051
                 {
                     if (joinChannel != usedChannel)
                     {
@@ -5999,7 +5999,7 @@ void Player::SetSkill(uint16 id, uint16 step, uint16 newVal, uint16 maxVal)
     if (itr != mSkillStatus.end() && itr->second.uState != SKILL_DELETED)
     {
         currVal = SKILL_VALUE(GetUInt32Value(PLAYER_SKILL_VALUE_INDEX(itr->second.pos)));
-        if (newVal)
+        if (newVal) //-V1051
         {
             // if skill value is going down, update enchantments before setting the new value
             if (newVal < currVal)
@@ -18540,7 +18540,7 @@ void Player::_LoadQuestStatus(PreparedQueryResult result)
 
                 time_t quest_time = time_t(fields[3].GetUInt32());
 
-                if (quest->HasSpecialFlag(QUEST_SPECIAL_FLAGS_TIMED) && !GetQuestRewardStatus(quest_id))
+                if (quest->HasSpecialFlag(QUEST_SPECIAL_FLAGS_TIMED) && !GetQuestRewardStatus(quest_id)) //-V1051
                 {
                     AddTimedQuest(quest_id);
 

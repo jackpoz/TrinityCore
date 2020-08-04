@@ -733,7 +733,7 @@ public:
 
         int32 objectState = atoi(state);
 
-        if (objectType < 4)
+        if (objectType < 4) //-V1051
             object->SetByteValue(GAMEOBJECT_BYTES_1, objectType, objectState);
         else if (objectType == 4)
         {

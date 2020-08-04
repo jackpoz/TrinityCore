@@ -326,7 +326,7 @@ void WorldSession::HandleQuestgiverChooseRewardOpcode(WorldPacket& recvData)
                     {
                         GameObject* questGiver = object->ToGameObject();
                         // Send next quest
-                        if (Quest const* nextQuest = _player->GetNextQuest(guid, quest))
+                        if (Quest const* nextQuest = _player->GetNextQuest(guid, quest)) //-V1051
                         {
                             // Only send the quest to the player if the conditions are met
                             if (_player->CanTakeQuest(nextQuest, false))

@@ -1478,7 +1478,7 @@ void Unit::DealMeleeDamage(CalcDamageInfo* damageInfo, bool durabilityLoss)
     }
 
     // Do effect if any damage done to target
-    if (damageInfo->Damages[0].Damage + damageInfo->Damages[1].Damage)
+    if (damageInfo->Damages[0].Damage + damageInfo->Damages[1].Damage) //-V793
     {
         // We're going to call functions which can modify content of the list during iteration over it's elements
         // Let's copy the list so we can prevent iterator invalidation
@@ -2134,7 +2134,7 @@ MeleeHitOutcome Unit::RollMeleeOutcomeAgainst(Unit const* victim, WeaponAttackTy
 
     // 1. MISS
     tmp = miss_chance;
-    if (tmp > 0 && roll < (sum += tmp))
+    if (tmp > 0 && roll < (sum += tmp)) //-V1019
         return MELEE_HIT_MISS;
 
     // always crit against a sitting target (except 0 crit chance)
@@ -2146,7 +2146,7 @@ MeleeHitOutcome Unit::RollMeleeOutcomeAgainst(Unit const* victim, WeaponAttackTy
     {
         tmp = dodge_chance;
         if (tmp > 0                                         // check if unit _can_ dodge
-            && roll < (sum += tmp))
+            && roll < (sum += tmp)) //-V1019
             return MELEE_HIT_DODGE;
     }
 
@@ -2155,7 +2155,7 @@ MeleeHitOutcome Unit::RollMeleeOutcomeAgainst(Unit const* victim, WeaponAttackTy
     {
         tmp = parry_chance;
         if (tmp > 0                                         // check if unit _can_ parry
-            && roll < (sum += tmp))
+            && roll < (sum += tmp)) //-V1019
             return MELEE_HIT_PARRY;
     }
 
@@ -2174,7 +2174,7 @@ MeleeHitOutcome Unit::RollMeleeOutcomeAgainst(Unit const* victim, WeaponAttackTy
         // against level 82 elites - 18% chance of 15% average damage reduction (damage reduction range : 10-20%)
         tmp = 600 + (victimDefenseSkill - skill) * 120;
         tmp = std::min(tmp, 4000);
-        if (tmp > 0 && roll < (sum += tmp))
+        if (tmp > 0 && roll < (sum += tmp)) //-V1019
             return MELEE_HIT_GLANCING;
     }
 
@@ -2183,13 +2183,13 @@ MeleeHitOutcome Unit::RollMeleeOutcomeAgainst(Unit const* victim, WeaponAttackTy
     {
         tmp = block_chance;
         if (tmp > 0                                          // check if unit _can_ block
-            && roll < (sum += tmp))
+            && roll < (sum += tmp)) //-V1019
             return MELEE_HIT_BLOCK;
     }
 
     // 6.CRIT
     tmp = crit_chance;
-    if (tmp > 0 && roll < (sum += tmp))
+    if (tmp > 0 && roll < (sum += tmp)) //-V1019
         return MELEE_HIT_CRIT;
 
     // 7. CRUSHING
@@ -2210,7 +2210,7 @@ MeleeHitOutcome Unit::RollMeleeOutcomeAgainst(Unit const* victim, WeaponAttackTy
 
         // add 2% chance per lacking skill point
         tmp = tmp * 200 - 1500;
-        if (tmp > 0 && roll < (sum += tmp))
+        if (tmp > 0 && roll < (sum += tmp)) //-V1019
             return MELEE_HIT_CRUSHING;
     }
 
