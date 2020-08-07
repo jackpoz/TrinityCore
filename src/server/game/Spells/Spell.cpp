@@ -5055,6 +5055,10 @@ void Spell::HandleThreatSpells()
         if (!target)
             continue;
 
+        // Add threat to start engagement logic
+        if (unitCaster->CanHaveThreatList())
+            unitCaster->GetThreatManager().AddThreat(target, 0.0f, nullptr, true, true);
+
         // positive spells distribute threat among all units that are in combat with target, like healing
         if (IsPositive())
             target->GetThreatManager().ForwardThreatForAssistingMe(unitCaster, threatToAdd, m_spellInfo);
