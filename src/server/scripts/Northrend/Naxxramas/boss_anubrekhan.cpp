@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -156,9 +156,9 @@ public:
             instance->DoStartTimedAchievement(ACHIEVEMENT_TIMED_TYPE_EVENT, ACHIEV_TIMED_START_EVENT);
         }
 
-        void JustEngagedWith(Unit* /*who*/) override
+        void JustEngagedWith(Unit* who) override
         {
-            _JustEngagedWith();
+            BossAI::JustEngagedWith(who);
             Talk(SAY_AGGRO);
 
             summons.DoZoneInCombat();
@@ -185,8 +185,9 @@ public:
                 switch (eventId)
                 {
                     case EVENT_IMPALE:
-                        if (events.GetTimeUntilEvent(EVENT_LOCUST) < 5 * IN_MILLISECONDS) break; // don't chain impale tank -> locust swarm
-                        if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0))
+                        if (events.GetTimeUntilEvent(EVENT_LOCUST) < 5s)
+                            break; // don't chain impale tank -> locust swarm
+                        if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0))
                             DoCast(target, SPELL_IMPALE);
                         else
                             EnterEvadeMode();

@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -51,6 +50,8 @@ class WaypointMovementGenerator<Creature> : public MovementGeneratorMedium<Creat
         void DoDeactivate(Creature*);
         void DoFinalize(Creature*, bool, bool);
 
+        std::string GetDebugInfo() const override;
+
     private:
         void MovementInform(Creature*);
         void OnArrived(Creature*);
@@ -67,7 +68,7 @@ class WaypointMovementGenerator<Creature> : public MovementGeneratorMedium<Creat
             return false;
         }
 
-        TimeTrackerSmall _nextMoveTime;
+        TimeTracker _nextMoveTime;
         uint32 _pathId;
         bool _repeating;
         bool _loadedFromDB;

@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -102,12 +101,12 @@ public:
             instance->DoStopTimedAchievement(ACHIEVEMENT_TIMED_TYPE_EVENT, ACHIEV_TIMELY_DEATH_START_EVENT);
         }
 
-        void JustEngagedWith(Unit* /*who*/) override
+        void JustEngagedWith(Unit* who) override
         {
-            _JustEngagedWith();
+            BossAI::JustEngagedWith(who);
             Talk(SAY_AGGRO);
             events.SetPhase(PHASE_NORMAL);
-            events.ScheduleEvent(EVENT_ARC_LIGHTNING, 15000);
+            events.ScheduleEvent(EVENT_ARC_LIGHTNING, 15s);
             events.ScheduleEvent(EVENT_LIGHTNING_NOVA, 20s);
             events.ScheduleEvent(EVENT_RESUME_PULSING_SHOCKWAVE, 1s);
             instance->DoStartTimedAchievement(ACHIEVEMENT_TIMED_TYPE_EVENT, ACHIEV_TIMELY_DEATH_START_EVENT);
@@ -117,7 +116,7 @@ public:
         {
             Talk(SAY_DEATH);
             _JustDied();
-            instance->DoRemoveAurasDueToSpellOnPlayers(SPELL_PULSING_SHOCKWAVE_AURA);
+            instance->DoRemoveAurasDueToSpellOnPlayers(SPELL_PULSING_SHOCKWAVE_AURA, true, true);
         }
 
         void KilledUnit(Unit* who) override
@@ -149,7 +148,7 @@ public:
                 switch (eventId)
                 {
                     case EVENT_ARC_LIGHTNING:
-                        if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0))
+                        if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0))
                             DoCast(target, SPELL_ARC_LIGHTNING);
                         events.ScheduleEvent(EVENT_ARC_LIGHTNING, 15s, 16s);
                         break;
@@ -158,7 +157,7 @@ public:
                         Talk(EMOTE_NOVA);
                         DoCastAOE(SPELL_LIGHTNING_NOVA);
                         me->RemoveAurasDueToSpell(sSpellMgr->GetSpellIdForDifficulty(SPELL_PULSING_SHOCKWAVE, me));
-                        events.ScheduleEvent(EVENT_RESUME_PULSING_SHOCKWAVE, DUNGEON_MODE(5000, 4000)); // Pause Pulsing Shockwave aura
+                        events.ScheduleEvent(EVENT_RESUME_PULSING_SHOCKWAVE, DUNGEON_MODE(5s, 4s)); // Pause Pulsing Shockwave aura
                         events.ScheduleEvent(EVENT_LIGHTNING_NOVA, 20s, 21s);
                         break;
                     case EVENT_RESUME_PULSING_SHOCKWAVE:

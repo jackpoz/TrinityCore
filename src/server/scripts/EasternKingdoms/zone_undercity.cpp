@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -128,7 +127,7 @@ public:
             DoPlaySoundToSet(me, SOUND_AGGRO);
             _events.ScheduleEvent(EVENT_FADE, 30s);
             _events.ScheduleEvent(EVENT_SUMMON_SKELETON, 20s);
-            _events.ScheduleEvent(EVENT_BLACK_ARROW, 15000);
+            _events.ScheduleEvent(EVENT_BLACK_ARROW, 15s);
             _events.ScheduleEvent(EVENT_SHOOT, 8s);
             _events.ScheduleEvent(EVENT_MULTI_SHOT, 10s);
         }
@@ -144,7 +143,7 @@ public:
                 LamentEvent = true;
 
                 for (uint8 i = 0; i < 4; ++i)
-                    me->SummonCreature(NPC_HIGHBORNE_LAMENTER, HighborneLoc[i][0], HighborneLoc[i][1], HIGHBORNE_LOC_Y, HighborneLoc[i][2], TEMPSUMMON_TIMED_DESPAWN, 160000);
+                    me->SummonCreature(NPC_HIGHBORNE_LAMENTER, HighborneLoc[i][0], HighborneLoc[i][1], HIGHBORNE_LOC_Y, HighborneLoc[i][2], TEMPSUMMON_TIMED_DESPAWN, 160s);
 
                 _events.ScheduleEvent(EVENT_LAMENT_OF_THE_HIGHBORN, 2s);
                 _events.ScheduleEvent(EVENT_SUNSORROW_WHISPER, 10s);
@@ -221,7 +220,7 @@ public:
                         }
                         else
                         {
-                            DoSummon(NPC_HIGHBORNE_BUNNY, me, 10.0f, 3000, TEMPSUMMON_TIMED_DESPAWN);
+                            DoSummon(NPC_HIGHBORNE_BUNNY, me, 10.0f, 3s, TEMPSUMMON_TIMED_DESPAWN);
                             _events.ScheduleEvent(EVENT_LAMENT_OF_THE_HIGHBORN, 2s);
                         }
                         break;

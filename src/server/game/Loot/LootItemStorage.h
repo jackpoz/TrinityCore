@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -21,17 +21,13 @@
 #include "Define.h"
 #include "DatabaseEnvFwd.h"
 
+#include <shared_mutex>
 #include <unordered_map>
 
 class Item;
 class Player;
 struct Loot;
 struct LootItem;
-
-namespace boost
-{
-    class shared_mutex;
-}
 
 struct StoredLootItem
 {
@@ -56,8 +52,8 @@ class StoredLootContainer
 
         explicit StoredLootContainer(uint32 containerId) : _containerId(containerId), _money(0) { }
 
-        void AddLootItem(LootItem const& lootItem, SQLTransaction& trans);
-        void AddMoney(uint32 money, SQLTransaction& trans);
+        void AddLootItem(LootItem const& lootItem, CharacterDatabaseTransaction& trans);
+        void AddMoney(uint32 money, CharacterDatabaseTransaction& trans);
 
         void RemoveMoney();
         void RemoveItem(uint32 itemId, uint32 count);
@@ -76,7 +72,7 @@ class LootItemStorage
 {
     public:
         static LootItemStorage* instance();
-        static boost::shared_mutex* GetLock();
+        static std::shared_mutex* GetLock();
 
         void LoadStorageFromDB();
         bool LoadStoredLoot(Item* item, Player* player);

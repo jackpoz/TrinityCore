@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -71,7 +70,7 @@ class boss_nethermancer_sepethrea : public CreatureScript
 
             void JustEngagedWith(Unit* who) override
             {
-                _JustEngagedWith();
+                BossAI::JustEngagedWith(who);
                 events.ScheduleEvent(EVENT_FROST_ATTACK, 7s, 10s);
                 events.ScheduleEvent(EVENT_ARCANE_BLAST, 12s, 18s);
                 events.ScheduleEvent(EVENT_DRAGONS_BREATH, 18s, 22s);
@@ -113,7 +112,7 @@ class boss_nethermancer_sepethrea : public CreatureScript
                             break;
                         case EVENT_ARCANE_BLAST:
                             DoCastVictim(SPELL_ARCANE_BLAST, true);
-                            events.ScheduleEvent(EVENT_ARCANE_BLAST, 15000);
+                            events.ScheduleEvent(EVENT_ARCANE_BLAST, 15s);
                             break;
                         case EVENT_DRAGONS_BREATH:
                             DoCastVictim(SPELL_DRAGONS_BREATH, true);
@@ -193,7 +192,7 @@ class npc_ragin_flames : public CreatureScript
                     //Check_Timer
                     if (Check_Timer <= diff)
                     {
-                        if (instance->GetData(DATA_NETHERMANCER_SEPRETHREA) != IN_PROGRESS)
+                        if (instance->GetBossState(DATA_NETHERMANCER_SEPRETHREA) != IN_PROGRESS)
                         {
                             //remove
                             me->DespawnOrUnsummon();
@@ -207,7 +206,7 @@ class npc_ragin_flames : public CreatureScript
 
                     if (!onlyonce)
                     {
-                        if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0))
+                        if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0))
                             me->GetMotionMaster()->MoveChase(target);
                         onlyonce = true;
                     }

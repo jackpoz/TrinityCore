@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -205,7 +204,7 @@ public:
 
         void BeginEvent(Player* target)
         {
-            _JustEngagedWith();
+            _JustEngagedWith(target);
 
             Talk(SAY_GAMESBEGIN_2);
 
@@ -239,11 +238,11 @@ public:
             if ( type == 1 && data == 1)
             {
                 me->StopMoving();
-                events.ScheduleEvent(EVENT_PATH_2, 9000);
+                events.ScheduleEvent(EVENT_PATH_2, 9s);
             }
 
             if (type == 1 && data == 2)
-                events.ScheduleEvent(EVENT_SUCCESS_1, 5000);
+                events.ScheduleEvent(EVENT_SUCCESS_1, 5s);
         }
 
         void UpdateAI(uint32 diff) override
@@ -258,7 +257,7 @@ public:
                     {
                         case EVENT_PATH_2:
                             me->GetMotionMaster()->MovePath(NEFARIUS_PATH_2, false);
-                            events.ScheduleEvent(EVENT_CHAOS_1, 7000);
+                            events.ScheduleEvent(EVENT_CHAOS_1, 7s);
                             break;
                         case EVENT_CHAOS_1:
                             if (Creature* gyth = me->FindNearestCreature(NPC_GYTH, 75.0f, true))
@@ -266,7 +265,7 @@ public:
                                 me->SetFacingToObject(gyth);
                                 Talk(SAY_CHAOS_SPELL);
                             }
-                            events.ScheduleEvent(EVENT_CHAOS_2, 2000);
+                            events.ScheduleEvent(EVENT_CHAOS_2, 2s);
                             break;
                         case EVENT_CHAOS_2:
                             DoCast(SPELL_CHROMATIC_CHAOS);
@@ -282,11 +281,11 @@ public:
                                 if (GameObject* portcullis2 = me->FindNearestGameObject(GO_PORTCULLIS_TOBOSSROOMS, 80.0f))
                                     portcullis2->SetGoState(GO_STATE_ACTIVE);
                             }
-                            events.ScheduleEvent(EVENT_SUCCESS_2, 4000);
+                            events.ScheduleEvent(EVENT_SUCCESS_2, 4s);
                             break;
                         case EVENT_SUCCESS_2:
                             DoCast(me, SPELL_VAELASTRASZZ_SPAWN);
-                            me->DespawnOrUnsummon(1000);
+                            me->DespawnOrUnsummon(1s);
                             break;
                         case EVENT_PATH_3:
                             me->GetMotionMaster()->MovePath(NEFARIUS_PATH_3, false);
@@ -317,7 +316,7 @@ public:
                                     DoCastVictim(SPELL_SHADOWBOLT_VOLLEY);
                                     break;
                                 case 1:
-                                    if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 40, true))
+                                    if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 40, true))
                                         DoCast(target, SPELL_SHADOWBOLT);
                                     break;
                             }
@@ -325,12 +324,12 @@ public:
                             events.ScheduleEvent(EVENT_SHADOW_BOLT, 3s, 10s);
                             break;
                         case EVENT_FEAR:
-                            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 40, true))
+                            if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 40, true))
                                 DoCast(target, SPELL_FEAR);
                             events.ScheduleEvent(EVENT_FEAR, 10s, 20s);
                             break;
                         case EVENT_MIND_CONTROL:
-                            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 40, true))
+                            if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 40, true))
                                 DoCast(target, SPELL_SHADOW_COMMAND);
                             events.ScheduleEvent(EVENT_MIND_CONTROL, 30s, 35s);
                             break;
@@ -514,8 +513,8 @@ public:
                         events.ScheduleEvent(EVENT_TAILLASH, 10s);
                         break;
                     case EVENT_CLASSCALL:
-                        if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 100.0f, true))
-                            switch (target->getClass())
+                        if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 100.0f, true))
+                            switch (target->GetClass())
                         {
                             case CLASS_MAGE:
                                 Talk(SAY_MAGE);

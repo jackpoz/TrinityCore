@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -91,7 +91,7 @@ enum Spells
     SPELL_CONJURE_EMPOWERED_FLAME       = 72040,
 
     // Ball of Flame
-    SPELL_FLAME_SPHERE_SPAWN_EFFECT     = 55891, // cast from creature_template_addon (needed cast before entering world)
+    SPELL_FLAME_SPHERE_SPAWN_EFFECT     = 55891,
     SPELL_BALL_OF_FLAMES_VISUAL         = 71706,
     SPELL_BALL_OF_FLAMES                = 71714,
     SPELL_FLAMES                        = 71393,
@@ -107,6 +107,7 @@ enum Spells
     SPELL_KINETIC_BOMB                  = 72080,
     SPELL_SHOCK_VORTEX                  = 72037,
     SPELL_EMPOWERED_SHOCK_VORTEX        = 72039,
+    SPELL_REMOVE_EMPOWERED_BLOOD        = 72131,
 
     // Kinetic Bomb
     SPELL_UNSTABLE                      = 72059,
@@ -247,7 +248,10 @@ class boss_blood_council_controller : public CreatureScript
                             prince->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
                             prince->SetImmuneToPC(false);
                             if (bossData == DATA_PRINCE_VALANAR)
+                            {
                                 prince->SetHealth(prince->GetMaxHealth());
+                                prince->CastSpell(prince, SPELL_REMOVE_EMPOWERED_BLOOD, true);
+                            }
                         }
             }
 
@@ -541,9 +545,9 @@ struct BloodPrincesBossAI : public BossAI
         }
     }
 
-    void SpellHit(Unit* /*caster*/, SpellInfo const* spell) override
+    void SpellHit(WorldObject* /*caster*/, SpellInfo const* spellInfo) override
     {
-        if (spell->Id == SelectInvocationSpell())
+        if (spellInfo->Id == SelectInvocationSpell())
             DoAction(ACTION_CAST_INVOCATION);
     }
 
@@ -567,7 +571,7 @@ struct BloodPrincesBossAI : public BossAI
                 me->RemoveFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_DEAD);
                 me->RemoveFlag(UNIT_FIELD_FLAGS_2, UNIT_FLAG2_FEIGN_DEATH);
                 me->ForceValuesUpdateAtIndex(UNIT_NPC_FLAGS);   // was in sniff. don't ask why
-                me->m_Events.AddEvent(new StandUpEvent(me), me->m_Events.CalculateTime(1000));
+                me->m_Events.AddEvent(new StandUpEvent(me), me->m_Events.CalculateTime(1s));
                 break;
             case ACTION_CAST_INVOCATION:
                 Talk(SelectInvocationSay());
@@ -719,9 +723,9 @@ class boss_prince_taldaram_icc : public CreatureScript
             void JustSummoned(Creature* summon) override
             {
                 summons.Summon(summon);
-                Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 1, -10.0f, true); // first try at distance
+                Unit* target = SelectTarget(SelectTargetMethod::Random, 1, -10.0f, true); // first try at distance
                 if (!target)
-                    target = SelectTarget(SELECT_TARGET_RANDOM, 0, 0.0f, true);     // too bad for you raiders, its going to boom
+                    target = SelectTarget(SelectTargetMethod::Random, 0, 0.0f, true);     // too bad for you raiders, its going to boom
 
                 if (summon->GetEntry() == NPC_BALL_OF_INFERNO_FLAME && target)
                     Talk(EMOTE_TALDARAM_FLAME, target);
@@ -820,7 +824,7 @@ class boss_prince_valanar_icc : public CreatureScript
                     }
                     case NPC_SHOCK_VORTEX:
                         summon->CastSpell(summon, SPELL_SHOCK_VORTEX_DUMMY, true);
-                        summon->m_Events.AddEvent(new VortexEvent(summon), summon->m_Events.CalculateTime(5000));
+                        summon->m_Events.AddEvent(new VortexEvent(summon), summon->m_Events.CalculateTime(5s));
                         break;
                     default:
                         break;
@@ -850,7 +854,7 @@ class boss_prince_valanar_icc : public CreatureScript
                             Talk(SAY_VALANAR_BERSERK);
                             break;
                         case EVENT_KINETIC_BOMB:
-                            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 1, 0.0f, true))
+                            if (Unit* target = SelectTarget(SelectTargetMethod::Random, 1, 0.0f, true))
                             {
                                 DoCast(target, SPELL_KINETIC_BOMB_TARGET);
                                 Talk(SAY_VALANAR_SPECIAL);
@@ -866,7 +870,7 @@ class boss_prince_valanar_icc : public CreatureScript
                             }
                             else
                             {
-                                if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 1, 0.0f, true))
+                                if (Unit* target = SelectTarget(SelectTargetMethod::Random, 1, 0.0f, true))
                                     DoCast(target, SPELL_SHOCK_VORTEX);
                                 events.Repeat(Seconds(18), Seconds(23));
                             }
@@ -914,7 +918,7 @@ class npc_blood_queen_lana_thel : public CreatureScript
                         _events.SetPhase(1);
                         _events.ScheduleEvent(EVENT_INTRO_1, Seconds(14));
                         // summon a visual trigger
-                        if (Creature* summon = DoSummon(NPC_FLOATING_TRIGGER, triggerPos, 15000, TEMPSUMMON_TIMED_DESPAWN))
+                        if (Creature* summon = DoSummon(NPC_FLOATING_TRIGGER, triggerPos, 15s, TEMPSUMMON_TIMED_DESPAWN))
                         {
                             summon->CastSpell(summon, SPELL_OOC_INVOCATION_VISUAL, true);
                             summon->SetSpeedRate(MOVE_RUN, 0.14f);
@@ -972,6 +976,7 @@ class npc_ball_of_flame : public CreatureScript
 
             void Reset() override
             {
+                DoCastSelf(SPELL_FLAME_SPHERE_SPAWN_EFFECT, true);
                 DoCastSelf(SPELL_BALL_OF_FLAMES_VISUAL, true);
                 if (me->GetEntry() == NPC_BALL_OF_INFERNO_FLAME)
                 {
@@ -1054,7 +1059,7 @@ class npc_kinetic_bomb : public CreatureScript
                 DoCastSelf(SPELL_KINETIC_BOMB_VISUAL, true);
                 me->SetReactState(REACT_PASSIVE);
                 me->GetPosition(_x, _y, _groundZ);
-                me->DespawnOrUnsummon(60000);
+                me->DespawnOrUnsummon(60s);
                 _groundZ = me->GetMap()->GetHeight(me->GetPhaseMask(), _x, _y, _groundZ, true, 500.0f);
             }
 
@@ -1084,7 +1089,7 @@ class npc_kinetic_bomb : public CreatureScript
                     {
                         case EVENT_BOMB_DESPAWN:
                             me->SetVisible(false);
-                            me->DespawnOrUnsummon(5000);
+                            me->DespawnOrUnsummon(5s);
                             break;
                         case EVENT_CONTINUE_FALLING:
                             me->GetMotionMaster()->Clear();
@@ -1152,7 +1157,7 @@ class npc_dark_nucleus : public CreatureScript
                 if (attacker == me)
                     return;
 
-                me->GetThreatManager().ClearAllThreat();
+                me->GetThreatManager().ResetAllThreat();
                 AddThreat(attacker, 500000000.0f);
             }
 
@@ -1406,15 +1411,18 @@ class spell_valanar_kinetic_bomb_knockback : public SpellScriptLoader
         {
             PrepareSpellScript(spell_valanar_kinetic_bomb_knockback_SpellScript);
 
-            void KnockIntoAir()
+            void KnockIntoAir(SpellMissInfo missInfo)
             {
+                if (missInfo != SPELL_MISS_NONE)
+                    return;
+
                 if (Creature* target = GetHitCreature())
                     target->AI()->DoAction(ACTION_KINETIC_BOMB_JUMP);
             }
 
             void Register() override
             {
-                BeforeHit += SpellHitFn(spell_valanar_kinetic_bomb_knockback_SpellScript::KnockIntoAir);
+                BeforeHit += BeforeSpellHitFn(spell_valanar_kinetic_bomb_knockback_SpellScript::KnockIntoAir);
             }
         };
 

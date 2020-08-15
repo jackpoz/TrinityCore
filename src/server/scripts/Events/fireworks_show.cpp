@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -860,7 +860,7 @@ public:
 
                             if (_big)
                             {
-                                if (GameObject* firework = me->SummonGameObject(FireworksBIGOnlyPicker(), rndpos, QuaternionData(0.f, 0.f, rndrot, rndrot2), 300))
+                                if (GameObject* firework = me->SummonGameObject(FireworksBIGOnlyPicker(), rndpos, QuaternionData(0.f, 0.f, rndrot, rndrot2), 5min))
                                 {
                                     firework->SetRespawnTime(0);
                                     firework->Delete();
@@ -868,7 +868,7 @@ public:
                             }
                             else
                             {
-                                if (GameObject* firework = me->SummonGameObject(FireworksPicker(), rndpos, QuaternionData(0.f, 0.f, rndrot, rndrot2), 300))
+                                if (GameObject* firework = me->SummonGameObject(FireworksPicker(), rndpos, QuaternionData(0.f, 0.f, rndrot, rndrot2), 5min))
                                 {
                                     firework->SetRespawnTime(0);
                                     firework->Delete();

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -23,6 +23,7 @@
 #include "MovementGenerator.h"
 #include "Optional.h"
 #include "Position.h"
+#include "Timer.h"
 
 class PathGenerator;
 class Unit;
@@ -50,7 +51,7 @@ class ChaseMovementGenerator : public MovementGenerator, public AbstractFollower
 
         std::unique_ptr<PathGenerator> _path;
         Optional<Position> _lastTargetPosition;
-        uint32 _rangeCheckTimer = RANGE_CHECK_INTERVAL;
+        TimeTracker _rangeCheckTimer;
         bool _movingTowards = true;
         bool _mutualChase = true;
 };

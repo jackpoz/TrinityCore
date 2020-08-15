@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -70,9 +69,13 @@ class TC_GAME_API MovementGenerator
         // used by Evade code for select point to evade with expected restart default movement
         virtual bool GetResetPosition(Unit*, float&/* x*/, float&/* y*/, float&/* z*/) { return false; }
 
+        virtual void NotifyAIOnFinalize(Unit*);
+
         void AddFlag(uint16 const flag) { Flags |= flag; }
         bool HasFlag(uint16 const flag) const { return (Flags & flag) != 0; }
         void RemoveFlag(uint16 const flag) { Flags &= ~flag; }
+
+        virtual std::string GetDebugInfo() const;
 
         uint8 Mode;
         uint8 Priority;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -88,8 +88,11 @@ class npc_frost_tomb : public CreatureScript
                 _instance = creature->GetInstanceScript();
             }
 
-            void IsSummonedBy(Unit* summoner) override
+            void IsSummonedBy(WorldObject* summonerWO) override
             {
+                Unit* summoner = summonerWO->ToUnit();
+                if (!summoner)
+                    return;
                 DoCast(summoner, SPELL_FROST_TOMB, true);
             }
 
@@ -140,7 +143,7 @@ class boss_keleseth : public CreatureScript
 
             void JustEngagedWith(Unit* who) override
             {
-                _JustEngagedWith();
+                BossAI::JustEngagedWith(who);
                 Talk(SAY_START_COMBAT);
 
                 if (!who)
@@ -202,7 +205,7 @@ class boss_keleseth : public CreatureScript
                             events.ScheduleEvent(EVENT_SHADOWBOLT, 2s, 3s);
                             break;
                         case EVENT_FROST_TOMB:
-                            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 100.0f, true, true, -SPELL_FROST_TOMB))
+                            if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 100.0f, true, true, -SPELL_FROST_TOMB))
                             {
                                 Talk(SAY_FROST_TOMB);
                                 Talk(SAY_FROST_TOMB_EMOTE, target);
@@ -294,7 +297,7 @@ class npc_vrykul_skeleton : public CreatureScript
                     switch (eventId)
                     {
                         case EVENT_DECREPIFY:
-                            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 0.0f, true, true, -SPELL_DECREPIFY))
+                            if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 0.0f, true, true, -SPELL_DECREPIFY))
                                 DoCast(target, SPELL_DECREPIFY);
                             events.ScheduleEvent(EVENT_DECREPIFY, 1s, 5s);
                             break;
@@ -350,7 +353,7 @@ class spell_frost_tomb : public SpellScriptLoader
                     if (Unit* caster = GetCaster())
                         if (caster->IsAlive())
                             if (Creature* creature = caster->ToCreature())
-                                creature->DespawnOrUnsummon(1000);
+                                creature->DespawnOrUnsummon(1s);
             }
 
             void Register() override

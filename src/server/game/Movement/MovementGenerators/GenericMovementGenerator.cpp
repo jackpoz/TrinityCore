@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -55,7 +55,10 @@ bool GenericMovementGenerator::Update(Unit* owner, uint32 diff)
     if (!owner || HasFlag(MOVEMENTGENERATOR_FLAG_FINALIZED))
         return false;
 
-    _duration.Update(diff);
+    // Cyclic splines never expire, so update the duration only if it's not cyclic
+    if (!owner->movespline->isCyclic())
+        _duration.Update(diff);
+
     if (_duration.Passed() || owner->movespline->Finalized())
     {
         AddFlag(MOVEMENTGENERATOR_FLAG_INFORM_ENABLED);

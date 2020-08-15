@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -112,7 +112,7 @@ public:
                         DoCast(me,SPELL_HEALING_WAVE);
                         break;
                     case EVENT_SHADOWBOLT_VOLLEY:
-                        if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0))
+                        if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0))
                             DoCast(target, SPELL_SHADOWBOLT_VOLLEY);
                         events.ScheduleEvent(EVENT_SHADOWBOLT_VOLLEY, 9s);
                         break;

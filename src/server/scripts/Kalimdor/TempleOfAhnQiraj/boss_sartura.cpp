@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -94,10 +93,10 @@ public:
             _Reset();
         }
 
-        void JustEngagedWith(Unit* /*who*/) override
+        void JustEngagedWith(Unit* who) override
         {
             Talk(SAY_AGGRO);
-            _JustEngagedWith();
+            BossAI::JustEngagedWith(who);
         }
 
          void JustDied(Unit* /*killer*/) override
@@ -122,7 +121,7 @@ public:
                 if (WhirlWindRandom_Timer <= diff)
                 {
                     //Attack random Gamers
-                    if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 1, 100.0f, true))
+                    if (Unit* target = SelectTarget(SelectTargetMethod::Random, 1, 100.0f, true))
                     {
                         AddThreat(target, 1.0f);
                         AttackStart(target);
@@ -149,7 +148,7 @@ public:
                 if (AggroReset_Timer <= diff)
                 {
                     //Attack random Gamers
-                    if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 1, 100.0f, true))
+                    if (Unit* target = SelectTarget(SelectTargetMethod::Random, 1, 100.0f, true))
                     {
                         AddThreat(target, 1.0f);
                         AttackStart(target);
@@ -263,7 +262,7 @@ public:
                 if (WhirlWindRandom_Timer <= diff)
                 {
                     //Attack random Gamers
-                    if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 1, 100.0f, true))
+                    if (Unit* target = SelectTarget(SelectTargetMethod::Random, 1, 100.0f, true))
                     {
                         AddThreat(target, 1.0f);
                         AttackStart(target);
@@ -283,7 +282,7 @@ public:
                 if (AggroReset_Timer <= diff)
                 {
                     //Attack random Gamers
-                    if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 1, 100.0f, true))
+                    if (Unit* target = SelectTarget(SelectTargetMethod::Random, 1, 100.0f, true))
                     {
                         AddThreat(target, 1.0f);
                         AttackStart(target);

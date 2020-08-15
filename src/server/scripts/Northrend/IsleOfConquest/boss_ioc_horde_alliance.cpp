@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -63,15 +63,19 @@ public:
         void JustEngagedWith(Unit* /*who*/) override
         {
             _events.ScheduleEvent(EVENT_BRUTAL_STRIKE, 5s);
-            _events.ScheduleEvent(EVENT_DAGGER_THROW,  7 * IN_MILLISECONDS);
-            _events.ScheduleEvent(EVENT_CHECK_RANGE,   1 * IN_MILLISECONDS);
+            _events.ScheduleEvent(EVENT_DAGGER_THROW, 7s);
+            _events.ScheduleEvent(EVENT_CHECK_RANGE, 1s);
             _events.ScheduleEvent(EVENT_CRUSHING_LEAP, 15s);
         }
 
-        void SpellHit(Unit* caster, SpellInfo const* /*spell*/) override
+        void SpellHit(WorldObject* caster, SpellInfo const* /*spellInfo*/) override
         {
-            if (caster->IsVehicle())
-                Unit::Kill(me, caster);
+            Unit* unitCaster = caster->ToUnit();
+            if (!unitCaster)
+                return;
+
+            if (unitCaster->IsVehicle())
+                Unit::Kill(me, unitCaster);
         }
 
         void UpdateAI(uint32 diff) override
@@ -93,7 +97,7 @@ public:
                         _events.ScheduleEvent(EVENT_BRUTAL_STRIKE, 5s);
                         break;
                     case EVENT_DAGGER_THROW:
-                        if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 1))
+                        if (Unit* target = SelectTarget(SelectTargetMethod::Random, 1))
                             DoCast(target, SPELL_DAGGER_THROW);
                         _events.ScheduleEvent(EVENT_DAGGER_THROW, 7s);
                         break;

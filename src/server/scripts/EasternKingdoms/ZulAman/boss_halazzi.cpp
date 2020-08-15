@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -115,9 +114,9 @@ class boss_halazzi : public CreatureScript
                 EnterPhase(PHASE_LYNX);
             }
 
-            void JustEngagedWith(Unit* /*who*/) override
+            void JustEngagedWith(Unit* who) override
             {
-                _JustEngagedWith();
+                BossAI::JustEngagedWith(who);
                 Talk(SAY_AGGRO);
                 EnterPhase(PHASE_LYNX);
             }
@@ -136,9 +135,9 @@ class boss_halazzi : public CreatureScript
                     damage = 0;
             }
 
-            void SpellHit(Unit*, SpellInfo const* spell) override
+            void SpellHit(WorldObject* /*caster*/, SpellInfo const* spellInfo) override
             {
-                if (spell->Id == SPELL_TRANSFORM_SPLIT2)
+                if (spellInfo->Id == SPELL_TRANSFORM_SPLIT2)
                     EnterPhase(PHASE_HUMAN);
             }
 
@@ -175,7 +174,7 @@ class boss_halazzi : public CreatureScript
                         break;
                     case PHASE_HUMAN:
                         //DoCast(me, SPELL_SUMMON_LYNX, true);
-                        DoSpawnCreature(NPC_SPIRIT_LYNX, 5, 5, 0, 0, TEMPSUMMON_CORPSE_DESPAWN, 0);
+                        DoSpawnCreature(NPC_SPIRIT_LYNX, 5, 5, 0, 0, TEMPSUMMON_CORPSE_DESPAWN, 0s);
                         me->SetMaxHealth(400000);
                         me->SetHealth(400000);
                         ShockTimer = 10000;
@@ -259,7 +258,7 @@ class boss_halazzi : public CreatureScript
 
                     if (ShockTimer <= diff)
                     {
-                        if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0))
+                        if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0))
                         {
                             if (target->IsNonMeleeSpellCast(false))
                                 DoCast(target, SPELL_EARTHSHOCK);

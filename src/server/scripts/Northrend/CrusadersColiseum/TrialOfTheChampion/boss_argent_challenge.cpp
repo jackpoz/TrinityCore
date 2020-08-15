@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -112,7 +112,7 @@ enum Spells
     SPELL_WAKING_NIGHTMARE_H    = 67677
 };
 
-class OrientationCheck : public std::unary_function<Unit*, bool>
+class OrientationCheck
 {
     public:
         explicit OrientationCheck(Unit* _caster) : caster(_caster) { }
@@ -225,7 +225,7 @@ public:
             {
                 me->InterruptNonMeleeSpells(true);
 
-                if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 250, true))
+                if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 250, true))
                 {
                     if (target->IsAlive())
                     {
@@ -351,7 +351,7 @@ public:
 
             if (uiHolyFireTimer <= uiDiff)
             {
-                if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 250, true))
+                if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 250, true))
                 {
                     if (target->IsAlive())
                         DoCast(target, SPELL_HOLY_FIRE);
@@ -364,7 +364,7 @@ public:
 
             if (uiHolySmiteTimer <= uiDiff)
             {
-                if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 250, true))
+                if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 250, true))
                 {
                     if (target->IsAlive())
                         DoCast(target, SPELL_SMITE);
@@ -457,7 +457,7 @@ public:
 
             if (uiOldWoundsTimer <= uiDiff)
             {
-                if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0))
+                if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0))
                 {
                     if (target->IsAlive())
                         DoCast(target, SPELL_OLD_WOUNDS);
@@ -473,7 +473,7 @@ public:
 
             if (uiShadowPastTimer <= uiDiff)
             {
-                if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 1))
+                if (Unit* target = SelectTarget(SelectTargetMethod::Random, 1))
                 {
                     if (target->IsAlive())
                         DoCast(target, SPELL_SHADOWS_PAST);
@@ -487,7 +487,7 @@ public:
         void JustDied(Unit* /*killer*/) override
         {
             if (TempSummon* summ = me->ToTempSummon())
-                if (Unit* summoner = summ->GetSummoner())
+                if (Unit* summoner = summ->GetSummonerUnit())
                     if (summoner->IsAlive())
                         summoner->GetAI()->SetData(1, 0);
         }

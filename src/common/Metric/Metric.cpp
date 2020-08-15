@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -18,19 +18,19 @@
 #include "Metric.h"
 #include "Common.h"
 #include "Config.h"
+#include "DeadlineTimer.h"
 #include "Log.h"
 #include "Strand.h"
 #include "Util.h"
 #include <boost/algorithm/string/replace.hpp>
-#include <boost/asio/deadline_timer.hpp>
 #include <boost/asio/ip/tcp.hpp>
 
 void Metric::Initialize(std::string const& realmName, Trinity::Asio::IoContext& ioContext, std::function<void()> overallStatusLogger)
 {
-    _dataStream = Trinity::make_unique<boost::asio::ip::tcp::iostream>();
+    _dataStream = std::make_unique<boost::asio::ip::tcp::iostream>();
     _realmName = FormatInfluxDBTagValue(realmName);
-    _batchTimer = Trinity::make_unique<boost::asio::deadline_timer>(ioContext);
-    _overallStatusTimer = Trinity::make_unique<boost::asio::deadline_timer>(ioContext);
+    _batchTimer = std::make_unique<Trinity::Asio::DeadlineTimer>(ioContext);
+    _overallStatusTimer = std::make_unique<Trinity::Asio::DeadlineTimer>(ioContext);
     _overallStatusLogger = overallStatusLogger;
     LoadFromConfigs();
 }
@@ -67,6 +67,15 @@ void Metric::LoadFromConfigs()
     {
         TC_LOG_ERROR("metric", "'Metric.OverallStatusInterval' config set to %d, overriding to 1.", _overallStatusTimerInterval);
         _overallStatusTimerInterval = 1;
+    }
+
+    _thresholds.clear();
+    std::vector<std::string> thresholdSettings = sConfigMgr->GetKeysByString("Metric.Threshold.");
+    for (std::string const& thresholdSetting : thresholdSettings)
+    {
+        int thresholdValue = sConfigMgr->GetIntDefault(thresholdSetting, 0);
+        std::string thresholdName = thresholdSetting.substr(strlen("Metric.Threshold."));
+        _thresholds[thresholdName] = thresholdValue;
     }
 
     // Schedule a send at this point only if the config changed from Disabled to Enabled.
@@ -106,6 +115,14 @@ void Metric::Update()
     }
 }
 
+bool Metric::ShouldLog(std::string const& category, int64 value) const
+{
+    auto threshold = _thresholds.find(category);
+    if (threshold == _thresholds.end())
+        return false;
+    return value >= threshold->second;
+}
+
 void Metric::LogEvent(std::string const& category, std::string const& title, std::string const& description)
 {
     using namespace std::chrono;
@@ -135,6 +152,9 @@ void Metric::SendBatch()
         batchedData << data->Category;
         if (!_realmName.empty())
             batchedData << ",realm=" << _realmName;
+
+        for (MetricTag const& tag : data->Tags)
+            batchedData << "," << tag.first << "=" << FormatInfluxDBTagValue(tag.second);
 
         batchedData << " ";
 
@@ -209,7 +229,7 @@ void Metric::ScheduleSend()
         MetricData* data;
         // Clear the queue
         while (_queuedData.Dequeue(data))
-            ;
+            delete data;
     }
 }
 
@@ -274,6 +294,11 @@ std::string Metric::FormatInfluxDBTagValue(std::string const& value)
 {
     // ToDo: should handle '=' and ',' characters too
     return boost::replace_all_copy(value, " ", "\\ ");
+}
+
+std::string Metric::FormatInfluxDBValue(std::chrono::nanoseconds value)
+{
+    return FormatInfluxDBValue(std::chrono::duration_cast<Milliseconds>(value).count());
 }
 
 Metric::Metric()

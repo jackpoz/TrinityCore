@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -25,6 +24,7 @@
 #include "Transport.h"
 #include "Vehicle.h"
 #include "WorldPacket.h"
+#include "WorldStatePackets.h"
 
 void BattlegroundICScore::BuildObjectivesBlock(WorldPacket& data)
 {
@@ -78,12 +78,12 @@ void BattlegroundIC::PostUpdateImpl(uint32 diff)
     {
         if (closeFortressDoorsTimer <= diff)
         {
-            GetBGObject(BG_IC_GO_DOODAD_ND_HUMAN_GATE_CLOSEDFX_DOOR01)->RemoveFromWorld();
-            GetBGObject(BG_IC_GO_DOODAD_ND_WINTERORC_WALL_GATEFX_DOOR01)->RemoveFromWorld();
-            GetBGObject(BG_IC_GO_DOODAD_ND_HUMAN_GATE_CLOSEDFX_DOOR02)->RemoveFromWorld();
-            GetBGObject(BG_IC_GO_DOODAD_ND_WINTERORC_WALL_GATEFX_DOOR02)->RemoveFromWorld();
-            GetBGObject(BG_IC_GO_DOODAD_ND_HUMAN_GATE_CLOSEDFX_DOOR03)->RemoveFromWorld();
-            GetBGObject(BG_IC_GO_DOODAD_ND_WINTERORC_WALL_GATEFX_DOOR03)->RemoveFromWorld();
+            RemoveObjectFromWorld(BG_IC_GO_DOODAD_ND_HUMAN_GATE_CLOSEDFX_DOOR01);
+            RemoveObjectFromWorld(BG_IC_GO_DOODAD_ND_WINTERORC_WALL_GATEFX_DOOR01);
+            RemoveObjectFromWorld(BG_IC_GO_DOODAD_ND_HUMAN_GATE_CLOSEDFX_DOOR02);
+            RemoveObjectFromWorld(BG_IC_GO_DOODAD_ND_WINTERORC_WALL_GATEFX_DOOR02);
+            RemoveObjectFromWorld(BG_IC_GO_DOODAD_ND_HUMAN_GATE_CLOSEDFX_DOOR03);
+            RemoveObjectFromWorld(BG_IC_GO_DOODAD_ND_WINTERORC_WALL_GATEFX_DOOR03);
 
             GetBGObject(BG_IC_GO_ALLIANCE_GATE_1)->SetDestructibleState(GO_DESTRUCTIBLE_DAMAGED);
             GetBGObject(BG_IC_GO_HORDE_GATE_1)->SetDestructibleState(GO_DESTRUCTIBLE_DAMAGED);
@@ -290,21 +290,21 @@ void BattlegroundIC::HandleAreaTrigger(Player* player, uint32 trigger)
     }
 }
 
-void BattlegroundIC::FillInitialWorldStates(WorldPacket& data)
+void BattlegroundIC::FillInitialWorldStates(WorldPackets::WorldState::InitWorldStates& packet)
 {
-    data << uint32(BG_IC_ALLIANCE_RENFORT_SET) << uint32(1);
-    data << uint32(BG_IC_HORDE_RENFORT_SET) << uint32(1);
-    data << uint32(BG_IC_ALLIANCE_RENFORT) << uint32(factionReinforcements[TEAM_ALLIANCE]);
-    data << uint32(BG_IC_HORDE_RENFORT) << uint32(factionReinforcements[TEAM_HORDE]);
+    packet.Worldstates.emplace_back(BG_IC_ALLIANCE_RENFORT_SET, 1);
+    packet.Worldstates.emplace_back(BG_IC_HORDE_RENFORT_SET, 1);
+    packet.Worldstates.emplace_back(BG_IC_ALLIANCE_RENFORT, factionReinforcements[TEAM_ALLIANCE]);
+    packet.Worldstates.emplace_back(BG_IC_HORDE_RENFORT, factionReinforcements[TEAM_HORDE]);
 
-    for (uint8 i = 0; i < MAX_FORTRESS_GATES_SPAWNS; ++i)
+    for (uint8 itr = 0; itr < MAX_FORTRESS_GATES_SPAWNS; ++itr)
     {
-        uint32 uws = GetWorldStateFromGateEntry(BG_IC_ObjSpawnlocs[i].entry, (GateStatus[GetGateIDFromEntry(BG_IC_ObjSpawnlocs[i].entry)] == BG_IC_GATE_DESTROYED ? true : false));
-        data << uint32(uws) << uint32(1);
+        int32 worldState = GetWorldStateFromGateEntry(BG_IC_ObjSpawnlocs[itr].entry, (GateStatus[GetGateIDFromEntry(BG_IC_ObjSpawnlocs[itr].entry)] == BG_IC_GATE_DESTROYED ? true : false));
+        packet.Worldstates.emplace_back(worldState, 1);
     }
 
-    for (uint8 i = 0; i < MAX_NODE_TYPES; ++i)
-        data << uint32(nodePoint[i].worldStates[nodePoint[i].nodeState]) << uint32(1);
+    for (uint8 itr = 0; itr < MAX_NODE_TYPES; ++itr)
+        packet.Worldstates.emplace_back(nodePoint[itr].worldStates[nodePoint[itr].nodeState], 1);
 }
 
 bool BattlegroundIC::SetupBattleground()
@@ -884,7 +884,7 @@ WorldSafeLocsEntry const* BattlegroundIC::GetClosestGraveyard(Player* player)
             WorldSafeLocsEntry const*entry = sWorldSafeLocsStore.LookupEntry(BG_IC_GraveyardIds[nodes[i]]);
             if (!entry)
                 continue;
-            float dist = (entry->x - player_x)*(entry->x - player_x)+(entry->y - player_y)*(entry->y - player_y);
+            float dist = (entry->Loc.X - player_x)*(entry->Loc.X - player_x)+(entry->Loc.Y - player_y)*(entry->Loc.Y - player_y);
             if (mindist > dist)
             {
                 mindist = dist;

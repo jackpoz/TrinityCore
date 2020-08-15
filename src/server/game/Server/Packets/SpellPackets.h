@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -22,11 +22,78 @@
 #include "ObjectGuid.h"
 #include "Optional.h"
 #include "Position.h"
+#include "SharedDefines.h"
 
 namespace WorldPackets
 {
     namespace Spells
     {
+        class CancelCast final : public ClientPacket
+        {
+        public:
+            CancelCast(WorldPacket&& packet) : ClientPacket(CMSG_CANCEL_CAST, std::move(packet)) { }
+
+            void Read() override;
+
+            uint8 CastID = 0;
+            uint32 SpellID = 0;
+        };
+
+        class CancelAura final : public ClientPacket
+        {
+        public:
+            CancelAura(WorldPacket&& packet) : ClientPacket(CMSG_CANCEL_AURA, std::move(packet)) { }
+
+            void Read() override;
+
+            uint32 SpellID = 0;
+        };
+
+        class PetCancelAura final : public ClientPacket
+        {
+        public:
+            PetCancelAura(WorldPacket&& packet) : ClientPacket(CMSG_PET_CANCEL_AURA, std::move(packet)) { }
+
+            void Read() override;
+
+            ObjectGuid PetGUID;
+            uint32 SpellID = 0;
+        };
+
+        class CancelGrowthAura final : public ClientPacket
+        {
+        public:
+            CancelGrowthAura(WorldPacket&& packet) : ClientPacket(CMSG_CANCEL_GROWTH_AURA, std::move(packet)) { }
+
+            void Read() override { }
+        };
+
+        class CancelMountAura final : public ClientPacket
+        {
+        public:
+            CancelMountAura(WorldPacket&& packet) : ClientPacket(CMSG_CANCEL_MOUNT_AURA, std::move(packet)) { }
+
+            void Read() override { }
+        };
+
+        class CancelAutoRepeatSpell final : public ClientPacket
+        {
+        public:
+            CancelAutoRepeatSpell(WorldPacket&& packet) : ClientPacket(CMSG_CANCEL_AUTO_REPEAT_SPELL, std::move(packet)) { }
+
+            void Read() override { }
+        };
+
+        class CancelChannelling final : public ClientPacket
+        {
+        public:
+            CancelChannelling(WorldPacket&& packet) : ClientPacket(CMSG_CANCEL_CHANNELLING, std::move(packet)) { }
+
+            void Read() override;
+
+            uint32 ChannelSpell = 0;
+        };
+
         struct SpellMissStatus
         {
             ObjectGuid TargetGUID;
@@ -79,10 +146,10 @@ namespace WorldPackets
         {
             ObjectGuid CasterGUID;
             ObjectGuid CasterUnit;
-            uint8 CastID               = 0;
-            uint32 SpellID             = 0;
-            uint32 CastFlags           = 0;
-            uint32 CastTime            = 0;
+            uint8 CastID = 0;
+            uint32 SpellID = 0;
+            uint32 CastFlags = 0;
+            uint32 CastTime = 0;
             mutable Optional<std::vector<ObjectGuid>> HitTargets;
             mutable Optional<std::vector<SpellMissStatus>> MissStatus;
             SpellTargetData Target;
@@ -111,6 +178,33 @@ namespace WorldPackets
                 WorldPacket const* Write() override;
 
                 SpellCastData Cast;
+        };
+
+        struct ResyncRune
+        {
+            uint8 RuneType = 0;
+            uint8 Cooldown = 0;
+        };
+
+        class ResyncRunes final : public ServerPacket
+        {
+        public:
+            ResyncRunes() : ServerPacket(SMSG_RESYNC_RUNES, 4 + 2 * MAX_RUNES) { }
+
+            WorldPacket const* Write() override;
+
+            uint32 Count = 0;
+            std::vector<ResyncRune> Runes;
+        };
+
+        class MountResult final : public ServerPacket
+        {
+        public:
+            MountResult() : ServerPacket(SMSG_MOUNT_RESULT, 4) { }
+
+            WorldPacket const* Write() override;
+
+            uint32 Result = 0;
         };
     }
 }

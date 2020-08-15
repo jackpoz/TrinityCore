@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -88,9 +88,9 @@ class boss_general_zarithrian : public CreatureScript
                 return (instance->GetBossState(DATA_SAVIANA_RAGEFIRE) == DONE && instance->GetBossState(DATA_BALTHARUS_THE_WARBORN) == DONE && BossAI::CanAIAttack(target));
             }
 
-            void JustEngagedWith(Unit* /*who*/) override
+            void JustEngagedWith(Unit* who) override
             {
-                _JustEngagedWith();
+                BossAI::JustEngagedWith(who);
                 Talk(SAY_AGGRO);
                 events.ScheduleEvent(EVENT_CLEAVE, 8s);
                 events.ScheduleEvent(EVENT_INTIDMDATING_ROAR, 14s);
@@ -139,7 +139,7 @@ class boss_general_zarithrian : public CreatureScript
                     {
                         case EVENT_SUMMON_ADDS:
                             Talk(SAY_ADDS);
-                            // no break
+                            [[fallthrough]];
                         case EVENT_SUMMON_ADDS2:
                         {
                             if (Creature* stalker1 = ObjectAccessor::GetCreature(*me, instance->GetGuidData(DATA_ZARITHRIAN_SPAWN_STALKER_1)))
@@ -202,7 +202,7 @@ class npc_onyx_flamecaller : public CreatureScript
 
             void EnterEvadeMode(EvadeReason /*why*/) override { }
 
-            void IsSummonedBy(Unit* /*summoner*/) override
+            void IsSummonedBy(WorldObject* /*summoner*/) override
             {
                 // Let Zarithrian count as summoner.
                 if (Creature* zarithrian = _instance->GetCreature(DATA_GENERAL_ZARITHRIAN))

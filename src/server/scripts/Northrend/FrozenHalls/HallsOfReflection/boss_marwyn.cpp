@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -104,7 +104,7 @@ class boss_marwyn : public CreatureScript
                         events.ScheduleEvent(EVENT_OBLITERATE, 8s, 13s);
                         break;
                     case EVENT_WELL_OF_CORRUPTION:
-                        if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 100.0f, true))
+                        if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 100.0f, true))
                             DoCast(target, SPELL_WELL_OF_CORRUPTION);
                         events.ScheduleEvent(EVENT_WELL_OF_CORRUPTION, 13s);
                         break;
@@ -114,7 +114,7 @@ class boss_marwyn : public CreatureScript
                         events.ScheduleEvent(EVENT_CORRUPTED_FLESH, 20s);
                         break;
                     case EVENT_SHARED_SUFFERING:
-                        if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 0.0f, true))
+                        if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 0.0f, true))
                             DoCast(target, SPELL_SHARED_SUFFERING);
                         events.ScheduleEvent(EVENT_SHARED_SUFFERING, 14s, 15s);
                         break;

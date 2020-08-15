@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -238,9 +237,9 @@ class boss_nalorakk : public CreatureScript
                 }
             }
 
-            void JustEngagedWith(Unit* /*who*/) override
+            void JustEngagedWith(Unit* who) override
             {
-                _JustEngagedWith();
+                BossAI::JustEngagedWith(who);
 
                 Talk(YELL_AGGRO);
             }
@@ -290,7 +289,6 @@ class boss_nalorakk : public CreatureScript
                         case 6:
                             ++MovePhase;
                             waitTimer = 1;
-                            inMove = true;
                             return;
                         case 5:
                             me->SetOrientation(3.1415f*0.5f);
@@ -384,7 +382,7 @@ class boss_nalorakk : public CreatureScript
                     if (Surge_Timer <= diff)
                     {
                         Talk(YELL_SURGE);
-                        Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 1, 45, true);
+                        Unit* target = SelectTarget(SelectTargetMethod::Random, 1, 45, true);
                         if (target)
                             DoCast(target, SPELL_SURGE);
                         Surge_Timer = urand(15000, 20000);

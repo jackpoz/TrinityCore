@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -22,10 +21,18 @@
 #include "Define.h"
 #include "Errors.h"
 
+#include <array>
 #include <string>
 #include <sstream>
 #include <utility>
 #include <vector>
+
+enum class TimeFormat : uint8
+{
+    FullText,       // 1 Days 2 Hours 3 Minutes 4 Seconds
+    ShortText,      // 1d 2h 3m 4s
+    Numeric         // 1:2:3:4
+};
 
 class TC_COMMON_API Tokenizer
 {
@@ -58,10 +65,14 @@ private:
 TC_COMMON_API int32 MoneyStringToMoney(std::string const& moneyString);
 
 TC_COMMON_API struct tm* localtime_r(time_t const* time, struct tm *result);
+TC_COMMON_API time_t LocalTimeToUTCTime(time_t time);
+TC_COMMON_API time_t GetLocalHourTimestamp(time_t time, uint8 hour, bool onlyAfterTime = true);
+TC_COMMON_API tm TimeBreakdown(time_t t);
 
-TC_COMMON_API std::string secsToTimeString(uint64 timeInSecs, bool shortText = false, bool hoursOnly = false);
+TC_COMMON_API std::string secsToTimeString(uint64 timeInSecs, TimeFormat timeFormat = TimeFormat::FullText, bool hoursOnly = false);
 TC_COMMON_API uint32 TimeStringToSecs(std::string const& timestring);
 TC_COMMON_API std::string TimeToTimestampStr(time_t t);
+TC_COMMON_API std::string TimeToHumanReadable(time_t t);
 
 // Percentage calculation
 template <class T, class U>
@@ -104,7 +115,7 @@ inline bool Utf8toWStr(const std::string& utf8str, wchar_t* wstr, size_t& wsize)
 
 TC_COMMON_API bool WStrToUtf8(std::wstring const& wstr, std::string& utf8str);
 // size==real string size
-TC_COMMON_API bool WStrToUtf8(wchar_t* wstr, size_t size, std::string& utf8str);
+TC_COMMON_API bool WStrToUtf8(wchar_t const* wstr, size_t size, std::string& utf8str);
 
 // set string to "" if invalid utf8 sequence
 TC_COMMON_API size_t utf8length(std::string& utf8str);
@@ -294,8 +305,39 @@ TC_COMMON_API bool IsIPAddress(char const* ipaddress);
 TC_COMMON_API uint32 CreatePIDFile(std::string const& filename);
 TC_COMMON_API uint32 GetPID();
 
-TC_COMMON_API std::string ByteArrayToHexStr(uint8 const* bytes, uint32 length, bool reverse = false);
-TC_COMMON_API void HexStrToByteArray(std::string const& str, uint8* out, bool reverse = false);
+namespace Trinity::Impl
+{
+    TC_COMMON_API std::string ByteArrayToHexStr(uint8 const* bytes, size_t length, bool reverse = false);
+    TC_COMMON_API void HexStrToByteArray(std::string const& str, uint8* out, size_t outlen, bool reverse = false);
+}
+
+template <typename Container>
+std::string ByteArrayToHexStr(Container const& c, bool reverse = false)
+{
+    return Trinity::Impl::ByteArrayToHexStr(std::data(c), std::size(c), reverse);
+}
+
+template <size_t Size>
+void HexStrToByteArray(std::string const& str, std::array<uint8, Size>& buf, bool reverse = false)
+{
+    Trinity::Impl::HexStrToByteArray(str, buf.data(), Size, reverse);
+}
+template <size_t Size>
+std::array<uint8, Size> HexStrToByteArray(std::string const& str, bool reverse = false)
+{
+    std::array<uint8, Size> arr;
+    HexStrToByteArray(str, arr, reverse);
+    return arr;
+}
+
+inline std::vector<uint8> HexStrToByteVector(std::string const& str, bool reverse = false)
+{
+    std::vector<uint8> buf;
+    size_t const sz = (str.size() / 2);
+    buf.resize(sz);
+    Trinity::Impl::HexStrToByteArray(str, buf.data(), sz, reverse);
+    return buf;
+}
 
 TC_COMMON_API bool StringToBool(std::string const& str);
 
@@ -395,14 +437,6 @@ public:
     inline bool operator!=(flag96 const& right) const
     {
         return !(*this == right);
-    }
-
-    inline flag96& operator=(flag96 const& right)
-    {
-        part[0] = right.part[0];
-        part[1] = right.part[1];
-        part[2] = right.part[2];
-        return *this;
     }
 
     inline flag96 operator&(flag96 const& right) const
@@ -507,6 +541,18 @@ constexpr typename std::underlying_type<E>::type AsUnderlyingType(E enumValue)
 {
     static_assert(std::is_enum<E>::value, "AsUnderlyingType can only be used with enums");
     return static_cast<typename std::underlying_type<E>::type>(enumValue);
+}
+
+template<typename Ret, typename Only>
+Ret* Coalesce(Only* arg)
+{
+    return arg;
+}
+
+template<typename Ret, typename T1, typename... T>
+Ret* Coalesce(T1* first, T*... rest)
+{
+    return static_cast<Ret*>(first ? static_cast<Ret*>(first) : Coalesce<Ret>(rest...));
 }
 
 #endif

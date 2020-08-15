@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -33,8 +33,6 @@ EndScriptData */
 #include "Realm.h"
 #include "World.h"
 #include "WorldSession.h"
-#include <boost/thread/locks.hpp>
-#include <boost/thread/shared_mutex.hpp>
 
 class gm_commandscript : public CommandScript
 {
@@ -100,7 +98,7 @@ public:
         if (!*args)
             return false;
 
-        Player* target =  handler->getSelectedPlayer();
+        Player* target = handler->getSelectedPlayer();
         if (!target)
             target = handler->GetSession()->GetPlayer();
 
@@ -126,7 +124,7 @@ public:
         bool first = true;
         bool footer = false;
 
-        boost::shared_lock<boost::shared_mutex> lock(*HashMapHolder<Player>::GetLock());
+        std::shared_lock<std::shared_mutex> lock(*HashMapHolder<Player>::GetLock());
         HashMapHolder<Player>::MapType const& m = ObjectAccessor::GetPlayers();
         for (HashMapHolder<Player>::MapType::const_iterator itr = m.begin(); itr != m.end(); ++itr)
         {
@@ -144,7 +142,7 @@ public:
                     handler->SendSysMessage("========================");
                 }
                 std::string const& name = itr->second->GetName();
-                uint8 size = name.size();
+                uint8 size = uint8(name.size());
                 uint8 security = itrSec;
                 uint8 max = ((16 - size) / 2);
                 uint8 max2 = max;
@@ -167,7 +165,7 @@ public:
     static bool HandleGMListFullCommand(ChatHandler* handler, char const* /*args*/)
     {
         ///- Get the accounts with GM Level >0
-        PreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_SEL_GM_ACCOUNTS);
+        LoginDatabasePreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_SEL_GM_ACCOUNTS);
         stmt->setUInt8(0, uint8(SEC_MODERATOR));
         stmt->setInt32(1, int32(realm.Id.Realm));
         PreparedQueryResult result = LoginDatabase.Query(stmt);
@@ -255,10 +253,6 @@ public:
             _player->SetGameMaster(true);
             handler->GetSession()->SendNotification(LANG_GM_ON);
             _player->UpdateTriggerVisibility();
-#ifdef _DEBUG_VMAPS
-            VMAP::IVMapManager* vMapManager = VMAP::VMapFactory::createOrGetVMapManager();
-            vMapManager->processCommand("stoplog");
-#endif
             return true;
         }
 
@@ -267,10 +261,6 @@ public:
             _player->SetGameMaster(false);
             handler->GetSession()->SendNotification(LANG_GM_OFF);
             _player->UpdateTriggerVisibility();
-#ifdef _DEBUG_VMAPS
-            VMAP::IVMapManager* vMapManager = VMAP::VMapFactory::createOrGetVMapManager();
-            vMapManager->processCommand("startlog");
-#endif
             return true;
         }
 

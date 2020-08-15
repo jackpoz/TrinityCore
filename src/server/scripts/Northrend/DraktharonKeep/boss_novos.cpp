@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -106,9 +106,9 @@ public:
             SetBubbled(false);
         }
 
-        void JustEngagedWith(Unit* /* victim */) override
+        void JustEngagedWith(Unit* who) override
         {
-            _JustEngagedWith();
+            BossAI::JustEngagedWith(who);
             Talk(SAY_AGGRO);
 
             SetCrystalsStatus(true);
@@ -156,7 +156,7 @@ public:
                         events.ScheduleEvent(EVENT_SUMMON_MINIONS, 15s);
                         break;
                     case EVENT_ATTACK:
-                        if (Unit* victim = SelectTarget(SELECT_TARGET_RANDOM))
+                        if (Unit* victim = SelectTarget(SelectTargetMethod::Random))
                             DoCast(victim, RAND(SPELL_ARCANE_BLAST, SPELL_BLIZZARD, SPELL_FROSTBOLT, SPELL_WRATH_OF_MISERY));
                         events.ScheduleEvent(EVENT_ATTACK, 3s);
                         break;

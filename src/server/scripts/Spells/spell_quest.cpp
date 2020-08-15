@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -41,10 +41,10 @@ class spell_generic_quest_update_entry_SpellScript : public SpellScript
         uint32 _originalEntry;
         uint32 _newEntry;
         bool _shouldAttack;
-        uint32 _despawnTime;
+        Milliseconds _despawnTime;
 
     public:
-        spell_generic_quest_update_entry_SpellScript(uint16 spellEffect, uint8 effIndex, uint32 originalEntry, uint32 newEntry, bool shouldAttack, uint32 despawnTime = 0) :
+        spell_generic_quest_update_entry_SpellScript(uint16 spellEffect, uint8 effIndex, uint32 originalEntry, uint32 newEntry, bool shouldAttack, Milliseconds despawnTime = 0s) :
             SpellScript(), _spellEffect(spellEffect), _effIndex(effIndex), _originalEntry(originalEntry),
             _newEntry(newEntry), _shouldAttack(shouldAttack), _despawnTime(despawnTime) { }
 
@@ -57,7 +57,7 @@ class spell_generic_quest_update_entry_SpellScript : public SpellScript
                     if (_shouldAttack)
                         creatureTarget->EngageWithTarget(GetCaster());
 
-                    if (_despawnTime)
+                    if (_despawnTime != 0s)
                         creatureTarget->DespawnOrUnsummon(_despawnTime);
                 }
         }
@@ -85,6 +85,33 @@ class spell_q55_sacred_cleansing : public SpellScriptLoader
         {
             return new spell_generic_quest_update_entry_SpellScript(SPELL_EFFECT_DUMMY, EFFECT_1, NPC_MORBENT, NPC_WEAKENED_MORBENT, true);
         }
+};
+
+enum BendingShinbone
+{
+    SPELL_BENDING_SHINBONE1 = 8854,
+    SPELL_BENDING_SHINBONE2 = 8855
+};
+
+class spell_q1846_bending_shinbone : public SpellScript
+{
+    PrepareSpellScript(spell_q1846_bending_shinbone);
+
+    void HandleScriptEffect(SpellEffIndex /* effIndex */)
+    {
+        Item* target = GetHitItem();
+        Unit* caster = GetCaster();
+        if (!target && caster->GetTypeId() != TYPEID_PLAYER)
+            return;
+
+        uint32 const spellId = roll_chance_i(20) ? SPELL_BENDING_SHINBONE1 : SPELL_BENDING_SHINBONE2;
+        caster->CastSpell(caster, spellId, true);
+    }
+
+    void Register() override
+    {
+        OnEffectHitTarget += SpellEffectFn(spell_q1846_bending_shinbone::HandleScriptEffect, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
+    }
 };
 
 // 9712 - Thaumaturgy Channel
@@ -181,8 +208,9 @@ enum Quests6124_6129Data
     NPC_CURED_GAZELLE   = 12297,
     NPC_SICKLY_DEER     = 12298,
     NPC_CURED_DEER      = 12299,
-    DESPAWN_TIME        = 30000
 };
+
+constexpr Milliseconds Quest6124_6129_DESPAWN_TIME = 30s;
 
 class spell_q6124_6129_apply_salve : public SpellScriptLoader
 {
@@ -219,7 +247,7 @@ class spell_q6124_6129_apply_salve : public SpellScriptLoader
                         if (newEntry)
                         {
                             creatureTarget->UpdateEntry(newEntry);
-                            creatureTarget->DespawnOrUnsummon(DESPAWN_TIME);
+                            creatureTarget->DespawnOrUnsummon(Quest6124_6129_DESPAWN_TIME);
                             caster->KilledMonsterCredit(newEntry);
                         }
                     }
@@ -796,7 +824,7 @@ class spell_q10041_q10040_who_are_they : public SpellScriptLoader
                 PreventHitDefaultEffect(effIndex);
                 if (Player* target = GetHitPlayer())
                 {
-                    target->CastSpell(target, target->getGender() == GENDER_MALE ? SPELL_MALE_DISGUISE : SPELL_FEMALE_DISGUISE, true);
+                    target->CastSpell(target, target->GetNativeGender() == GENDER_MALE ? SPELL_MALE_DISGUISE : SPELL_FEMALE_DISGUISE, true);
                     target->CastSpell(target, SPELL_GENERIC_DISGUISE, true);
                 }
             }
@@ -928,7 +956,7 @@ class spell_q9874_liquid_fire : public SpellScriptLoader
                     {
                         caster->KilledMonsterCredit(NPC_VILLAGER_KILL_CREDIT);
                         target->CastSpell(target, SPELL_FLAMES, true);
-                        target->DespawnOrUnsummon(60000);
+                        target->DespawnOrUnsummon(60s);
                     }
             }
 
@@ -972,7 +1000,7 @@ class spell_q12805_lifeblood_dummy : public SpellScriptLoader
                 {
                     caster->KilledMonsterCredit(NPC_SHARD_KILL_CREDIT);
                     target->CastSpell(target, uint32(GetEffectValue()), true);
-                    target->DespawnOrUnsummon(2000);
+                    target->DespawnOrUnsummon(2s);
                 }
             }
 
@@ -1160,7 +1188,7 @@ class spell_q14076_14092_pound_drum : public SpellScriptLoader
             {
                 Unit* caster = GetCaster();
 
-                if (roll_chance_i(80))
+                if (roll_chance_i(50))
                     caster->CastSpell(caster, SPELL_SUMMON_DEEP_JORMUNGAR, true);
                 else
                     caster->CastSpell(caster, SPELL_STORMFORGED_MOLE_MACHINE, true);
@@ -1466,6 +1494,10 @@ class spell_q12372_destabilize_azure_dragonshrine_dummy : public SpellScriptLoad
 };
 
 // ID - 50287 Azure Dragon: On Death Force Cast Wyrmrest Defender to Whisper to Controller - Random (cast from Azure Dragons and Azure Drakes on death)
+enum q12372Creatures
+{
+    NPC_WYRMREST_DEFENDER = 27629
+};
 class spell_q12372_azure_on_death_force_whisper : public SpellScriptLoader
 {
     public:
@@ -1477,7 +1509,8 @@ class spell_q12372_azure_on_death_force_whisper : public SpellScriptLoader
 
             void HandleScript(SpellEffIndex /*effIndex*/)
             {
-                if (Creature* defender = GetHitCreature())
+                Creature* defender = GetHitCreature();
+                if (defender && defender->GetEntry() == NPC_WYRMREST_DEFENDER)
                     defender->AI()->Talk(WHISPER_ON_HIT_BY_FORCE_WHISPER, defender->GetCharmerOrOwner());
             }
 
@@ -1962,7 +1995,7 @@ enum BurstAtTheSeams
 {
     AREA_THE_BROKEN_FRONT                       =  4507,
     AREA_MORD_RETHAR_THE_DEATH_GATE             =  4508,
-                                                
+
     NPC_DRAKKARI_CHIEFTAINK                     = 29099,
     NPC_ICY_GHOUL                               = 31142,
     NPC_VICIOUS_GEIST                           = 31147,
@@ -2195,7 +2228,7 @@ class spell_q12690_burst_at_the_seams_52510 : public SpellScript
 
     void HandleScript(SpellEffIndex /*effIndex*/)
     {
-        GetCaster()->ToCreature()->DespawnOrUnsummon(2 * IN_MILLISECONDS);
+        GetCaster()->ToCreature()->DespawnOrUnsummon(2s);
     }
 
     void Register() override
@@ -2861,9 +2894,31 @@ public:
     }
 };
 
+class spell_q11896_weakness_to_lightning_46444 : public SpellScript
+{
+    PrepareSpellScript(spell_q11896_weakness_to_lightning_46444);
+
+    void HandleScript(SpellEffIndex /*effIndex*/)
+    {
+        if (Unit* target = GetHitUnit())
+        {
+            if (Unit* owner = target->GetOwner())
+            {
+                target->CastSpell(owner, GetEffectValue(), true);
+            }
+        }
+    }
+
+    void Register() override
+    {
+        OnEffectHitTarget += SpellEffectFn(spell_q11896_weakness_to_lightning_46444::HandleScript, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
+    }
+};
+
 void AddSC_quest_spell_scripts()
 {
     new spell_q55_sacred_cleansing();
+    RegisterSpellScript(spell_q1846_bending_shinbone);
     new spell_q2203_thaumaturgy_channel();
     new spell_q5206_test_fetid_skull();
     new spell_q6124_6129_apply_salve();
@@ -2916,6 +2971,7 @@ void AddSC_quest_spell_scripts()
     RegisterSpellScript(spell_q13264_q13276_q13288_q13289_area_restrict_abom);
     RegisterSpellScript(spell_q13264_q13276_q13288_q13289_assign_credit_to_master);
     RegisterSpellScript(spell_q12690_burst_at_the_seams_52510);
+    RegisterSpellScript(spell_q11896_weakness_to_lightning_46444);
     new spell_q12308_escape_from_silverbrook_summon_worgen();
     new spell_q12308_escape_from_silverbrook();
     new spell_q12641_death_comes_from_on_high();

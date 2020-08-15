@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -121,9 +121,9 @@ struct boss_teron_gorefiend : public BossAI
         }
     }
 
-    void JustEngagedWith(Unit* /*who*/) override
+    void JustEngagedWith(Unit* who) override
     {
-        _JustEngagedWith();
+        BossAI::JustEngagedWith(who);
         Talk(SAY_AGGRO);
         events.SetPhase(PHASE_COMBAT);
         events.ScheduleEvent(EVENT_ENRAGE, 10min);
@@ -182,7 +182,7 @@ struct boss_teron_gorefiend : public BossAI
                     DoCast(SPELL_BERSERK);
                     break;
                 case EVENT_INCINERATE:
-                    if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0))
+                    if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0))
                         DoCast(target, SPELL_INCINERATE);
                     Talk(SAY_INCINERATE);
                     events.Repeat(Seconds(12), Seconds(20));
@@ -193,7 +193,7 @@ struct boss_teron_gorefiend : public BossAI
                     events.Repeat(Seconds(30), Seconds(40));
                     break;
                 case EVENT_SHADOW_DEATH:
-                    if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 1, 100.0f, true, true, -SPELL_SPIRITUAL_VENGEANCE))
+                    if (Unit* target = SelectTarget(SelectTargetMethod::Random, 1, 100.0f, true, true, -SPELL_SPIRITUAL_VENGEANCE))
                         DoCast(target, SPELL_SHADOW_OF_DEATH);
                     events.Repeat(Seconds(30), Seconds(35));
                     break;
@@ -235,7 +235,7 @@ struct npc_doom_blossom : public NullCreatureAI
         DoZoneInCombat();
         _scheduler.Schedule(Seconds(12), [this](TaskContext shadowBolt)
         {
-            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0))
+            if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0))
                 DoCast(target, SPELL_SHADOWBOLT);
 
             shadowBolt.Repeat(Seconds(2));
@@ -313,10 +313,10 @@ struct npc_shadowy_construct : public ScriptedAI
     {
         if (Creature* teron = _instance->GetCreature(DATA_TERON_GOREFIEND))
         {
-            Unit* target = teron->AI()->SelectTarget(SELECT_TARGET_RANDOM, 0, 100.0f, true, true, -SPELL_SPIRITUAL_VENGEANCE);
+            Unit* target = teron->AI()->SelectTarget(SelectTargetMethod::Random, 0, 100.0f, true, true, -SPELL_SPIRITUAL_VENGEANCE);
             // He should target Vengeful Spirits only if has no other player available
             if (!target)
-                target = teron->AI()->SelectTarget(SELECT_TARGET_RANDOM, 0);
+                target = teron->AI()->SelectTarget(SelectTargetMethod::Random, 0);
 
             if (target)
             {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -22,6 +22,15 @@
 #include "SpellMgr.h"
 
 #include "Packets/QueryPackets.h"
+
+bool ItemTemplate::HasSignature() const
+{
+    return GetMaxStackSize() == 1 &&
+        Class != ITEM_CLASS_CONSUMABLE &&
+        Class != ITEM_CLASS_QUEST &&
+        !HasFlag(ITEM_FLAG_NO_CREATOR) &&
+        ItemId != 6948; /*Hearthstone*/
+}
 
 bool ItemTemplate::CanChangeEquipStateInCombat() const
 {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License along
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include "Hyperlinks.h"
 #include "AchievementMgr.h"
 #include "ObjectMgr.h"
@@ -130,7 +130,7 @@ bool Trinity::Hyperlinks::LinkTags::talent::StoreTo(TalentLinkData& val, char co
     val.Rank = rank+1;
     if (!(val.Talent = sTalentStore.LookupEntry(talentId)))
         return false;
-    if (val.Rank > 0 && !val.Talent->RankID[val.Rank - 1])
+    if (val.Rank > 0 && !val.Talent->SpellRank[val.Rank - 1])
         return false;
     return true;
 }

@@ -1,9 +1,9 @@
 # Set build-directive (used in core to tell which buildtype we used)
 target_compile_definitions(trinity-compile-option-interface
   INTERFACE
-    -D_BUILD_DIRECTIVE="${CMAKE_BUILD_TYPE}")
+    -D_BUILD_DIRECTIVE="$<CONFIG>")
 
-set(GCC_EXPECTED_VERSION 6.3.0)
+set(GCC_EXPECTED_VERSION 7.1.0)
 
 if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS GCC_EXPECTED_VERSION)
   message(FATAL_ERROR "GCC: TrinityCore requires version ${GCC_EXPECTED_VERSION} to build but found ${CMAKE_CXX_COMPILER_VERSION}")
@@ -16,13 +16,15 @@ if(PLATFORM EQUAL 32)
       -msse2
       -mfpmath=sse)
 endif()
-target_compile_definitions(trinity-compile-option-interface
-  INTERFACE
-    -DHAVE_SSE2
-    -D__SSE2__)
-message(STATUS "GCC: SFMT enabled, SSE2 flags forced")
+if(NOT CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
+  target_compile_definitions(trinity-compile-option-interface
+    INTERFACE
+      -DHAVE_SSE2
+      -D__SSE2__)
+  message(STATUS "GCC: SFMT enabled, SSE2 flags forced")
+endif()
 
-if( WITH_WARNINGS )
+if(WITH_WARNINGS)
   target_compile_options(trinity-warning-interface
     INTERFACE
       -W
@@ -36,7 +38,7 @@ if( WITH_WARNINGS )
   message(STATUS "GCC: All warnings enabled")
 endif()
 
-if( WITH_COREDEBUG )
+if(WITH_COREDEBUG)
   target_compile_options(trinity-compile-option-interface
     INTERFACE
       -g3)
@@ -44,7 +46,25 @@ if( WITH_COREDEBUG )
   message(STATUS "GCC: Debug-flags set (-g3)")
 endif()
 
-if (BUILD_SHARED_LIBS)
+if(ASAN)
+  target_compile_options(trinity-compile-option-interface
+    INTERFACE
+      -fno-omit-frame-pointer
+      -fsanitize=address
+      -fsanitize-recover=address
+      -fsanitize-address-use-after-scope)
+
+  target_link_options(trinity-compile-option-interface
+    INTERFACE
+      -fno-omit-frame-pointer
+      -fsanitize=address
+      -fsanitize-recover=address
+      -fsanitize-address-use-after-scope)
+
+  message(STATUS "GCC: Enabled Address Sanitizer")
+endif()
+
+if(BUILD_SHARED_LIBS)
   target_compile_options(trinity-compile-option-interface
     INTERFACE
       -fPIC

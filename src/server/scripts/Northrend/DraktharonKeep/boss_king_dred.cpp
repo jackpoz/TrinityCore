@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -76,13 +76,13 @@ class boss_king_dred : public CreatureScript
                 _Reset();
             }
 
-            void JustEngagedWith(Unit* /*who*/) override
+            void JustEngagedWith(Unit* who) override
             {
-                _JustEngagedWith();
+                BossAI::JustEngagedWith(who);
 
                 events.ScheduleEvent(EVENT_BELLOWING_ROAR, 33s);
                 events.ScheduleEvent(EVENT_GRIEVOUS_BITE, 20s);
-                events.ScheduleEvent(EVENT_MANGLING_SLASH, 18500);
+                events.ScheduleEvent(EVENT_MANGLING_SLASH, 18500ms);
                 events.ScheduleEvent(EVENT_FEARSOME_ROAR, 10s, 20s);
                 events.ScheduleEvent(EVENT_PIERCING_SLASH, 15s);
                 events.ScheduleEvent(EVENT_RAPTOR_CALL, 20s, 25s);
@@ -131,7 +131,7 @@ class boss_king_dred : public CreatureScript
                             break;
                         case EVENT_MANGLING_SLASH:
                             DoCastVictim(SPELL_MANGLING_SLASH);
-                            events.ScheduleEvent(EVENT_MANGLING_SLASH, 18500);
+                            events.ScheduleEvent(EVENT_MANGLING_SLASH, 18500ms);
                             break;
                         case EVENT_FEARSOME_ROAR:
                             DoCastAOE(SPELL_FEARSOME_ROAR);
@@ -147,7 +147,7 @@ class boss_king_dred : public CreatureScript
                             float x, y, z;
 
                             me->GetClosePoint(x, y, z, me->GetCombatReach() / 3, 10.0f);
-                            me->SummonCreature(RAND(NPC_DRAKKARI_GUTRIPPER, NPC_DRAKKARI_SCYTHECLAW), x, y, z, 0, TEMPSUMMON_DEAD_DESPAWN, 1000);
+                            me->SummonCreature(RAND(NPC_DRAKKARI_GUTRIPPER, NPC_DRAKKARI_SCYTHECLAW), x, y, z, 0, TEMPSUMMON_DEAD_DESPAWN, 1s);
                             events.ScheduleEvent(EVENT_RAPTOR_CALL, 20s, 25s);
                             break;
                         default:

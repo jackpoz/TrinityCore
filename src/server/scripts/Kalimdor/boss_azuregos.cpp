@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -103,9 +103,9 @@ class boss_azuregos : public CreatureScript
                     switch (eventId)
                     {
                         case EVENT_MANA_STORM:
-                            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 60.0f, true))
+                            if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 60.0f, true))
                                 DoCast(target, SPELL_MANA_STORM);
-                            events.ScheduleEvent(EVENT_MANA_STORM, urand(7500, 12500));
+                            events.ScheduleEvent(EVENT_MANA_STORM, 7500ms, 12500ms);
                             break;
                         case EVENT_CHILL:
                             DoCastVictim(SPELL_CHILL);

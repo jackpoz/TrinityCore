@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -104,9 +104,9 @@ class boss_garfrost : public CreatureScript
                 Initialize();
             }
 
-            void JustEngagedWith(Unit* /*who*/) override
+            void JustEngagedWith(Unit* who) override
             {
-                _JustEngagedWith();
+                BossAI::JustEngagedWith(who);
                 Talk(SAY_AGGRO);
                 DoCast(me, SPELL_PERMAFROST);
                 me->CallForHelp(70.0f);
@@ -135,7 +135,7 @@ class boss_garfrost : public CreatureScript
                 {
                     events.SetPhase(PHASE_TWO);
                     Talk(SAY_PHASE2);
-                    events.DelayEvents(8000);
+                    events.DelayEvents(8s);
                     DoCast(me, SPELL_THUNDERING_STOMP);
                     events.ScheduleEvent(EVENT_FORGE_JUMP, 1500ms);
                     return;
@@ -145,7 +145,7 @@ class boss_garfrost : public CreatureScript
                 {
                     events.SetPhase(PHASE_THREE);
                     Talk(SAY_PHASE3);
-                    events.DelayEvents(8000);
+                    events.DelayEvents(8s);
                     DoCast(me, SPELL_THUNDERING_STOMP);
                     events.ScheduleEvent(EVENT_FORGE_JUMP, 1500ms);
                     return;
@@ -171,11 +171,15 @@ class boss_garfrost : public CreatureScript
                 events.ScheduleEvent(EVENT_RESUME_ATTACK, 5s);
             }
 
-            void SpellHitTarget(Unit* target, SpellInfo const* spell) override
+            void SpellHitTarget(WorldObject* target, SpellInfo const* spellInfo) override
             {
-                if (spell->Id == SPELL_PERMAFROST_HELPER)
+                Unit* unitTarget = target->ToUnit();
+                if (!unitTarget)
+                    return;
+
+                if (spellInfo->Id == SPELL_PERMAFROST_HELPER)
                 {
-                    if (Aura* aura = target->GetAura(SPELL_PERMAFROST_HELPER))
+                    if (Aura* aura = unitTarget->GetAura(SPELL_PERMAFROST_HELPER))
                         _permafrostStack = std::max<uint32>(_permafrostStack, aura->GetStackAmount());
                 }
             }
@@ -200,19 +204,19 @@ class boss_garfrost : public CreatureScript
                     switch (eventId)
                     {
                         case EVENT_THROW_SARONITE:
-                            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 0.0f, true))
+                            if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 0.0f, true))
                             {
                                 Talk(SAY_THROW_SARONITE, target);
                                 DoCast(target, SPELL_THROW_SARONITE);
                             }
-                            events.ScheduleEvent(EVENT_THROW_SARONITE, urand(12500, 20000));
+                            events.ScheduleEvent(EVENT_THROW_SARONITE, 12500ms, 20s);
                             break;
                         case EVENT_CHILLING_WAVE:
                             DoCast(me, SPELL_CHILLING_WAVE);
                             events.ScheduleEvent(EVENT_CHILLING_WAVE, 4s, 0, PHASE_TWO);
                             break;
                         case EVENT_DEEP_FREEZE:
-                            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 0.0f, true))
+                            if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 0.0f, true))
                             {
                                 Talk(SAY_CAST_DEEP_FREEZE, target);
                                 DoCast(target, SPELL_DEEP_FREEZE);
@@ -270,8 +274,11 @@ class spell_garfrost_permafrost : public SpellScriptLoader
             }
 
         private:
-            void PreventHitByLoS()
+            void PreventHitByLoS(SpellMissInfo missInfo)
             {
+                if (missInfo != SPELL_MISS_NONE)
+                    return;
+
                 if (Unit* target = GetHitUnit())
                 {
                     Unit* caster = GetCaster();
@@ -312,7 +319,7 @@ class spell_garfrost_permafrost : public SpellScriptLoader
 
             void Register() override
             {
-                BeforeHit += SpellHitFn(spell_garfrost_permafrost_SpellScript::PreventHitByLoS);
+                BeforeHit += BeforeSpellHitFn(spell_garfrost_permafrost_SpellScript::PreventHitByLoS);
                 AfterHit += SpellHitFn(spell_garfrost_permafrost_SpellScript::RestoreImmunity);
             }
 

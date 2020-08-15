@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -135,7 +135,7 @@ class boss_zuramat : public CreatureScript
 
                 scheduler.Schedule(Seconds(9), [this](TaskContext task)
                 {
-                    if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 60.0f, true))
+                    if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 60.0f, true))
                         DoCast(target, SPELL_VOID_SHIFT);
                     task.Repeat(Seconds(15));
                 });
@@ -169,7 +169,7 @@ class npc_void_sentry : public CreatureScript
                 me->SetReactState(REACT_PASSIVE);
             }
 
-            void IsSummonedBy(Unit* /*summoner*/) override
+            void IsSummonedBy(WorldObject* /*summoner*/) override
             {
                 me->CastSpell(me, SPELL_SUMMON_VOID_SENTRY_BALL, true);
             }

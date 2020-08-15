@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2005-2008 MaNGOS <http://getmangos.com/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -153,7 +152,7 @@ void Log::CreateLoggerFromConfig(std::string const& appenderName)
     if (level < lowestLogLevel)
         lowestLogLevel = level;
 
-    logger = Trinity::make_unique<Logger>(name, level);
+    logger = std::make_unique<Logger>(name, level);
     //fprintf(stdout, "Log::CreateLoggerFromConfig: Created Logger %s, Level %u\n", name.c_str(), level);
 
     std::istringstream ss(*iter);
@@ -216,12 +215,12 @@ void Log::RegisterAppender(uint8 index, AppenderCreatorFn appenderCreateFn)
 
 void Log::outMessage(std::string const& filter, LogLevel level, std::string&& message)
 {
-    write(Trinity::make_unique<LogMessage>(level, filter, std::move(message)));
+    write(std::make_unique<LogMessage>(level, filter, std::move(message)));
 }
 
 void Log::outCommand(std::string&& message, std::string&& param1)
 {
-    write(Trinity::make_unique<LogMessage>(LOG_LEVEL_INFO, "commands.gm", std::move(message), std::move(param1)));
+    write(std::make_unique<LogMessage>(LOG_LEVEL_INFO, "commands.gm", std::move(message), std::move(param1)));
 }
 
 void Log::write(std::unique_ptr<LogMessage>&& msg) const
@@ -271,11 +270,12 @@ std::string Log::GetTimestampStr()
         aTm.tm_year + 1900, aTm.tm_mon + 1, aTm.tm_mday, aTm.tm_hour, aTm.tm_min, aTm.tm_sec);
 }
 
-bool Log::SetLogLevel(std::string const& name, char const* newLevelc, bool isLogger /* = true */)
+bool Log::SetLogLevel(std::string const& name, int32 newLeveli, bool isLogger /* = true */)
 {
-    LogLevel newLevel = LogLevel(atoi(newLevelc));
-    if (newLevel < 0)
+    if (newLeveli < 0)
         return false;
+
+    LogLevel newLevel = LogLevel(newLeveli);
 
     if (isLogger)
     {
@@ -323,8 +323,8 @@ void Log::outCharDump(char const* str, uint32 accountId, uint64 guid, char const
 
 void Log::SetRealmId(uint32 id)
 {
-    for (auto it = appenders.begin(); it != appenders.end(); ++it)
-        it->second->setRealmId(id);
+    for (std::pair<uint8 const, std::unique_ptr<Appender>>& appender : appenders)
+        appender.second->setRealmId(id);
 }
 
 void Log::Close()

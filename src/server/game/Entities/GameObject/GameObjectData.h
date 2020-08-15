@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -22,6 +22,8 @@
 #include "SharedDefines.h"
 #include "SpawnData.h"
 #include "WorldPacket.h"
+
+#include <array>
 #include <string>
 #include <vector>
 
@@ -454,6 +456,7 @@ struct GameObjectTemplate
             case GAMEOBJECT_TYPE_CHEST: return chest.losOK == 0;
             case GAMEOBJECT_TYPE_GOOBER: return goober.losOK == 0;
             case GAMEOBJECT_TYPE_FLAGSTAND: return flagstand.losOK == 0;
+            case GAMEOBJECT_TYPE_TRAP: return true;
             default: return false;
         }
     }
@@ -488,6 +491,21 @@ struct GameObjectTemplate
             case GAMEOBJECT_TYPE_FLAGSTAND:  return flagstand.noDamageImmune != 0;
             case GAMEOBJECT_TYPE_FLAGDROP:   return flagdrop.noDamageImmune != 0;
             default: return true;
+        }
+    }
+
+    bool CannotBeUsedUnderImmunity() const // Cannot be used/activated/looted by players under immunity effects (example: Divine Shield)
+    {
+        switch (type)
+        {
+            case GAMEOBJECT_TYPE_DOOR:       return door.noDamageImmune != 0;
+            case GAMEOBJECT_TYPE_BUTTON:     return button.noDamageImmune != 0;
+            case GAMEOBJECT_TYPE_QUESTGIVER: return questgiver.noDamageImmune != 0;
+            case GAMEOBJECT_TYPE_CHEST:      return true;                           // All chests cannot be opened while immune on 3.3.5a
+            case GAMEOBJECT_TYPE_GOOBER:     return goober.noDamageImmune != 0;
+            case GAMEOBJECT_TYPE_FLAGSTAND:  return flagstand.noDamageImmune != 0;
+            case GAMEOBJECT_TYPE_FLAGDROP:   return flagdrop.noDamageImmune != 0;
+            default: return false;
         }
     }
 
@@ -587,6 +605,18 @@ struct GameObjectTemplate
         }
     }
 
+    bool IsInfiniteGameObject() const
+    {
+        switch (type)
+        {
+            case GAMEOBJECT_TYPE_DOOR:                  return true;
+            case GAMEOBJECT_TYPE_FLAGSTAND:             return true;
+            case GAMEOBJECT_TYPE_FLAGDROP:              return true;
+            case GAMEOBJECT_TYPE_TRAPDOOR:              return true;
+            default: return false;
+        }
+    }
+
     void InitializeQueryData();
     WorldPacket BuildQueryData(LocaleConstant loc) const;
 };
@@ -603,6 +633,7 @@ struct GameObjectTemplateAddon : public GameObjectOverride
 {
     uint32 Mingold;
     uint32 Maxgold;
+    std::array<uint32, 4> artKits = {};
 };
 
 struct GameObjectLocale
@@ -639,6 +670,35 @@ struct GameObjectData : public SpawnData
     uint32 animprogress = 0;
     GOState goState = GO_STATE_ACTIVE;
     uint8 artKit = 0;
+};
+
+enum class GameObjectActions : uint32
+{
+                                    // Name from client executable      // Comments
+    None,                           // -NONE-
+    AnimateCustom0,                 // Animate Custom0
+    AnimateCustom1,                 // Animate Custom1
+    AnimateCustom2,                 // Animate Custom2
+    AnimateCustom3,                 // Animate Custom3
+    Disturb,                        // Disturb                          // Triggers trap
+    Unlock,                         // Unlock                           // Resets GO_FLAG_LOCKED
+    Lock,                           // Lock                             // Sets GO_FLAG_LOCKED
+    Open,                           // Open                             // Sets GO_STATE_ACTIVE
+    OpenAndUnlock,                  // Open + Unlock                    // Sets GO_STATE_ACTIVE and resets GO_FLAG_LOCKED
+    Close,                          // Close                            // Sets GO_STATE_READY
+    ToggleOpen,                     // Toggle Open
+    Destroy,                        // Destroy                          // Sets GO_STATE_DESTROYED
+    Rebuild,                        // Rebuild                          // Resets from GO_STATE_DESTROYED
+    Creation,                       // Creation
+    Despawn,                        // Despawn
+    MakeInert,                      // Make Inert                       // Disables interactions
+    MakeActive,                     // Make Active                      // Enables interactions
+    CloseAndLock,                   // Close + Lock                     // Sets GO_STATE_READY and sets GO_FLAG_LOCKED
+    UseArtKit0,                     // Use ArtKit0                      // 46904: 121
+    UseArtKit1,                     // Use ArtKit1                      // 36639: 81, 46903: 122
+    UseArtKit2,                     // Use ArtKit2
+    UseArtKit3,                     // Use ArtKit3
+    SetTapList,                     // Set Tap List
 };
 
 #endif // GameObjectData_h__

@@ -2259,12 +2259,19 @@ function (cotire_generate_target_script _language _configurations _target _targe
 	set (${_targetConfigScriptVar} "${_targetCotireConfigScript}" PARENT_SCOPE)
 endfunction()
 
-function (cotire_setup_pch_file_compilation _language _target _targetScript _prefixFile _pchFile _hostFile)
+function (cotire_setup_pch_file_compilation _language _target _targetScript _prefixFile _pchFile _prefixFileWasGenerated _hostFile)
 	set (_sourceFiles ${ARGN})
 	if (CMAKE_${_language}_COMPILER_ID MATCHES "MSVC|Intel")
 		# for Visual Studio and Intel, we attach the precompiled header compilation to the host file
 		# the remaining files include the precompiled header, see cotire_setup_pch_file_inclusion
 		if (_sourceFiles)
+			# unlike MSBuild, Ninja does not automatically create the directory for /Fp file
+			# so we have to do it ourselves to avoid C1083
+			if (${CMAKE_GENERATOR} STREQUAL "Ninja Multi-Config")
+				cotire_get_intermediate_dir(_baseDir)
+				add_custom_command (OUTPUT "${_baseDir}/.mkdir" COMMAND ${CMAKE_COMMAND} -E touch "${_baseDir}/.mkdir")
+				set_property (SOURCE ${_hostFile} APPEND PROPERTY OBJECT_DEPENDS "${_baseDir}/.mkdir")
+			endif()
 			set (_flags "")
 			cotire_add_pch_compilation_flags(
 				"${_language}" "${CMAKE_${_language}_COMPILER_ID}" "${CMAKE_${_language}_COMPILER_VERSION}"
@@ -2272,7 +2279,9 @@ function (cotire_setup_pch_file_compilation _language _target _targetScript _pre
 			set_property (SOURCE ${_hostFile} APPEND_STRING PROPERTY COMPILE_FLAGS " ${_flags} ")
 			set_property (SOURCE ${_hostFile} APPEND PROPERTY OBJECT_OUTPUTS "${_pchFile}")
 			# make object file generated from host file depend on prefix header
-			set_property (SOURCE ${_hostFile} APPEND PROPERTY OBJECT_DEPENDS "${_prefixFile}")
+			if (_prefixFileWasGenerated)
+				set_property (SOURCE ${_hostFile} APPEND PROPERTY OBJECT_DEPENDS "${_prefixFile}")
+			endif()
 			# mark host file as cotired to prevent it from being used in another cotired target
 			set_property (SOURCE ${_hostFile} PROPERTY COTIRE_TARGET "${_target}")
 		endif()
@@ -2341,7 +2350,7 @@ function (cotire_setup_pch_file_inclusion _language _target _wholeTarget _prefix
 	endif()
 endfunction()
 
-function (cotire_setup_prefix_file_inclusion _language _target _prefixFile)
+function (cotire_setup_prefix_file_inclusion _language _target _prefixFile _prefixFileWasGenerated)
 	set (_sourceFiles ${ARGN})
 	# force the inclusion of the prefix header for the given source files
 	set (_flags "")
@@ -2352,8 +2361,10 @@ function (cotire_setup_prefix_file_inclusion _language _target _prefixFile)
 	set_property (SOURCE ${_sourceFiles} APPEND_STRING PROPERTY COMPILE_FLAGS " ${_flags} ")
 	# mark sources as cotired to prevent them from being used in another cotired target
 	set_source_files_properties(${_sourceFiles} PROPERTIES COTIRE_TARGET "${_target}")
-	# make object files generated from source files depend on prefix header
-	set_property (SOURCE ${_sourceFiles} APPEND PROPERTY OBJECT_DEPENDS "${_prefixFile}")
+	if (_prefixFileWasGenerated)
+		# make object files generated from source files depend on prefix header
+		set_property (SOURCE ${_sourceFiles} APPEND PROPERTY OBJECT_DEPENDS "${_prefixFile}")
+	endif()
 endfunction()
 
 function (cotire_get_first_set_property_value _propertyValueVar _type _object)
@@ -2866,9 +2877,21 @@ function (cotire_process_target_language _language _configurations _target _whol
 	if (_prefixFile)
 		# check for user provided prefix header files
 		get_property(_prefixHeaderFiles TARGET ${_target} PROPERTY COTIRE_${_language}_PREFIX_HEADER_INIT)
+		set (_prefixFileWasGenerated TRUE)
 		if (_prefixHeaderFiles)
-			cotire_setup_prefix_generation_from_provided_command(
-				${_language} ${_target} "${_targetConfigScript}" "${_prefixFile}" _cmds ${_prefixHeaderFiles})
+			list (LENGTH _prefixHeaderFiles _numberOfprefixHeaderFiles)
+			# if there is only one header specified in COTIRE_${_language}_PREFIX_HEADER_INIT then use it directly
+			# this works around a bug/change that causes Visual Studio to always rebuild entire project
+			# even if only one source file changed
+			# custom commands in cmake are designed to be always "out of date" so generation always happens
+			# Visual Studio determines "out of date" status by last modification timestamp, not content
+			if (_numberOfprefixHeaderFiles GREATER 1 OR NOT CMAKE_${_language}_COMPILER_ID MATCHES "MSVC|Intel")
+				cotire_setup_prefix_generation_from_provided_command(
+					${_language} ${_target} "${_targetConfigScript}" "${_prefixFile}" _cmds ${_prefixHeaderFiles})
+			else()
+				list (GET _prefixHeaderFiles 0 _prefixFile)
+				set (_prefixFileWasGenerated FALSE)
+			endif()
 		else()
 			cotire_setup_prefix_generation_from_unity_command(
 				${_language} ${_target} "${_targetConfigScript}" "${_prefixFile}" "${_unityFile}" _cmds ${_unitySourceFiles})
@@ -2885,13 +2908,13 @@ function (cotire_process_target_language _language _configurations _target _whol
 			if (_pchFile)
 				# first file in _sourceFiles is passed as the host file
 				cotire_setup_pch_file_compilation(
-					${_language} ${_target} "${_targetConfigScript}" "${_prefixFile}" "${_pchFile}" ${_sourceFiles})
+					${_language} ${_target} "${_targetConfigScript}" "${_prefixFile}" "${_pchFile}" ${_prefixFileWasGenerated} ${_sourceFiles})
 				cotire_setup_pch_file_inclusion(
 					${_language} ${_target} ${_wholeTarget} "${_prefixFile}" "${_pchFile}" ${_sourceFiles})
 			endif()
 		elseif (_prefixHeaderFiles)
 			# user provided prefix header must be included unconditionally
-			cotire_setup_prefix_file_inclusion(${_language} ${_target} "${_prefixFile}" ${_sourceFiles})
+			cotire_setup_prefix_file_inclusion(${_language} ${_target} "${_prefixFile}" ${_prefixFileWasGenerated} ${_sourceFiles})
 		endif()
 	endif()
 	# mark target as cotired for language
@@ -2995,7 +3018,7 @@ function (cotire_setup_unity_target_pch_usage _languages _target)
 			get_property(_prefixFile TARGET ${_target} PROPERTY COTIRE_${_language}_PREFIX_HEADER)
 			if (_userPrefixFile AND _prefixFile)
 				# user provided prefix header must be included unconditionally by unity sources
-				cotire_setup_prefix_file_inclusion(${_language} ${_target} "${_prefixFile}" ${_unityFiles})
+				cotire_setup_prefix_file_inclusion(${_language} ${_target} "${_prefixFile}" TRUE ${_unityFiles})
 			endif()
 		endif()
 	endforeach()

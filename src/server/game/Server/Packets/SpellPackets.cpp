@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -19,6 +19,28 @@
 #include "SharedDefines.h"
 #include "Spell.h"
 #include "SpellInfo.h"
+
+void WorldPackets::Spells::CancelCast::Read()
+{
+    _worldPacket >> CastID;
+    _worldPacket >> SpellID;
+}
+
+void WorldPackets::Spells::CancelAura::Read()
+{
+    _worldPacket >> SpellID;
+}
+
+void WorldPackets::Spells::PetCancelAura::Read()
+{
+    _worldPacket >> PetGUID;
+    _worldPacket >> SpellID;
+}
+
+void WorldPackets::Spells::CancelChannelling::Read()
+{
+    _worldPacket >> ChannelSpell;
+}
 
 ByteBuffer& operator<<(ByteBuffer& data, WorldPackets::Spells::SpellMissStatus const& spellMissStatus)
 {
@@ -156,5 +178,23 @@ WorldPacket const* WorldPackets::Spells::SpellGo::Write()
 WorldPacket const* WorldPackets::Spells::SpellStart::Write()
 {
     _worldPacket << Cast;
+    return &_worldPacket;
+}
+
+WorldPacket const* WorldPackets::Spells::ResyncRunes::Write()
+{
+    _worldPacket << Count;
+    for (WorldPackets::Spells::ResyncRune const& rune : Runes)
+    {
+        _worldPacket << rune.RuneType;
+        _worldPacket << rune.Cooldown;
+    }
+    return &_worldPacket;
+}
+
+WorldPacket const* WorldPackets::Spells::MountResult::Write()
+{
+    _worldPacket << int32(Result);
+
     return &_worldPacket;
 }

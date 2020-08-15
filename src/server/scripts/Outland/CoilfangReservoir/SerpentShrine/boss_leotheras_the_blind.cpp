@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -218,7 +217,8 @@ public:
             IsFinalForm = false;
             NeedThreatReset = false;
             EnrageUsed = false;
-            memset(InnderDemon, 0, sizeof(InnderDemon));
+            for (ObjectGuid& guid : InnderDemon)
+                guid.Clear();
             InnerDemon_Count = 0;
         }
 
@@ -271,7 +271,7 @@ public:
                 if (i == 0) {nx += 10; ny -= 5; o=2.5f;}
                 if (i == 1) {nx -= 8; ny -= 7; o=0.9f;}
                 if (i == 2) {nx -= 3; ny += 9; o=5.0f;}
-                Creature* binder = me->SummonCreature(NPC_SPELLBINDER, nx, ny, z, o, TEMPSUMMON_DEAD_DESPAWN, 0);
+                Creature* binder = me->SummonCreature(NPC_SPELLBINDER, nx, ny, z, o, TEMPSUMMON_DEAD_DESPAWN);
                 if (binder)
                     SpellBinderGUID[i] = binder->GetGUID();
             }
@@ -437,7 +437,7 @@ public:
             {
                 if (Whirlwind_Timer <= diff)
                 {
-                    Unit* newTarget = SelectTarget(SELECT_TARGET_RANDOM, 0);
+                    Unit* newTarget = SelectTarget(SelectTargetMethod::Random, 0);
                     if (newTarget)
                     {
                         ResetThreatList();
@@ -525,7 +525,7 @@ public:
                 {
                     ThreatManager const& mgr = me->GetThreatManager();
                     std::list<Unit*> TargetList;
-                    Unit* currentVictim = mgr.GetCurrentVictim();
+                    Unit* currentVictim = mgr.GetLastVictim();
                     for (ThreatReference const* ref : mgr.GetSortedThreatList())
                     {
                         if (Player* tempTarget = ref->GetVictim()->ToPlayer())
@@ -537,7 +537,7 @@ public:
                     {
                         if ((*itr) && (*itr)->IsAlive())
                         {
-                            Creature* demon = me->SummonCreature(INNER_DEMON_ID, (*itr)->GetPositionX()+10, (*itr)->GetPositionY()+10, (*itr)->GetPositionZ(), 0, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 5000);
+                            Creature* demon = me->SummonCreature(INNER_DEMON_ID, (*itr)->GetPositionX()+10, (*itr)->GetPositionY()+10, (*itr)->GetPositionZ(), 0, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 5s);
                             if (demon)
                             {
                                 demon->AI()->AttackStart((*itr));
@@ -583,7 +583,7 @@ public:
                 //at this point he divides himself in two parts
                 CastConsumingMadness();
                 DespawnDemon();
-                if (Creature* Copy = DoSpawnCreature(DEMON_FORM, 0, 0, 0, 0, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 6000))
+                if (Creature* Copy = DoSpawnCreature(DEMON_FORM, 0, 0, 0, 0, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 6s))
                 {
                     Demon = Copy->GetGUID();
                     if (me->GetVictim())
@@ -776,7 +776,7 @@ public:
 
             if (Mindblast_Timer <= diff)
             {
-                if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0))
+                if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0))
                     DoCast(target, SPELL_MINDBLAST);
 
                 Mindblast_Timer = urand(10000, 15000);

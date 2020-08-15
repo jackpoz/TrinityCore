@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -106,9 +106,9 @@ struct boss_mother_shahraz : public BossAI
         _enraged = false;
     }
 
-    void JustEngagedWith(Unit* /*who*/) override
+    void JustEngagedWith(Unit* who) override
     {
-        _JustEngagedWith();
+        BossAI::JustEngagedWith(who);
         Talk(SAY_AGGRO);
         events.ScheduleEvent(EVENT_SILENCING_SHRIEK, 22s);
         events.ScheduleEvent(EVENT_PRISMATIC_SHIELD, 15s);
@@ -257,7 +257,7 @@ class spell_mother_shahraz_saber_lash : public AuraScript
         PreventDefaultAction();
 
         uint32 triggerSpell = GetSpellInfo()->Effects[aurEff->GetEffIndex()].TriggerSpell;
-        if (Unit* target = GetUnitOwner()->GetAI()->SelectTarget(SELECT_TARGET_RANDOM, 0))
+        if (Unit* target = GetUnitOwner()->GetAI()->SelectTarget(SelectTargetMethod::Random, 0))
             GetUnitOwner()->CastSpell(target, triggerSpell, true);
     }
 
@@ -285,7 +285,7 @@ class spell_mother_shahraz_generic_periodic : public AuraScript
         PreventDefaultAction();
 
         uint32 triggerSpell = GetSpellInfo()->Effects[aurEff->GetEffIndex()].TriggerSpell;
-        if (Unit* target = GetUnitOwner()->GetAI()->SelectTarget(SELECT_TARGET_RANDOM, 0))
+        if (Unit* target = GetUnitOwner()->GetAI()->SelectTarget(SelectTargetMethod::Random, 0))
             GetUnitOwner()->CastSpell(target, triggerSpell, true);
     }
 

@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -28,6 +27,7 @@
 #include "ScriptedCreature.h"
 #include "UpdateData.h"
 #include "WorldPacket.h"
+#include "WorldStatePackets.h"
 
 void BattlegroundSAScore::BuildObjectivesBlock(WorldPacket& data)
 {
@@ -205,12 +205,12 @@ bool BattlegroundSA::ResetObjs()
         if (i == BG_SA_BEACH_GY)
         {
             GraveyardStatus[i] = Attackers;
-            AddSpiritGuide(i + BG_SA_MAXNPC, sg->x, sg->y, sg->z, BG_SA_GYOrientation[i], Attackers);
+            AddSpiritGuide(i + BG_SA_MAXNPC, sg->Loc.X, sg->Loc.Y, sg->Loc.Z, BG_SA_GYOrientation[i], Attackers);
         }
         else
         {
             GraveyardStatus[i] = ((Attackers == TEAM_HORDE)? TEAM_ALLIANCE : TEAM_HORDE);
-            if (!AddSpiritGuide(i + BG_SA_MAXNPC, sg->x, sg->y, sg->z, BG_SA_GYOrientation[i], Attackers == TEAM_HORDE ? TEAM_ALLIANCE : TEAM_HORDE))
+            if (!AddSpiritGuide(i + BG_SA_MAXNPC, sg->Loc.X, sg->Loc.Y, sg->Loc.Z, BG_SA_GYOrientation[i], Attackers == TEAM_HORDE ? TEAM_ALLIANCE : TEAM_HORDE))
                 TC_LOG_ERROR("bg.battleground", "SOTA: couldn't spawn GY: %u", i);
         }
     }
@@ -443,44 +443,41 @@ void BattlegroundSA::StartingEventCloseDoors() { }
 
 void BattlegroundSA::StartingEventOpenDoors() { }
 
-void BattlegroundSA::FillInitialWorldStates(WorldPacket& data)
+void BattlegroundSA::FillInitialWorldStates(WorldPackets::WorldState::InitWorldStates& packet)
 {
-    bool allyAttacks = Attackers == TEAM_ALLIANCE;
-    bool hordeAttacks = Attackers == TEAM_HORDE;
+    bool const allyAttacks = Attackers == TEAM_ALLIANCE;
+    bool const hordeAttacks = Attackers == TEAM_HORDE;
 
-    data << uint32(BG_SA_ANCIENT_GATEWS) << uint32(GateStatus[BG_SA_ANCIENT_GATE]);
-    data << uint32(BG_SA_YELLOW_GATEWS) << uint32(GateStatus[BG_SA_YELLOW_GATE]);
-    data << uint32(BG_SA_GREEN_GATEWS) << uint32(GateStatus[BG_SA_GREEN_GATE]);
-    data << uint32(BG_SA_BLUE_GATEWS) << uint32(GateStatus[BG_SA_BLUE_GATE]);
-    data << uint32(BG_SA_RED_GATEWS) << uint32(GateStatus[BG_SA_RED_GATE]);
-    data << uint32(BG_SA_PURPLE_GATEWS) << uint32(GateStatus[BG_SA_PURPLE_GATE]);
+    packet.Worldstates.emplace_back(BG_SA_ANCIENT_GATEWS, GateStatus[BG_SA_ANCIENT_GATE]);
+    packet.Worldstates.emplace_back(BG_SA_YELLOW_GATEWS, GateStatus[BG_SA_YELLOW_GATE]);
+    packet.Worldstates.emplace_back(BG_SA_GREEN_GATEWS, GateStatus[BG_SA_GREEN_GATE]);
+    packet.Worldstates.emplace_back(BG_SA_BLUE_GATEWS, GateStatus[BG_SA_BLUE_GATE]);
+    packet.Worldstates.emplace_back(BG_SA_RED_GATEWS, GateStatus[BG_SA_RED_GATE]);
+    packet.Worldstates.emplace_back(BG_SA_PURPLE_GATEWS, GateStatus[BG_SA_PURPLE_GATE]);
 
-    data << uint32(BG_SA_BONUS_TIMER) << uint32(0);
-
-    data << uint32(BG_SA_HORDE_ATTACKS) << uint32(hordeAttacks);
-    data << uint32(BG_SA_ALLY_ATTACKS) << uint32(allyAttacks);
+    packet.Worldstates.emplace_back(BG_SA_BONUS_TIMER, 0);
+    packet.Worldstates.emplace_back(BG_SA_HORDE_ATTACKS, hordeAttacks);
+    packet.Worldstates.emplace_back(BG_SA_ALLY_ATTACKS, allyAttacks);
 
     // Time will be sent on first update...
-    data << uint32(BG_SA_ENABLE_TIMER) << uint32(TimerEnabled);
-    data << uint32(BG_SA_TIMER_MINS) << uint32(0);
-    data << uint32(BG_SA_TIMER_SEC_TENS) << uint32(0);
-    data << uint32(BG_SA_TIMER_SEC_DECS) << uint32(0);
+    packet.Worldstates.emplace_back(BG_SA_ENABLE_TIMER, TimerEnabled);
+    packet.Worldstates.emplace_back(BG_SA_TIMER_MINS, 0);
+    packet.Worldstates.emplace_back(BG_SA_TIMER_SEC_TENS, 0);
+    packet.Worldstates.emplace_back(BG_SA_TIMER_SEC_DECS, 0);
 
-    data << uint32(BG_SA_RIGHT_GY_HORDE) << uint32(GraveyardStatus[BG_SA_RIGHT_CAPTURABLE_GY] == TEAM_HORDE);
-    data << uint32(BG_SA_LEFT_GY_HORDE) << uint32(GraveyardStatus[BG_SA_LEFT_CAPTURABLE_GY] == TEAM_HORDE);
-    data << uint32(BG_SA_CENTER_GY_HORDE) << uint32(GraveyardStatus[BG_SA_CENTRAL_CAPTURABLE_GY] == TEAM_HORDE);
+    packet.Worldstates.emplace_back(BG_SA_RIGHT_GY_HORDE, (GraveyardStatus[BG_SA_RIGHT_CAPTURABLE_GY] == TEAM_HORDE) ? 1 : 0);
+    packet.Worldstates.emplace_back(BG_SA_LEFT_GY_HORDE, (GraveyardStatus[BG_SA_LEFT_CAPTURABLE_GY] == TEAM_HORDE) ? 1 : 0);
+    packet.Worldstates.emplace_back(BG_SA_CENTER_GY_HORDE, (GraveyardStatus[BG_SA_CENTRAL_CAPTURABLE_GY] == TEAM_HORDE) ? 1 : 0);
+    packet.Worldstates.emplace_back(BG_SA_RIGHT_GY_ALLIANCE, (GraveyardStatus[BG_SA_RIGHT_CAPTURABLE_GY] == TEAM_ALLIANCE) ? 1 : 0);
+    packet.Worldstates.emplace_back(BG_SA_LEFT_GY_ALLIANCE, (GraveyardStatus[BG_SA_LEFT_CAPTURABLE_GY] == TEAM_ALLIANCE) ? 1 : 0);
+    packet.Worldstates.emplace_back(BG_SA_CENTER_GY_ALLIANCE, (GraveyardStatus[BG_SA_CENTRAL_CAPTURABLE_GY] == TEAM_ALLIANCE) ? 1 : 0);
 
-    data << uint32(BG_SA_RIGHT_GY_ALLIANCE) << uint32(GraveyardStatus[BG_SA_RIGHT_CAPTURABLE_GY] == TEAM_ALLIANCE);
-    data << uint32(BG_SA_LEFT_GY_ALLIANCE) << uint32(GraveyardStatus[BG_SA_LEFT_CAPTURABLE_GY] == TEAM_ALLIANCE);
-    data << uint32(BG_SA_CENTER_GY_ALLIANCE) << uint32(GraveyardStatus[BG_SA_CENTRAL_CAPTURABLE_GY] == TEAM_ALLIANCE);
-
-    data << uint32(BG_SA_HORDE_DEFENCE_TOKEN) << uint32(allyAttacks);
-    data << uint32(BG_SA_ALLIANCE_DEFENCE_TOKEN) << uint32(hordeAttacks);
-
-    data << uint32(BG_SA_LEFT_ATT_TOKEN_HRD) << uint32(hordeAttacks);
-    data << uint32(BG_SA_RIGHT_ATT_TOKEN_HRD) << uint32(hordeAttacks);
-    data << uint32(BG_SA_RIGHT_ATT_TOKEN_ALL) <<  uint32(allyAttacks);
-    data << uint32(BG_SA_LEFT_ATT_TOKEN_ALL) <<  uint32(allyAttacks);
+    packet.Worldstates.emplace_back(BG_SA_HORDE_DEFENCE_TOKEN, allyAttacks);
+    packet.Worldstates.emplace_back(BG_SA_ALLIANCE_DEFENCE_TOKEN, hordeAttacks);
+    packet.Worldstates.emplace_back(BG_SA_LEFT_ATT_TOKEN_HRD, hordeAttacks);
+    packet.Worldstates.emplace_back(BG_SA_RIGHT_ATT_TOKEN_HRD, hordeAttacks);
+    packet.Worldstates.emplace_back(BG_SA_RIGHT_ATT_TOKEN_ALL, allyAttacks);
+    packet.Worldstates.emplace_back(BG_SA_LEFT_ATT_TOKEN_ALL, allyAttacks);
 }
 
 void BattlegroundSA::AddPlayer(Player* player)
@@ -709,7 +706,7 @@ WorldSafeLocsEntry const* BattlegroundSA::GetClosestGraveyard(Player* player)
         safeloc = BG_SA_GYEntries[BG_SA_DEFENDER_LAST_GY];
 
     closest = sWorldSafeLocsStore.LookupEntry(safeloc);
-    nearest = player->GetExactDistSq(closest->x, closest->y, closest->z);
+    nearest = player->GetExactDistSq(closest->Loc.X, closest->Loc.Y, closest->Loc.Z);
 
     for (uint8 i = BG_SA_RIGHT_CAPTURABLE_GY; i < BG_SA_MAX_GY; i++)
     {
@@ -717,7 +714,7 @@ WorldSafeLocsEntry const* BattlegroundSA::GetClosestGraveyard(Player* player)
             continue;
 
         ret = sWorldSafeLocsStore.LookupEntry(BG_SA_GYEntries[i]);
-        dist = player->GetExactDistSq(ret->x, ret->y, ret->z);
+        dist = player->GetExactDistSq(ret->Loc.X, ret->Loc.Y, ret->Loc.Z);
         if (dist < nearest)
         {
             closest = ret;
@@ -743,11 +740,11 @@ bool BattlegroundSA::CanInteractWithObject(uint32 objectId)
         case BG_SA_TITAN_RELIC:
             if (GateStatus[BG_SA_ANCIENT_GATE] != BG_SA_GATE_DESTROYED || GateStatus[BG_SA_YELLOW_GATE] != BG_SA_GATE_DESTROYED)
                 return false;
-            // no break
+            [[fallthrough]];
         case BG_SA_CENTRAL_FLAG:
             if (GateStatus[BG_SA_RED_GATE] != BG_SA_GATE_DESTROYED && GateStatus[BG_SA_PURPLE_GATE] != BG_SA_GATE_DESTROYED)
                 return false;
-            // no break
+            [[fallthrough]];
         case BG_SA_LEFT_FLAG:
         case BG_SA_RIGHT_FLAG:
             if (GateStatus[BG_SA_GREEN_GATE] != BG_SA_GATE_DESTROYED && GateStatus[BG_SA_BLUE_GATE] != BG_SA_GATE_DESTROYED)
@@ -817,7 +814,7 @@ void BattlegroundSA::CaptureGraveyard(BG_SA_Graveyards i, Player* Source)
         return;
     }
 
-    AddSpiritGuide(i + BG_SA_MAXNPC, sg->x, sg->y, sg->z, BG_SA_GYOrientation[i], GraveyardStatus[i]);
+    AddSpiritGuide(i + BG_SA_MAXNPC, sg->Loc.X, sg->Loc.Y, sg->Loc.Z, BG_SA_GYOrientation[i], GraveyardStatus[i]);
     uint32 npc = 0;
     uint32 flag = 0;
 

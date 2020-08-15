@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -59,6 +58,7 @@ class ZoneScript;
 struct FactionTemplateEntry;
 struct PositionFullTerrainStatus;
 struct QuaternionData;
+enum ZLiquidStatus : uint32;
 
 typedef std::unordered_map<Player*, UpdateData> UpdateDataMapType;
 
@@ -74,6 +74,7 @@ class TC_GAME_API Object
         virtual void AddToWorld();
         virtual void RemoveFromWorld();
 
+        static ObjectGuid GetGUID(Object const* o) { return o ? o->GetGUID() : ObjectGuid::Empty; }
         ObjectGuid GetGUID() const { return GetGuidValue(OBJECT_FIELD_GUID); }
         PackedGuid const& GetPackGUID() const { return m_PackGUID; }
         uint32 GetEntry() const { return GetUInt32Value(OBJECT_FIELD_ENTRY); }
@@ -156,23 +157,41 @@ class TC_GAME_API Object
         // FG: some hacky helpers
         void ForceValuesUpdateAtIndex(uint32);
 
-        Player* ToPlayer() { if (GetTypeId() == TYPEID_PLAYER) return reinterpret_cast<Player*>(this); else return nullptr; }
-        Player const* ToPlayer() const { if (GetTypeId() == TYPEID_PLAYER) return reinterpret_cast<Player const*>(this); else return nullptr; }
+        inline bool IsPlayer() const { return GetTypeId() == TYPEID_PLAYER; }
+        static Player* ToPlayer(Object* o) { if (o && o->IsPlayer()) return reinterpret_cast<Player*>(o); else return nullptr; }
+        static Player const* ToPlayer(Object const* o) { if (o && o->IsPlayer()) return reinterpret_cast<Player const*>(o); else return nullptr; }
+        Player* ToPlayer() { return ToPlayer(this); }
+        Player const* ToPlayer() const { return ToPlayer(this); }
 
-        Creature* ToCreature() { if (GetTypeId() == TYPEID_UNIT) return reinterpret_cast<Creature*>(this); else return nullptr; }
-        Creature const* ToCreature() const { if (GetTypeId() == TYPEID_UNIT) return reinterpret_cast<Creature const*>(this); else return nullptr; }
+        inline bool IsCreature() const { return GetTypeId() == TYPEID_UNIT; }
+        static Creature* ToCreature(Object* o) { if (o && o->IsCreature()) return reinterpret_cast<Creature*>(o); else return nullptr; }
+        static Creature const* ToCreature(Object const* o) { if (o && o->IsCreature()) return reinterpret_cast<Creature const*>(o); else return nullptr; }
+        Creature* ToCreature() { return ToCreature(this); }
+        Creature const* ToCreature() const { return ToCreature(this); }
 
-        Unit* ToUnit() { if (isType(TYPEMASK_UNIT)) return reinterpret_cast<Unit*>(this); else return nullptr; }
-        Unit const* ToUnit() const { if (isType(TYPEMASK_UNIT)) return reinterpret_cast<Unit const*>(this); else return nullptr; }
+        inline bool IsUnit() const { return isType(TYPEMASK_UNIT); }
+        static Unit* ToUnit(Object* o) { if (o && o->IsUnit()) return reinterpret_cast<Unit*>(o); else return nullptr; }
+        static Unit const* ToUnit(Object const* o) { if (o && o->IsUnit()) return reinterpret_cast<Unit const*>(o); else return nullptr; }
+        Unit* ToUnit() { return ToUnit(this); }
+        Unit const* ToUnit() const { return ToUnit(this); }
 
-        GameObject* ToGameObject() { if (GetTypeId() == TYPEID_GAMEOBJECT) return reinterpret_cast<GameObject*>(this); else return nullptr; }
-        GameObject const* ToGameObject() const { if (GetTypeId() == TYPEID_GAMEOBJECT) return reinterpret_cast<GameObject const*>(this); else return nullptr; }
+        inline bool IsGameObject() const { return GetTypeId() == TYPEID_GAMEOBJECT; }
+        static GameObject* ToGameObject(Object* o) { if (o && o->IsGameObject()) return reinterpret_cast<GameObject*>(o); else return nullptr; }
+        static GameObject const* ToGameObject(Object const* o) { if (o && o->IsGameObject()) return reinterpret_cast<GameObject const*>(o); else return nullptr; }
+        GameObject* ToGameObject() { return ToGameObject(this); }
+        GameObject const* ToGameObject() const { return ToGameObject(this); }
 
-        Corpse* ToCorpse() { if (GetTypeId() == TYPEID_CORPSE) return reinterpret_cast<Corpse*>(this); else return nullptr; }
-        Corpse const* ToCorpse() const { if (GetTypeId() == TYPEID_CORPSE) return reinterpret_cast<Corpse const*>(this); else return nullptr; }
+        inline bool IsCorpse() const { return GetTypeId() == TYPEID_CORPSE; }
+        static Corpse* ToCorpse(Object* o) { if (o && o->IsCorpse()) return reinterpret_cast<Corpse*>(o); else return nullptr; }
+        static Corpse const* ToCorpse(Object const* o) { if (o && o->IsCorpse()) return reinterpret_cast<Corpse const*>(o); else return nullptr; }
+        Corpse* ToCorpse() { return ToCorpse(this); }
+        Corpse const* ToCorpse() const { return ToCorpse(this); }
 
-        DynamicObject* ToDynObject() { if (GetTypeId() == TYPEID_DYNAMICOBJECT) return reinterpret_cast<DynamicObject*>(this); else return nullptr; }
-        DynamicObject const* ToDynObject() const { if (GetTypeId() == TYPEID_DYNAMICOBJECT) return reinterpret_cast<DynamicObject const*>(this); else return nullptr; }
+        inline bool IsDynObject() const { return GetTypeId() == TYPEID_DYNAMICOBJECT; }
+        static DynamicObject* ToDynObject(Object* o) { if (o && o->IsDynObject()) return reinterpret_cast<DynamicObject*>(o); else return nullptr; }
+        static DynamicObject const* ToDynObject(Object const* o) { if (o && o->IsDynObject()) return reinterpret_cast<DynamicObject const*>(o); else return nullptr; }
+        DynamicObject* ToDynObject() { return ToDynObject(this); }
+        DynamicObject const* ToDynObject() const { return ToDynObject(this); }
 
         virtual std::string GetDebugInfo() const;
 
@@ -207,7 +226,7 @@ class TC_GAME_API Object
 
         uint16 _fieldNotifyFlags;
 
-        virtual void AddToObjectUpdate() = 0;
+        virtual bool AddToObjectUpdate() = 0;
         virtual void RemoveFromObjectUpdate() = 0;
         void AddToObjectUpdateIfNeeded();
 
@@ -249,14 +268,14 @@ class FlaggedValuesArray32
             m_flags = 0;
         }
 
-        T_FLAGS  GetFlags() const { return m_flags; }
-        bool     HasFlag(FLAG_TYPE flag) const { return m_flags & (1 << flag); }
-        void     AddFlag(FLAG_TYPE flag) { m_flags |= (1 << flag); }
-        void     DelFlag(FLAG_TYPE flag) { m_flags &= ~(1 << flag); }
+        T_FLAGS GetFlags() const { return m_flags; }
+        bool HasFlag(FLAG_TYPE flag) const { return m_flags & (1 << flag); }
+        void AddFlag(FLAG_TYPE flag) { m_flags |= (1 << flag); }
+        void DelFlag(FLAG_TYPE flag) { m_flags &= ~(1 << flag); }
 
         T_VALUES GetValue(FLAG_TYPE flag) const { return m_values[flag]; }
-        void     SetValue(FLAG_TYPE flag, T_VALUES value) { m_values[flag] = value; }
-        void     AddValue(FLAG_TYPE flag, T_VALUES value) { m_values[flag] += value; }
+        void SetValue(FLAG_TYPE flag, T_VALUES value) { m_values[flag] = value; }
+        void AddValue(FLAG_TYPE flag, T_VALUES value) { m_values[flag] += value; }
 
     private:
         T_VALUES m_values[ARRAY_SIZE];
@@ -276,19 +295,19 @@ class TC_GAME_API WorldObject : public Object, public WorldLocation
         void AddToWorld() override;
         void RemoveFromWorld() override;
 
-        void GetNearPoint2D(WorldObject const* searcher, float &x, float &y, float distance, float absAngle) const;
-        void GetNearPoint(WorldObject const* searcher, float &x, float &y, float &z, float distance2d, float absAngle) const;
-        void GetClosePoint(float &x, float &y, float &z, float size, float distance2d = 0, float relAngle = 0) const;
+        void GetNearPoint2D(WorldObject const* searcher, float& x, float& y, float distance, float absAngle) const;
+        void GetNearPoint(WorldObject const* searcher, float& x, float& y, float& z, float distance2d, float absAngle) const;
+        void GetClosePoint(float& x, float& y, float& z, float size, float distance2d = 0, float relAngle = 0) const;
         void MovePosition(Position &pos, float dist, float angle);
         Position GetNearPosition(float dist, float angle);
         void MovePositionToFirstCollision(Position &pos, float dist, float angle);
         Position GetFirstCollisionPosition(float dist, float angle);
         Position GetRandomNearPosition(float radius);
-        void GetContactPoint(WorldObject const* obj, float &x, float &y, float &z, float distance2d = CONTACT_DISTANCE) const;
+        void GetContactPoint(WorldObject const* obj, float& x, float& y, float& z, float distance2d = CONTACT_DISTANCE) const;
 
         virtual float GetCombatReach() const { return 0.0f; } // overridden (only) in Unit
         void UpdateGroundPositionZ(float x, float y, float &z) const;
-        void UpdateAllowedPositionZ(float x, float y, float &z) const;
+        void UpdateAllowedPositionZ(float x, float y, float &z, float* groundZ = nullptr) const;
 
         void GetRandomPoint(Position const& srcPos, float distance, float& rand_x, float& rand_y, float& rand_z) const;
         Position GetRandomPoint(Position const& srcPos, float distance) const;
@@ -304,7 +323,9 @@ class TC_GAME_API WorldObject : public Object, public WorldLocation
         uint32 GetZoneId() const { return m_zoneId; }
         uint32 GetAreaId() const { return m_areaId; }
         void GetZoneAndAreaId(uint32& zoneid, uint32& areaid) const { zoneid = m_zoneId, areaid = m_areaId; }
+        bool IsInWorldPvpZone() const;
         bool IsOutdoors() const { return m_outdoors; }
+        ZLiquidStatus GetLiquidStatus() const { return m_liquidStatus; }
 
         InstanceScript* GetInstanceScript() const;
 
@@ -349,15 +370,14 @@ class TC_GAME_API WorldObject : public Object, public WorldLocation
         virtual void SendMessageToSetInRange(WorldPacket const* data, float dist, bool self) const;
         virtual void SendMessageToSet(WorldPacket const* data, Player const* skipped_rcvr) const;
 
-        virtual uint8 getLevelForTarget(WorldObject const* /*target*/) const { return 1; }
+        virtual uint8 GetLevelForTarget(WorldObject const* /*target*/) const { return 1; }
 
-        void PlayDistanceSound(uint32 sound_id, Player* target = nullptr);
-        void PlayDirectSound(uint32 sound_id, Player* target = nullptr);
-        void PlayDirectMusic(uint32 music_id, Player* target = nullptr);
+        void PlayDistanceSound(uint32 soundId, Player* target = nullptr);
+        void PlayDirectSound(uint32 soundId, Player* target = nullptr);
+        void PlayDirectMusic(uint32 musicId, Player* target = nullptr);
 
         void SendObjectDeSpawnAnim(ObjectGuid guid);
 
-        virtual void SaveRespawnTime(uint32 /*forceDelay*/ = 0, bool /*saveToDB*/ = true) { }
         void AddObjectToRemoveList();
 
         float GetGridActivationRange() const;
@@ -380,23 +400,20 @@ class TC_GAME_API WorldObject : public Object, public WorldLocation
         Map* FindMap() const { return m_currMap; }
         //used to check all object's GetMap() calls when object is not in world!
 
-        //this function should be removed in nearest time...
-        Map const* GetBaseMap() const;
-
         void SetZoneScript();
         void ClearZoneScript();
         ZoneScript* GetZoneScript() const { return m_zoneScript; }
 
-        TempSummon* SummonCreature(uint32 entry, Position const& pos, TempSummonType despawnType = TEMPSUMMON_MANUAL_DESPAWN, uint32 despawnTime = 0, uint32 vehId = 0, uint32 spellId = 0);
-        TempSummon* SummonCreature(uint32 entry, Position const& pos, TempSummonType despawnType, Milliseconds despawnTime, uint32 vehId = 0, uint32 spellId = 0) { return SummonCreature(entry, pos, despawnType, uint32(despawnTime.count()), vehId, spellId); }
-        TempSummon* SummonCreature(uint32 entry, float x, float y, float z, float o = 0, TempSummonType despawnType = TEMPSUMMON_MANUAL_DESPAWN, uint32 despawnTime = 0);
-        GameObject* SummonGameObject(uint32 entry, Position const& pos, QuaternionData const& rot, uint32 respawnTime /* s */, GOSummonType summonType = GO_SUMMON_TIMED_OR_CORPSE_DESPAWN);
-        GameObject* SummonGameObject(uint32 entry, float x, float y, float z, float ang, QuaternionData const& rot, uint32 respawnTime /* s */);
-        Creature*   SummonTrigger(float x, float y, float z, float ang, uint32 dur, CreatureAI* (*GetAI)(Creature*) = nullptr);
+        TempSummon* SummonCreature(uint32 entry, Position const& pos, TempSummonType despawnType = TEMPSUMMON_MANUAL_DESPAWN, Milliseconds despawnTime = 0s, uint32 vehId = 0, uint32 spellId = 0);
+        TempSummon* SummonCreature(uint32 entry, float x, float y, float z, float o = 0, TempSummonType despawnType = TEMPSUMMON_MANUAL_DESPAWN, Milliseconds despawnTime = 0s);
+        GameObject* SummonGameObject(uint32 entry, Position const& pos, QuaternionData const& rot, Seconds respawnTime, GOSummonType summonType = GO_SUMMON_TIMED_OR_CORPSE_DESPAWN);
+        GameObject* SummonGameObject(uint32 entry, float x, float y, float z, float ang, QuaternionData const& rot, Seconds respawnTime, GOSummonType summonType = GO_SUMMON_TIMED_OR_CORPSE_DESPAWN);
+        Creature*   SummonTrigger(float x, float y, float z, float ang, Milliseconds despawnTime, CreatureAI* (*GetAI)(Creature*) = nullptr);
         void SummonCreatureGroup(uint8 group, std::list<TempSummon*>* list = nullptr);
 
         Creature*   FindNearestCreature(uint32 entry, float range, bool alive = true) const;
         GameObject* FindNearestGameObject(uint32 entry, float range) const;
+        GameObject* FindNearestUnspawnedGameObject(uint32 entry, float range) const;
         GameObject* FindNearestGameObjectOfType(GameobjectTypes type, float range) const;
         Player* SelectNearestPlayer(float distance) const;
 
@@ -442,9 +459,9 @@ class TC_GAME_API WorldObject : public Object, public WorldLocation
         bool IsNeutralToAll() const;
 
         // CastSpell's third arg can be a variety of things - check out CastSpellExtraArgs' constructors!
-        void CastSpell(SpellCastTargets const& targets, uint32 spellId, CastSpellExtraArgs const& args = { });
-        void CastSpell(WorldObject* target, uint32 spellId, CastSpellExtraArgs const& args = { });
-        void CastSpell(Position const& dest, uint32 spellId, CastSpellExtraArgs const& args = { });
+        SpellCastResult CastSpell(SpellCastTargets const& targets, uint32 spellId, CastSpellExtraArgs const& args = { });
+        SpellCastResult CastSpell(WorldObject* target, uint32 spellId, CastSpellExtraArgs const& args = { });
+        SpellCastResult CastSpell(Position const& dest, uint32 spellId, CastSpellExtraArgs const& args = { });
 
         bool IsValidAttackTarget(WorldObject const* target, SpellInfo const* bySpell = nullptr) const;
         bool IsValidAssistTarget(WorldObject const* target, SpellInfo const* bySpell = nullptr) const;
@@ -467,7 +484,7 @@ class TC_GAME_API WorldObject : public Object, public WorldLocation
 
         void BuildUpdate(UpdateDataMapType&) override;
 
-        void AddToObjectUpdate() override;
+        bool AddToObjectUpdate() override;
         void RemoveFromObjectUpdate() override;
 
         //relocation and visibility system functions
@@ -480,7 +497,7 @@ class TC_GAME_API WorldObject : public Object, public WorldLocation
         void setActive(bool isActiveObject);
         bool IsFarVisible() const { return m_isFarVisible; }
         void SetFarVisible(bool on);
-        bool IsVisibilityOverridden() const { return m_visibilityDistanceOverride.is_initialized(); }
+        bool IsVisibilityOverridden() const { return m_visibilityDistanceOverride.has_value(); }
         void SetVisibilityDistanceOverride(VisibilityDistanceType type);
         void SetWorldObject(bool apply);
         bool IsPermanentWorldObject() const { return m_isWorldObject; }
@@ -534,6 +551,7 @@ class TC_GAME_API WorldObject : public Object, public WorldLocation
         uint32 m_areaId;
         float m_staticFloorZ;
         bool m_outdoors;
+        ZLiquidStatus m_liquidStatus;
 
         //these functions are used mostly for Relocate() and Corpse/Player specific stuff...
         //use them ONLY in LoadFromDB()/Create() funcs and nowhere else!

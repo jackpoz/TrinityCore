@@ -1,5 +1,4 @@
-# Copyright (C) 2005-2009 MaNGOS project <http://getmangos.com/>
-# Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+# This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
 #
 # This file is free software; as a special exception the author gives
 # unlimited permission to copy and/or distribute it, with or without
@@ -11,9 +10,7 @@
 
 set(PRIVATE_SOURCES VMapAssembler.cpp)
 
-if (WIN32)
-  list(APPEND PRIVATE_SOURCES ${sources_windows})
-endif()
+list(APPEND PRIVATE_SOURCES ${sources_windows})
 
 add_executable(vmap4assembler ${PRIVATE_SOURCES})
 
@@ -33,8 +30,8 @@ set_target_properties(vmap4assembler
       FOLDER
         "tools")
 
-if( UNIX )
+if(UNIX)
   install(TARGETS vmap4assembler DESTINATION bin)
-elseif( WIN32 )
+elseif(WIN32)
   install(TARGETS vmap4assembler DESTINATION "${CMAKE_INSTALL_PREFIX}")
 endif()

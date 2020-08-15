@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -19,12 +18,15 @@
 #ifndef __AUTHSESSION_H__
 #define __AUTHSESSION_H__
 
-#include "Common.h"
-#include "ByteBuffer.h"
-#include "Socket.h"
+#include "AsyncCallbackProcessor.h"
 #include "BigNumber.h"
+#include "ByteBuffer.h"
+#include "Common.h"
+#include "CryptoHash.h"
+#include "Optional.h"
+#include "Socket.h"
+#include "SRP6.h"
 #include "QueryResult.h"
-#include "QueryCallbackProcessor.h"
 #include <memory>
 #include <boost/asio/ip/tcp.hpp>
 
@@ -56,7 +58,6 @@ struct AccountInfo
     bool IsBanned = false;
     bool IsPermanenetlyBanned = false;
     AccountTypes SecurityLevel = SEC_PLAYER;
-    std::string TokenKey;
 };
 
 class AuthSession : public Socket<AuthSession>
@@ -64,6 +65,7 @@ class AuthSession : public Socket<AuthSession>
     typedef Socket<AuthSession> AuthSocket;
 
 public:
+    static void ServerStartup();
     static std::unordered_map<uint8, AuthHandler> InitHandlers();
 
     AuthSession(tcp::socket&& socket);
@@ -90,16 +92,15 @@ private:
 
     void SetVSFields(const std::string& rI);
 
-    bool VerifyVersion(uint8 const* a, int32 aLength, uint8 const* versionProof, bool isReconnect);
+    bool VerifyVersion(uint8 const* a, int32 aLength, Trinity::Crypto::SHA1::Digest const& versionProof, bool isReconnect);
 
-    BigNumber N, s, g, v;
-    BigNumber b, B;
-    BigNumber K;
-    BigNumber _reconnectProof;
+    Optional<Trinity::Crypto::SRP6> _srp6;
+    SessionKey _sessionKey;
+    std::array<uint8, 16> _reconnectProof;
 
     AuthStatus _status;
     AccountInfo _accountInfo;
-    std::string _tokenKey;
+    Optional<std::vector<uint8>> _totpSecret;
     std::string _localizationName;
     std::string _os;
     std::string _ipCountry;

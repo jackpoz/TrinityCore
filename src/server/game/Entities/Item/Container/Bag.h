@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -49,11 +48,11 @@ class TC_GAME_API Bag : public Item
 
         // DB operations
         // overwrite virtual Item::SaveToDB
-        void SaveToDB(SQLTransaction& trans) override;
+        void SaveToDB(CharacterDatabaseTransaction& trans) override;
         // overwrite virtual Item::LoadFromDB
         bool LoadFromDB(ObjectGuid::LowType guid, ObjectGuid owner_guid, Field* fields, uint32 entry) override;
         // overwrite virtual Item::DeleteFromDB
-        void DeleteFromDB(SQLTransaction& trans) override;
+        void DeleteFromDB(CharacterDatabaseTransaction& trans) override;
 
         void BuildCreateUpdateBlockForPlayer(UpdateData* data, Player* target) const override;
 

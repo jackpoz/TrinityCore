@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -33,6 +32,9 @@ class RandomMovementGenerator : public MovementGeneratorMedium<T, RandomMovement
 
         MovementGeneratorType GetMovementGeneratorType() const override;
 
+        void Pause(uint32 timer = 0) override;
+        void Resume(uint32 overrideTimer = 0) override;
+
         void DoInitialize(T*);
         void DoReset(T*);
         bool DoUpdate(T*, uint32);
@@ -48,6 +50,7 @@ class RandomMovementGenerator : public MovementGeneratorMedium<T, RandomMovement
         TimeTracker _timer;
         Position _reference;
         float _wanderDistance;
+        uint8 _wanderSteps;
 };
 
 #endif

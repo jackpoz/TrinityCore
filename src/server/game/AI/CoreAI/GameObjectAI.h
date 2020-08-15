@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -24,6 +23,7 @@
 #include "Optional.h"
 #include "QuestDef.h"
 
+class Creature;
 class GameObject;
 class Unit;
 class SpellInfo;
@@ -33,8 +33,9 @@ class TC_GAME_API GameObjectAI
 {
     protected:
         GameObject* const me;
+
     public:
-        explicit GameObjectAI(GameObject* g) : me(g) { }
+        explicit GameObjectAI(GameObject* go) : me(go) { }
         virtual ~GameObjectAI() { }
 
         virtual void UpdateAI(uint32 /*diff*/) { }
@@ -51,7 +52,7 @@ class TC_GAME_API GameObjectAI
         static int32 Permissible(GameObject const* go);
 
         // Called when the dialog status between a player and the gameobject is requested.
-        virtual Optional<QuestGiverStatus> GetDialogStatus(Player* /*player*/) { return boost::none; }
+        virtual Optional<QuestGiverStatus> GetDialogStatus(Player* /*player*/) { return {}; }
 
         // Called when a player opens a gossip dialog with the gameobject.
         virtual bool GossipHello(Player* /*player*/) { return false; }
@@ -86,18 +87,22 @@ class TC_GAME_API GameObjectAI
         virtual void EventInform(uint32 /*eventId*/) { }
 
         // Called when hit by a spell
-        virtual void SpellHit(Unit* /*caster*/, SpellInfo const* /*spellInfo*/) { }
-        virtual void SpellHit(GameObject* /*caster*/, SpellInfo const* /*spellInfo*/) { }
+        virtual void SpellHit(WorldObject* /*caster*/, SpellInfo const* /*spellInfo*/) { }
 
         // Called when spell hits a target
-        virtual void SpellHitTarget(Unit* /*target*/, SpellInfo const* /*spellInfo*/) { }
-        virtual void SpellHitTarget(GameObject* /*target*/, SpellInfo const* /*spellInfo*/) { }
+        virtual void SpellHitTarget(WorldObject* /*target*/, SpellInfo const* /*spellInfo*/) { }
+
+        // Called when the gameobject summon successfully other creature
+        virtual void JustSummoned(Creature* /*summon*/) { }
+
+        virtual void SummonedCreatureDespawn(Creature* /*summon*/) { }
+        virtual void SummonedCreatureDies(Creature* /*summon*/, Unit* /*killer*/) { }
 };
 
 class TC_GAME_API NullGameObjectAI : public GameObjectAI
 {
     public:
-        explicit NullGameObjectAI(GameObject* g);
+        explicit NullGameObjectAI(GameObject* go);
 
         void UpdateAI(uint32 /*diff*/) override { }
 

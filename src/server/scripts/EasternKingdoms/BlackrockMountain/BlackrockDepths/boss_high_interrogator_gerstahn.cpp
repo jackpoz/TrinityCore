@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -69,7 +69,7 @@ class boss_high_interrogator_gerstahn : public CreatureScript
                     switch (eventId)
                     {
                         case EVENT_SHADOW_WORD_PAIN:
-                            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 100.0f, true))
+                            if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 100.0f, true))
                                 DoCast(target, SPELL_SHADOWWORDPAIN);
                             _events.ScheduleEvent(EVENT_SHADOW_WORD_PAIN, 7s);
                             break;
@@ -78,7 +78,7 @@ class boss_high_interrogator_gerstahn : public CreatureScript
                             _events.ScheduleEvent(EVENT_PSYCHIC_SCREAM, 30s);
                             break;
                         case EVENT_MANABURN:
-                            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 100.0f, true))
+                            if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 100.0f, true))
                                 DoCast(target, SPELL_MANABURN);
                             _events.ScheduleEvent(EVENT_MANABURN, 10s);
                             break;

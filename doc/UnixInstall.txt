@@ -1,5 +1,5 @@
 = TrinityCore -- Linux installation =
-Copyright (C) 2008-2019 TrinityCore (https://www.trinitycore.org/)
+This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
 
 =========================================================
 WARNING: THIS DOCUMENTATION IS NOT ALWAYS UP TO DATE.
@@ -42,7 +42,6 @@ CMakeLists.txt in the main folder and take a look at some of the flags like
     CMAKE_INSTALL_PREFIX    Set installation directory
     NOJEM                   Do not build with jemalloc (advanced users only)
     CONF_DIR                Set path as default configuration directory
-    LIBSDIR                 Set path as default library directory
     CMAKE_C_FLAGS           Set C_FLAGS for compile (advanced users only)
     CMAKE_CXX_FLAGS         Set CXX_FLAGS for compile (advanced users only)
     CMAKE_BUILD_TYPE        Set build type - the supported modes are:

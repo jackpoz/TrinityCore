@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -82,7 +82,7 @@ class boss_shazzrah : public CreatureScript
                             DoCastVictim(SPELL_ARCANE_EXPLOSION);
                             break;
                         case EVENT_SHAZZRAH_CURSE:
-                            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 0.0f, true, true, -SPELL_SHAZZRAH_CURSE))
+                            if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 0.0f, true, true, -SPELL_SHAZZRAH_CURSE))
                                 DoCast(target, SPELL_SHAZZRAH_CURSE);
                             events.ScheduleEvent(EVENT_SHAZZRAH_CURSE, 25s, 30s);
                             break;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -218,7 +218,7 @@ class boss_ichoron : public CreatureScript
 
                 scheduler.Schedule(Seconds(6), Seconds(9), [this](TaskContext task)
                 {
-                    if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 50.0f))
+                    if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 50.0f))
                         DoCast(target, SPELL_WATER_BLAST);
                     task.Repeat(Seconds(6), Seconds(9));
                 });
@@ -248,13 +248,17 @@ class npc_ichor_globule : public CreatureScript
                 creature->SetReactState(REACT_PASSIVE);
             }
 
-            void SpellHit(Unit* caster, SpellInfo const* spellInfo) override
+            void SpellHit(WorldObject* caster, SpellInfo const* spellInfo) override
             {
+                Unit* unitCaster = caster->ToUnit();
+                if (!unitCaster)
+                    return;
+
                 if (spellInfo->Id == SPELL_WATER_GLOBULE_VISUAL)
                 {
                     DoCast(me, SPELL_WATER_GLOBULE_TRANSFORM);
                     me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
-                    me->GetMotionMaster()->MoveFollow(caster, 0.0f, 0.0f);
+                    me->GetMotionMaster()->MoveFollow(unitCaster, 0.0f, 0.0f);
                 }
             }
 
@@ -267,7 +271,7 @@ class npc_ichor_globule : public CreatureScript
                     return;
 
                 me->CastSpell(me, SPELL_MERGE);
-                me->DespawnOrUnsummon(1);
+                me->DespawnOrUnsummon(1ms);
             }
 
             // on retail spell casted on a creature's death are not casted after death but keeping mob at 1 health, casting it and then letting the mob die.
@@ -314,13 +318,13 @@ class spell_ichoron_drained : public SpellScriptLoader
 
             void HandleApply(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
             {
-                GetTarget()->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE | UNIT_FLAG_UNK_31);
+                GetTarget()->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
                 GetTarget()->SetFlag(UNIT_FIELD_FLAGS_2, UNIT_FLAG2_FEIGN_DEATH);
             }
 
             void HandleRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
             {
-                GetTarget()->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE | UNIT_FLAG_UNK_31);
+                GetTarget()->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
                 GetTarget()->RemoveFlag(UNIT_FIELD_FLAGS_2, UNIT_FLAG2_FEIGN_DEATH);
 
                 if (GetTargetApplication()->GetRemoveMode() == AURA_REMOVE_BY_EXPIRE)

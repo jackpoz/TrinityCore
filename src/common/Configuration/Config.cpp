@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -80,18 +79,21 @@ bool ConfigMgr::Reload(std::string& error)
 }
 
 template<class T>
-T ConfigMgr::GetValueDefault(std::string const& name, T def) const
+T ConfigMgr::GetValueDefault(std::string const& name, T def, bool quiet) const
 {
     try
     {
         return _config.get<T>(bpt::ptree::path_type(name, '/'));
     }
-    catch (bpt::ptree_bad_path)
+    catch (bpt::ptree_bad_path const&)
     {
-        TC_LOG_WARN("server.loading", "Missing name %s in config file %s, add \"%s = %s\" to this file",
-            name.c_str(), _filename.c_str(), name.c_str(), std::to_string(def).c_str());
+        if (!quiet)
+        {
+            TC_LOG_WARN("server.loading", "Missing name %s in config file %s, add \"%s = %s\" to this file",
+                name.c_str(), _filename.c_str(), name.c_str(), std::to_string(def).c_str());
+        }
     }
-    catch (bpt::ptree_bad_data)
+    catch (bpt::ptree_bad_data const&)
     {
         TC_LOG_ERROR("server.loading", "Bad value defined for name %s in config file %s, going to use %s instead",
             name.c_str(), _filename.c_str(), std::to_string(def).c_str());
@@ -101,18 +103,21 @@ T ConfigMgr::GetValueDefault(std::string const& name, T def) const
 }
 
 template<>
-std::string ConfigMgr::GetValueDefault<std::string>(std::string const& name, std::string def) const
+std::string ConfigMgr::GetValueDefault<std::string>(std::string const& name, std::string def, bool quiet) const
 {
     try
     {
         return _config.get<std::string>(bpt::ptree::path_type(name, '/'));
     }
-    catch (bpt::ptree_bad_path)
+    catch (bpt::ptree_bad_path const&)
     {
-        TC_LOG_WARN("server.loading", "Missing name %s in config file %s, add \"%s = %s\" to this file",
-            name.c_str(), _filename.c_str(), name.c_str(), def.c_str());
+        if (!quiet)
+        {
+            TC_LOG_WARN("server.loading", "Missing name %s in config file %s, add \"%s = %s\" to this file",
+                name.c_str(), _filename.c_str(), name.c_str(), def.c_str());
+        }
     }
-    catch (bpt::ptree_bad_data)
+    catch (bpt::ptree_bad_data const&)
     {
         TC_LOG_ERROR("server.loading", "Bad value defined for name %s in config file %s, going to use %s instead",
             name.c_str(), _filename.c_str(), def.c_str());
@@ -121,28 +126,28 @@ std::string ConfigMgr::GetValueDefault<std::string>(std::string const& name, std
     return def;
 }
 
-std::string ConfigMgr::GetStringDefault(std::string const& name, const std::string& def) const
+std::string ConfigMgr::GetStringDefault(std::string const& name, const std::string& def, bool quiet) const
 {
-    std::string val = GetValueDefault(name, def);
+    std::string val = GetValueDefault(name, def, quiet);
     val.erase(std::remove(val.begin(), val.end(), '"'), val.end());
     return val;
 }
 
-bool ConfigMgr::GetBoolDefault(std::string const& name, bool def) const
+bool ConfigMgr::GetBoolDefault(std::string const& name, bool def, bool quiet) const
 {
-    std::string val = GetValueDefault(name, std::string(def ? "1" : "0"));
+    std::string val = GetValueDefault(name, std::string(def ? "1" : "0"), quiet);
     val.erase(std::remove(val.begin(), val.end(), '"'), val.end());
     return StringToBool(val);
 }
 
-int ConfigMgr::GetIntDefault(std::string const& name, int def) const
+int ConfigMgr::GetIntDefault(std::string const& name, int def, bool quiet) const
 {
-    return GetValueDefault(name, def);
+    return GetValueDefault(name, def, quiet);
 }
 
-float ConfigMgr::GetFloatDefault(std::string const& name, float def) const
+float ConfigMgr::GetFloatDefault(std::string const& name, float def, bool quiet) const
 {
-    return GetValueDefault(name, def);
+    return GetValueDefault(name, def, quiet);
 }
 
 std::string const& ConfigMgr::GetFilename()

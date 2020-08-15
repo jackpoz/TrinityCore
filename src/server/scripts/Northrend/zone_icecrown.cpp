@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -80,7 +79,7 @@ public:
                 uiDamage = 0;
                 pDoneBy->CastSpell(pDoneBy, SPELL_KILL_CREDIT, true);
                 me->SetFaction(FACTION_FRIENDLY);
-                me->DespawnOrUnsummon(5000);
+                me->DespawnOrUnsummon(5s);
                 me->SetHomePosition(me->GetPositionX(), me->GetPositionY(), me->GetPositionZ(), me->GetOrientation());
                 EnterEvadeMode();
             }
@@ -232,35 +231,39 @@ class npc_tournament_training_dummy : public CreatureScript
             void DamageTaken(Unit* /*attacker*/, uint32& damage) override
             {
                 damage = 0;
-                events.RescheduleEvent(EVENT_DUMMY_RESET, 10000);
+                events.RescheduleEvent(EVENT_DUMMY_RESET, 10s);
             }
 
-            void SpellHit(Unit* caster, SpellInfo const* spell) override
+            void SpellHit(WorldObject* caster, SpellInfo const* spellInfo) override
             {
+                Unit* unitCaster = caster->ToUnit();
+                if (!unitCaster)
+                    return;
+
                 switch (me->GetEntry())
                 {
                     case NPC_CHARGE_TARGET:
-                        if (spell->Id == SPELL_PLAYER_CHARGE)
+                        if (spellInfo->Id == SPELL_PLAYER_CHARGE)
                             if (isVulnerable)
-                                DoCast(caster, SPELL_CHARGE_CREDIT, true);
+                                DoCast(unitCaster, SPELL_CHARGE_CREDIT, true);
                         break;
                     case NPC_MELEE_TARGET:
-                        if (spell->Id == SPELL_PLAYER_THRUST)
+                        if (spellInfo->Id == SPELL_PLAYER_THRUST)
                         {
-                            DoCast(caster, SPELL_MELEE_CREDIT, true);
+                            DoCast(unitCaster, SPELL_MELEE_CREDIT, true);
 
-                            if (Unit* target = caster->GetVehicleBase())
+                            if (Unit* target = unitCaster->GetVehicleBase())
                                 DoCast(target, SPELL_COUNTERATTACK, true);
                         }
                         break;
                     case NPC_RANGED_TARGET:
-                        if (spell->Id == SPELL_PLAYER_BREAK_SHIELD)
+                        if (spellInfo->Id == SPELL_PLAYER_BREAK_SHIELD)
                             if (isVulnerable)
-                                DoCast(caster, SPELL_RANGED_CREDIT, true);
+                                DoCast(unitCaster, SPELL_RANGED_CREDIT, true);
                         break;
                 }
 
-                if (spell->Id == SPELL_PLAYER_BREAK_SHIELD)
+                if (spellInfo->Id == SPELL_PLAYER_BREAK_SHIELD)
                     if (!me->HasAura(SPELL_CHARGE_DEFEND) && !me->HasAura(SPELL_RANGED_DEFEND))
                         isVulnerable = true;
             }
@@ -498,14 +501,14 @@ public:
                             guidMason[2] = Mason3->GetGUID();
                             Mason3->GetMotionMaster()->MovePoint(0, Mason3Pos[1]);
                         }
-                        events.ScheduleEvent(EVENT_INTRO_1, 15000);
+                        events.ScheduleEvent(EVENT_INTRO_1, 15s);
                     }
                     break;
                 case EVENT_INTRO_1:
                     {
                         if (Creature* Dalfors = ObjectAccessor::GetCreature(*me, guidDalfors))
                             Dalfors->AI()->Talk(DALFORS_SAY_PRE_1);
-                        events.ScheduleEvent(EVENT_INTRO_2, 5000);
+                        events.ScheduleEvent(EVENT_INTRO_2, 5s);
                     }
                     break;
                 case EVENT_INTRO_2:
@@ -515,7 +518,7 @@ public:
                             Dalfors->SetFacingTo(6.215f);
                             Dalfors->AI()->Talk(DALFORS_SAY_PRE_2);
                         }
-                    events.ScheduleEvent(EVENT_INTRO_3, 5000);
+                    events.ScheduleEvent(EVENT_INTRO_3, 5s);
                     }
                     break;
                 case EVENT_INTRO_3:
@@ -724,7 +727,7 @@ class npc_frostbrood_skytalon : public CreatureScript
 
             EventMap events;
 
-            void IsSummonedBy(Unit* summoner) override
+            void IsSummonedBy(WorldObject* summoner) override
             {
                 me->GetMotionMaster()->MovePoint(POINT_GRAB_DECOY, summoner->GetPositionX(), summoner->GetPositionY(), summoner->GetPositionZ());
             }
@@ -736,7 +739,7 @@ class npc_frostbrood_skytalon : public CreatureScript
 
                 if (id == POINT_GRAB_DECOY)
                     if (TempSummon* summon = me->ToTempSummon())
-                        if (Unit* summoner = summon->GetSummoner())
+                        if (Unit* summoner = summon->GetSummonerUnit())
                             DoCast(summoner, SPELL_GRAB);
             }
 
@@ -757,9 +760,9 @@ class npc_frostbrood_skytalon : public CreatureScript
                 }
             }
 
-            void SpellHit(Unit* /*caster*/, SpellInfo const* spell) override
+            void SpellHit(WorldObject* /*caster*/, SpellInfo const* spellInfo) override
             {
-                switch (spell->Id)
+                switch (spellInfo->Id)
                 {
                     case SPELL_EXPLOSION:
                         DoCast(me, SPELL_IMMOLATION);

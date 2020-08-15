@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -195,7 +195,7 @@ public:
                         {
                             if (uiDeathRespiteTimer <= uiDiff)
                             {
-                                if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 100, true))
+                                if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 100, true))
                                 {
                                     if (target->IsAlive())
                                         DoCast(target, SPELL_DEATH_RESPITE);
@@ -223,7 +223,7 @@ public:
                             }
                             if (uiDesecration <= uiDiff)
                             {
-                                if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 100, true))
+                                if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 100, true))
                                 {
                                     if (target->IsAlive())
                                         DoCast(target, SPELL_DESECRATION);
@@ -250,7 +250,7 @@ public:
                     } else uiDeathBiteTimer -= uiDiff;
                     if (uiMarkedDeathTimer <= uiDiff)
                     {
-                        if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 100, true))
+                        if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 100, true))
                         {
                             if (target->IsAlive())
                                 DoCast(target, SPELL_MARKED_DEATH);
@@ -331,7 +331,7 @@ public:
 
             if (uiAttackTimer <= uiDiff)
             {
-                if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 1, 100, true))
+                if (Unit* target = SelectTarget(SelectTargetMethod::Random, 1, 100, true))
                 {
                     if (target->IsAlive())
                         DoCast(target, (SPELL_LEAP));

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -30,8 +30,7 @@ enum Spells
     SPELL_DECREPIT_FEVER    = 29998, // 25-man: 55011
     SPELL_SPELL_DISRUPTION  = 29310,
     SPELL_PLAGUE_CLOUD      = 29350,
-    SPELL_TELEPORT_SELF     = 30211,
-    SPELL_ERUPTION          = 29371
+    SPELL_TELEPORT_SELF     = 30211
 };
 
 enum Yells
@@ -114,9 +113,9 @@ public:
             Talk(SAY_DEATH);
         }
 
-        void JustEngagedWith(Unit* /*who*/) override
+        void JustEngagedWith(Unit* who) override
         {
-            _JustEngagedWith();
+            BossAI::JustEngagedWith(who);
             Talk(SAY_AGGRO);
 
             _safeSection = 0;
@@ -194,7 +193,9 @@ public:
                                     if (GameObject* tile = ObjectAccessor::GetGameObject(*me, tileGUID))
                                     {
                                         tile->SendCustomAnim(0);
-                                        tile->CastSpell(nullptr, SPELL_ERUPTION);
+                                        CastSpellExtraArgs args;
+                                        args.OriginalCaster = me->GetGUID();
+                                        tile->CastSpell(tile, tile->GetGOInfo()->trap.spellId, args);
                                     }
 
                         if (_safeSection == 0)

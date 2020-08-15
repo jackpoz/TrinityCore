@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -26,14 +25,16 @@
 #include "MapManager.h"
 #include "MotionMaster.h"
 #include "MovementGenerator.h"
+#include "MoveSpline.h"
 #include "Transport.h"
 #include "Battleground.h"
 #include "InstanceSaveMgr.h"
 #include "ObjectMgr.h"
 #include "Vehicle.h"
 #include "GameTime.h"
-
-#define MOVEMENT_PACKET_TIME_DELAY 0
+#include <boost/accumulators/statistics/variance.hpp>
+#include <boost/accumulators/accumulators.hpp>
+#include <boost/accumulators/statistics.hpp>
 
 void WorldSession::HandleMoveWorldportAckOpcode(WorldPacket & /*recvData*/)
 {
@@ -82,7 +83,7 @@ void WorldSession::HandleMoveWorldportAck()
     // while the player is in transit, for example the map may get full
     if (!newMap || newMap->CannotEnter(player))
     {
-        TC_LOG_ERROR("network", "Map %d (%s) could not be created for player %d (%s), porting player to homebind", loc.GetMapId(), newMap ? newMap->GetMapName() : "Unknown", player->GetGUID().GetCounter(), player->GetName().c_str());
+        TC_LOG_ERROR("network", "Map %d (%s) could not be created for player %s (%s), porting player to homebind", loc.GetMapId(), newMap ? newMap->GetMapName() : "Unknown", player->GetGUID().ToString().c_str(), player->GetName().c_str());
         player->TeleportTo(player->m_homebindMapId, player->m_homebindX, player->m_homebindY, player->m_homebindZ, player->GetOrientation());
         return;
     }
@@ -97,8 +98,8 @@ void WorldSession::HandleMoveWorldportAck()
     player->SendInitialPacketsBeforeAddToMap();
     if (!player->GetMap()->AddPlayerToMap(player))
     {
-        TC_LOG_ERROR("network", "WORLD: failed to teleport player %s (%d) to map %d (%s) because of unknown reason!",
-            player->GetName().c_str(), player->GetGUID().GetCounter(), loc.GetMapId(), newMap ? newMap->GetMapName() : "Unknown");
+        TC_LOG_ERROR("network", "WORLD: failed to teleport player %s %s to map %d (%s) because of unknown reason!",
+            player->GetName().c_str(), player->GetGUID().ToString().c_str(), loc.GetMapId(), newMap ? newMap->GetMapName() : "Unknown");
         player->ResetMap();
         player->SetMap(oldMap);
         player->TeleportTo(player->m_homebindMapId, player->m_homebindX, player->m_homebindY, player->m_homebindZ, player->GetOrientation());
@@ -148,7 +149,7 @@ void WorldSession::HandleMoveWorldportAck()
     // resurrect character at enter into instance where his corpse exist after add to map
     if (mEntry->IsDungeon() && !player->IsAlive())
     {
-        if (player->GetCorpseLocation().GetMapId() == mEntry->MapID)
+        if (player->GetCorpseLocation().GetMapId() == mEntry->ID)
         {
             player->ResurrectPlayer(0.5f);
             player->SpawnCorpseBones();
@@ -160,14 +161,14 @@ void WorldSession::HandleMoveWorldportAck()
     {
         // check if this instance has a reset time and send it to player if so
         Difficulty diff = player->GetDifficulty(mEntry->IsRaid());
-        if (MapDifficulty const* mapDiff = GetMapDifficultyData(mEntry->MapID, diff))
+        if (MapDifficulty const* mapDiff = GetMapDifficultyData(mEntry->ID, diff))
         {
             if (mapDiff->resetTime)
             {
-                if (time_t timeReset = sInstanceSaveMgr->GetResetTimeFor(mEntry->MapID, diff))
+                if (time_t timeReset = sInstanceSaveMgr->GetResetTimeFor(mEntry->ID, diff))
                 {
                     uint32 timeleft = uint32(timeReset - GameTime::GetGameTime());
-                    player->SendInstanceResetWarning(mEntry->MapID, diff, timeleft, true);
+                    player->SendInstanceResetWarning(mEntry->ID, diff, timeleft, true);
                 }
             }
         }
@@ -214,7 +215,7 @@ void WorldSession::HandleMoveTeleportAck(WorldPacket& recvData)
     uint32 sequenceIndex, time;
     recvData >> sequenceIndex >> time;
 
-    Player* plMover = _player->m_unitMovedByMe->ToPlayer();
+    Player* plMover = _player->GetUnitBeingMoved()->ToPlayer();
 
     if (!plMover || !plMover->IsBeingTeleportedNear())
         return;
@@ -258,7 +259,7 @@ void WorldSession::HandleMovementOpcodes(WorldPacket& recvData)
 {
     uint16 opcode = recvData.GetOpcode();
 
-    Unit* mover = _player->m_unitMovedByMe;
+    Unit* mover = _player->GetUnitBeingMoved();
 
     ASSERT(mover != nullptr);                      // there must always be a mover
 
@@ -287,6 +288,12 @@ void WorldSession::HandleMovementOpcodes(WorldPacket& recvData)
         return;
 
     if (!movementInfo.pos.IsPositionValid())
+    {
+        recvData.rfinish();                     // prevent warnings spam
+        return;
+    }
+
+    if (!mover->movespline->Finalized())
     {
         recvData.rfinish();                     // prevent warnings spam
         return;
@@ -359,17 +366,21 @@ void WorldSession::HandleMovementOpcodes(WorldPacket& recvData)
     if (plrMover && ((movementInfo.flags & MOVEMENTFLAG_SWIMMING) != 0) != plrMover->IsInWater())
     {
         // now client not include swimming flag in case jumping under water
-        plrMover->SetInWater(!plrMover->IsInWater() || plrMover->GetBaseMap()->IsUnderWater(movementInfo.pos.GetPositionX(), movementInfo.pos.GetPositionY(), movementInfo.pos.GetPositionZ()));
+        plrMover->SetInWater(!plrMover->IsInWater() || plrMover->GetMap()->IsUnderWater(plrMover->GetPhaseMask(), movementInfo.pos.GetPositionX(), movementInfo.pos.GetPositionY(), movementInfo.pos.GetPositionZ()));
     }
-
-    uint32 mstime = GameTime::GetGameTimeMS();
-    /*----------------------*/
-    if (m_clientTimeDelay == 0)
-        m_clientTimeDelay = mstime - movementInfo.time;
 
     /* process position-change */
     WorldPacket data(opcode, recvData.size());
-    movementInfo.time = movementInfo.time + m_clientTimeDelay + MOVEMENT_PACKET_TIME_DELAY;
+    int64 movementTime = (int64) movementInfo.time + _timeSyncClockDelta;
+    if (_timeSyncClockDelta == 0 || movementTime < 0 || movementTime > 0xFFFFFFFF)
+    {
+        TC_LOG_WARN("misc", "The computed movement time using clockDelta is erronous. Using fallback instead");
+        movementInfo.time = GameTime::GetGameTimeMS();
+    }
+    else
+    {
+        movementInfo.time = (uint32)movementTime;
+    }
 
     movementInfo.guid = mover->GetGUID();
     WriteMovementInfo(&data, &movementInfo);
@@ -382,7 +393,7 @@ void WorldSession::HandleMovementOpcodes(WorldPacket& recvData)
     {
         if (VehicleSeatEntry const* seat = vehicle->GetSeatForPassenger(mover))
         {
-            if (seat->m_flags & VEHICLE_SEAT_FLAG_ALLOW_TURNING)
+            if (seat->Flags & VEHICLE_SEAT_FLAG_ALLOW_TURNING)
             {
                 if (movementInfo.pos.GetOrientation() != mover->GetOrientation())
                 {
@@ -422,6 +433,8 @@ void WorldSession::HandleMovementOpcodes(WorldPacket& recvData)
                 }
             }
         }
+        else
+            plrMover->RemoveFlag(PLAYER_FLAGS, PLAYER_FLAGS_IS_OUT_OF_BOUNDS);
     }
 }
 
@@ -496,7 +509,7 @@ void WorldSession::HandleForceSpeedChangeAck(WorldPacket &recvData)
         {
             TC_LOG_DEBUG("misc", "Player %s from account id %u kicked for incorrect speed (must be %f instead %f)",
                 _player->GetName().c_str(), _player->GetSession()->GetAccountId(), _player->GetSpeed(move_type), newspeed);
-            _player->GetSession()->KickPlayer();
+            _player->GetSession()->KickPlayer("WorldSession::HandleForceSpeedChangeAck Incorrect speed");
         }
     }
 }
@@ -509,8 +522,8 @@ void WorldSession::HandleSetActiveMoverOpcode(WorldPacket &recvData)
     recvData >> guid;
 
     if (GetPlayer()->IsInWorld())
-        if (_player->m_unitMovedByMe->GetGUID() != guid)
-            TC_LOG_DEBUG("network", "HandleSetActiveMoverOpcode: incorrect mover guid: mover is %s and should be %s" , guid.ToString().c_str(), _player->m_unitMovedByMe->GetGUID().ToString().c_str());
+        if (_player->GetUnitBeingMoved()->GetGUID() != guid)
+            TC_LOG_DEBUG("network", "HandleSetActiveMoverOpcode: incorrect mover guid: mover is %s and should be %s" , guid.ToString().c_str(), _player->GetUnitBeingMoved()->GetGUID().ToString().c_str());
 }
 
 void WorldSession::HandleMoveNotActiveMover(WorldPacket &recvData)
@@ -543,7 +556,7 @@ void WorldSession::HandleMoveKnockBackAck(WorldPacket& recvData)
     ObjectGuid guid;
     recvData >> guid.ReadAsPacked();
 
-    if (_player->m_unitMovedByMe->GetGUID() != guid)
+    if (_player->GetUnitBeingMoved()->GetGUID() != guid)
         return;
 
     recvData.read_skip<uint32>();                          // unk
@@ -639,4 +652,77 @@ void WorldSession::HandleMoveTimeSkippedOpcode(WorldPacket& recvData)
     data << guid.WriteAsPacked();
     data << timeSkipped;
     GetPlayer()->SendMessageToSet(&data, false);
+}
+
+void WorldSession::HandleTimeSyncResponse(WorldPacket& recvData)
+{
+    TC_LOG_DEBUG("network", "CMSG_TIME_SYNC_RESP");
+
+    uint32 counter, clientTimestamp;
+    recvData >> counter >> clientTimestamp;
+
+    if (_pendingTimeSyncRequests.count(counter) == 0)
+        return;
+
+    uint32 serverTimeAtSent = _pendingTimeSyncRequests.at(counter);
+    _pendingTimeSyncRequests.erase(counter);
+
+    // time it took for the request to travel to the client, for the client to process it and reply and for response to travel back to the server.
+    // we are going to make 2 assumptions:
+    // 1) we assume that the request processing time equals 0.
+    // 2) we assume that the packet took as much time to travel from server to client than it took to travel from client to server.
+    uint32 roundTripDuration = getMSTimeDiff(serverTimeAtSent, recvData.GetReceivedTime());
+    uint32 lagDelay = roundTripDuration / 2;
+
+    /*
+    clockDelta = serverTime - clientTime
+    where
+    serverTime: time that was displayed on the clock of the SERVER at the moment when the client processed the SMSG_TIME_SYNC_REQUEST packet.
+    clientTime:  time that was displayed on the clock of the CLIENT at the moment when the client processed the SMSG_TIME_SYNC_REQUEST packet.
+
+    Once clockDelta has been computed, we can compute the time of an event on server clock when we know the time of that same event on the client clock,
+    using the following relation:
+    serverTime = clockDelta + clientTime
+    */
+    int64 clockDelta = (int64)(serverTimeAtSent + lagDelay) - (int64)clientTimestamp;
+    _timeSyncClockDeltaQueue.push_back(std::pair<int64, uint32>(clockDelta, roundTripDuration));
+    ComputeNewClockDelta();
+}
+
+void WorldSession::ComputeNewClockDelta()
+{
+    // implementation of the technique described here: https://web.archive.org/web/20180430214420/http://www.mine-control.com/zack/timesync/timesync.html
+    // to reduce the skew induced by dropped TCP packets that get resent.
+
+    using namespace boost::accumulators;
+
+    accumulator_set<uint32, features<tag::mean, tag::median, tag::variance(lazy)> > latencyAccumulator;
+
+    for (auto pair : _timeSyncClockDeltaQueue)
+        latencyAccumulator(pair.second);
+
+    uint32 latencyMedian = static_cast<uint32>(std::round(median(latencyAccumulator)));
+    uint32 latencyStandardDeviation = static_cast<uint32>(std::round(sqrt(variance(latencyAccumulator))));
+
+    accumulator_set<int64, features<tag::mean> > clockDeltasAfterFiltering;
+    uint32 sampleSizeAfterFiltering = 0;
+    for (auto pair : _timeSyncClockDeltaQueue)
+    {
+        if (pair.second < latencyStandardDeviation + latencyMedian) {
+            clockDeltasAfterFiltering(pair.first);
+            sampleSizeAfterFiltering++;
+        }
+    }
+
+    if (sampleSizeAfterFiltering != 0)
+    {
+        int64 meanClockDelta = static_cast<int64>(std::round(mean(clockDeltasAfterFiltering)));
+        if (std::abs(meanClockDelta - _timeSyncClockDelta) > 25)
+            _timeSyncClockDelta = meanClockDelta;
+    }
+    else if (_timeSyncClockDelta == 0)
+    {
+        std::pair<int64, uint32> back = _timeSyncClockDeltaQueue.back();
+        _timeSyncClockDelta = back.first;
+    }
 }

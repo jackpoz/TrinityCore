@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -51,9 +51,9 @@ class boss_illucia_barov : public CreatureScript
         {
             boss_illuciabarovAI(Creature* creature) : BossAI(creature, DATA_LADYILLUCIABAROV) { }
 
-            void JustEngagedWith(Unit* /*who*/) override
+            void JustEngagedWith(Unit* who) override
             {
-                _JustEngagedWith();
+                BossAI::JustEngagedWith(who);
                 events.ScheduleEvent(EVENT_CURSEOFAGONY, 18s);
                 events.ScheduleEvent(EVENT_SHADOWSHOCK, 9s);
                 events.ScheduleEvent(EVENT_SILENCE, 5s);
@@ -79,7 +79,7 @@ class boss_illucia_barov : public CreatureScript
                             events.ScheduleEvent(EVENT_CURSEOFAGONY, 30s);
                             break;
                         case EVENT_SHADOWSHOCK:
-                            DoCast(SelectTarget(SELECT_TARGET_RANDOM, 0, 100, true), SPELL_SHADOWSHOCK, true);
+                            DoCast(SelectTarget(SelectTargetMethod::Random, 0, 100, true), SPELL_SHADOWSHOCK, true);
                             events.ScheduleEvent(EVENT_SHADOWSHOCK, 12s);
                             break;
                         case EVENT_SILENCE:

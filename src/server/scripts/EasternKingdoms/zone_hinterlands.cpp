@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -112,7 +111,7 @@ public:
                     {
                         const Position src = {147.927444f, -3851.513428f, 130.893f, 0};
                         Position dst = me->GetRandomPoint(src, 7.0f);
-                        DoSummon(NPC_MARAUDING_OWL, dst, 25000, TEMPSUMMON_CORPSE_TIMED_DESPAWN);
+                        DoSummon(NPC_MARAUDING_OWL, dst, 25s, TEMPSUMMON_CORPSE_TIMED_DESPAWN);
                     }
                     break;
                 case 44:
@@ -120,7 +119,7 @@ public:
                     {
                         const Position src = {-141.151581f, -4291.213867f, 120.130f, 0};
                         Position dst = me->GetRandomPoint(src, 7.0f);
-                        me->SummonCreature(NPC_VILE_AMBUSHER, dst, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 25000);
+                        me->SummonCreature(NPC_VILE_AMBUSHER, dst, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 25s);
                     }
                     break;
             }
@@ -220,11 +219,11 @@ public:
             if (!_first)
                 spawnId = 1;
 
-            me->SummonCreature(NPC_RANGER, AmbushSpawn[spawnId], TEMPSUMMON_TIMED_OR_CORPSE_DESPAWN, 60000);
+            me->SummonCreature(NPC_RANGER, AmbushSpawn[spawnId], TEMPSUMMON_TIMED_OR_CORPSE_DESPAWN, 1min);
 
             for (int i = 0; i < 2; ++i)
             {
-                me->SummonCreature(NPC_OUTRUNNER, AmbushSpawn[spawnId], TEMPSUMMON_TIMED_OR_CORPSE_DESPAWN, 60000);
+                me->SummonCreature(NPC_OUTRUNNER, AmbushSpawn[spawnId], TEMPSUMMON_TIMED_OR_CORPSE_DESPAWN, 1min);
             }
         }
 

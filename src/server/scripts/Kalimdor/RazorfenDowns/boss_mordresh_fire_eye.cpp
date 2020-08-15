@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -55,12 +55,12 @@ public:
         void Reset() override
         {
             _Reset();
-            events.ScheduleEvent(EVENT_OOC_1, 10000);
+            events.ScheduleEvent(EVENT_OOC_1, 10s);
         }
 
-        void JustEngagedWith(Unit* /*who*/) override
+        void JustEngagedWith(Unit* who) override
         {
-            _JustEngagedWith();
+            BossAI::JustEngagedWith(who);
             events.Reset();
             Talk(SAY_AGGRO);
             events.ScheduleEvent(EVENT_FIREBALL, 100ms);
@@ -84,19 +84,19 @@ public:
                     {
                         case EVENT_OOC_1:
                             Talk(SAY_OOC_1);
-                            events.ScheduleEvent(EVENT_OOC_2, 8000);
+                            events.ScheduleEvent(EVENT_OOC_2, 8s);
                             break;
                         case EVENT_OOC_2:
                             Talk(SAY_OOC_2);
-                            events.ScheduleEvent(EVENT_OOC_3, 3000);
+                            events.ScheduleEvent(EVENT_OOC_3, 3s);
                             break;
                         case EVENT_OOC_3:
                             me->HandleEmoteCommand(EMOTE_ONESHOT_EXCLAMATION);
-                            events.ScheduleEvent(EVENT_OOC_4, 6000);
+                            events.ScheduleEvent(EVENT_OOC_4, 6s);
                             break;
                         case EVENT_OOC_4:
                             Talk(SAY_OOC_3);
-                            events.ScheduleEvent(EVENT_OOC_1, 14000);
+                            events.ScheduleEvent(EVENT_OOC_1, 14s);
                             break;
                     }
                 }

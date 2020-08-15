@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -31,8 +30,11 @@ EndContentData */
 #include "ScriptMgr.h"
 #include "GameObject.h"
 #include "Group.h"
+#include "Map.h"
 #include "Player.h"
 #include "ScriptedEscortAI.h"
+#include "Spell.h"
+#include "SpellScript.h"
 #include "WorldSession.h"
 
 /*######
@@ -91,8 +93,8 @@ public:
             me->SetFaction(FACTION_FRIENDLY);
             me->SetStandState(UNIT_STAND_STATE_SIT);
             me->RemoveAllAuras();
-            me->GetThreatManager().ClearAllThreat();
             me->CombatStop(true);
+            EngagementOver();
             UnkorUnfriendly_Timer = 60000;
         }
 
@@ -256,8 +258,25 @@ public:
     }
 };
 
+// 40655 - Skyguard Flare
+class spell_skyguard_flare : public SpellScript
+{
+    PrepareSpellScript(spell_skyguard_flare);
+
+    void ModDestHeight(SpellDestination& dest)
+    {
+        dest._position.m_positionZ = GetCaster()->GetMap()->GetHeight(dest._position.GetPositionX(), dest._position.GetPositionY(), MAX_HEIGHT);
+    }
+
+    void Register() override
+    {
+        OnDestinationTargetSelect += SpellDestinationTargetSelectFn(spell_skyguard_flare::ModDestHeight, EFFECT_0, TARGET_DEST_TARGET_RANDOM);
+    }
+};
+
 void AddSC_terokkar_forest()
 {
     new npc_unkor_the_ruthless();
     new npc_isla_starmane();
+    RegisterSpellScript(spell_skyguard_flare);
 }

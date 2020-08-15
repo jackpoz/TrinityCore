@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -107,7 +107,7 @@ class boss_kurinnaxx : public CreatureScript
                             events.ScheduleEvent(EVENT_MORTAL_WOUND, 8s);
                             break;
                         case EVENT_SANDTRAP:
-                            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 100, true))
+                            if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 100, true))
                                 target->CastSpell(target, SPELL_SANDTRAP, true);
                             else if (Unit* victim = me->GetVictim())
                                 victim->CastSpell(victim, SPELL_SANDTRAP, true);

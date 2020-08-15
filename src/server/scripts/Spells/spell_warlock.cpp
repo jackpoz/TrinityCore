@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -35,6 +35,7 @@
 
 enum WarlockSpells
 {
+    SPELL_WARLOCK_DRAIN_SOUL_R1                     = 1120,
     SPELL_WARLOCK_CREATE_SOULSHARD                  = 43836,
     SPELL_WARLOCK_CURSE_OF_DOOM_EFFECT              = 18662,
     SPELL_WARLOCK_DEMONIC_CIRCLE_SUMMON             = 48018,
@@ -148,40 +149,26 @@ class spell_warl_banish : public SpellScriptLoader
             PrepareSpellScript(spell_warl_banish_SpellScript);
 
         public:
-            spell_warl_banish_SpellScript()
-            {
-                _removed = false;
-            }
+            spell_warl_banish_SpellScript() {}
 
         private:
-            void HandleBanish()
+            void HandleBanish(SpellMissInfo missInfo)
             {
+                if (missInfo != SPELL_MISS_IMMUNE)
+                    return;
+
                 if (Unit* target = GetHitUnit())
                 {
-                    if (target->GetAuraEffect(SPELL_AURA_SCHOOL_IMMUNITY, SPELLFAMILY_WARLOCK, 0, 0x08000000, 0))
-                    {
-                        // No need to remove old aura since its removed due to not stack by current Banish aura
-                        PreventHitDefaultEffect(EFFECT_0);
-                        PreventHitDefaultEffect(EFFECT_1);
-                        PreventHitDefaultEffect(EFFECT_2);
-                        _removed = true;
-                    }
+                    // Casting Banish on a banished target will remove applied aura
+                    if (Aura * banishAura = target->GetAura(GetSpellInfo()->Id, GetCaster()->GetGUID()))
+                        banishAura->Remove();
                 }
-            }
-
-            void RemoveAura()
-            {
-                if (_removed)
-                    PreventHitAura();
             }
 
             void Register() override
             {
-                BeforeHit += SpellHitFn(spell_warl_banish_SpellScript::HandleBanish);
-                AfterHit += SpellHitFn(spell_warl_banish_SpellScript::RemoveAura);
+                BeforeHit += BeforeSpellHitFn(spell_warl_banish_SpellScript::HandleBanish);
             }
-
-            bool _removed;
         };
 
         SpellScript* GetSpellScript() const override
@@ -527,6 +514,20 @@ class spell_warl_drain_soul : public SpellScriptLoader
                 });
             }
 
+            bool CheckProc(ProcEventInfo& eventInfo)
+            {
+                // Drain Soul's proc tries to happen each time the warlock lands a killing blow on a unit while channeling.
+                // Make sure that dying unit is afflicted by the caster's Drain Soul debuff in order to avoid a false positive.
+
+                Unit* caster = GetCaster();
+                Unit* victim = eventInfo.GetProcTarget();
+
+                if (caster && victim)
+                    return victim->GetAuraApplicationOfRankedSpell(SPELL_WARLOCK_DRAIN_SOUL_R1, caster->GetGUID()) != 0;
+
+                return false;
+            }
+
             void HandleProc(AuraEffect const* aurEff, ProcEventInfo& eventInfo)
             {
                 PreventDefaultAction();
@@ -562,9 +563,11 @@ class spell_warl_drain_soul : public SpellScriptLoader
 
             void Register() override
             {
+                DoCheckProc += AuraCheckProcFn(spell_warl_drain_soul_AuraScript::CheckProc);
                 OnEffectPeriodic += AuraEffectPeriodicFn(spell_warl_drain_soul_AuraScript::HandleTick, EFFECT_1, SPELL_AURA_PERIODIC_DAMAGE);
                 OnEffectProc += AuraEffectProcFn(spell_warl_drain_soul_AuraScript::HandleProc, EFFECT_2, SPELL_AURA_PROC_TRIGGER_SPELL);
             }
+
         };
 
         AuraScript* GetAuraScript() const override
@@ -773,7 +776,7 @@ class spell_warl_haunt : public SpellScriptLoader
             {
                 if (Aura* aura = GetHitAura())
                     if (AuraEffect* aurEff = aura->GetEffect(EFFECT_1))
-                        aurEff->SetAmount(CalculatePct(aurEff->GetAmount(), GetHitDamage()));
+                        aurEff->SetAmount(CalculatePct(GetHitDamage(), aurEff->GetAmount()));
             }
 
             void Register() override
@@ -1054,9 +1057,10 @@ class spell_warl_demonic_pact : public SpellScriptLoader
                 {
                     if (AuraEffect* aurEff = owner->GetDummyAuraEffect(SPELLFAMILY_WARLOCK, WARLOCK_ICON_ID_DEMONIC_PACT, EFFECT_0))
                     {
-                        int32 bp0 = static_cast<int32>((aurEff->GetAmount() * owner->SpellBaseDamageBonusDone(SPELL_SCHOOL_MASK_MAGIC) + 100.0f) / 100.0f);
+                        int32 bp = static_cast<int32>((aurEff->GetAmount() * owner->SpellBaseDamageBonusDone(SPELL_SCHOOL_MASK_MAGIC) + 100.0f) / 100.0f);
                         CastSpellExtraArgs args(aurEff);
-                        args.AddSpellBP0(bp0);
+                        args.AddSpellBP0(bp);
+                        args.AddSpellMod(SPELLVALUE_BASE_POINT1, bp);
                         owner->CastSpell(nullptr, SPELL_WARLOCK_DEMONIC_PACT_PROC, args);
                     }
                 }

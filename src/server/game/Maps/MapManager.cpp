@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -29,7 +28,6 @@
 #include "World.h"
 #include "Corpse.h"
 #include "ObjectMgr.h"
-#include "Language.h"
 #include "WorldPacket.h"
 #include "Group.h"
 #include "Player.h"
@@ -140,7 +138,7 @@ Map::EnterState MapManager::PlayerCannotEnter(uint32 mapid, Player* player, bool
     Difficulty targetDifficulty, requestedDifficulty;
     targetDifficulty = requestedDifficulty = player->GetDifficulty(entry->IsRaid());
     // Get the highest available difficulty if current setting is higher than the instance allows
-    MapDifficulty const* mapDiff = GetDownscaledMapDifficultyData(entry->MapID, targetDifficulty);
+    MapDifficulty const* mapDiff = GetDownscaledMapDifficultyData(entry->ID, targetDifficulty);
     if (!mapDiff)
         return Map::CANNOT_ENTER_DIFFICULTY_UNAVAILABLE;
 
@@ -148,7 +146,11 @@ Map::EnterState MapManager::PlayerCannotEnter(uint32 mapid, Player* player, bool
     if (player->IsGameMaster())
         return Map::CAN_ENTER;
 
-    char const* mapName = entry->name[player->GetSession()->GetSessionDbcLocale()];
+    //Other requirements
+    if (!player->Satisfy(sObjectMgr->GetAccessRequirement(mapid, targetDifficulty), mapid, true))
+        return Map::CANNOT_ENTER_UNSPECIFIED_REASON;
+
+    char const* mapName = entry->MapName[player->GetSession()->GetSessionDbcLocale()];
 
     Group* group = player->GetGroup();
     if (entry->IsRaid()) // can only enter in a raid group
@@ -201,11 +203,7 @@ Map::EnterState MapManager::PlayerCannotEnter(uint32 mapid, Player* player, bool
             return Map::CANNOT_ENTER_TOO_MANY_INSTANCES;
     }
 
-    //Other requirements
-    if (player->Satisfy(sObjectMgr->GetAccessRequirement(mapid, targetDifficulty), mapid, true))
-        return Map::CAN_ENTER;
-    else
-        return Map::CANNOT_ENTER_UNSPECIFIED_REASON;
+    return Map::CAN_ENTER;
 }
 
 void MapManager::Update(uint32 diff)
@@ -342,7 +340,7 @@ uint32 MapManager::GenerateInstanceId()
     ASSERT(newInstanceId < _freeInstanceIds.size());
     _freeInstanceIds[newInstanceId] = false;
 
-    // Find the lowest available id starting from the current NextInstanceId (which should be the lowest according to the logic in FreeInstanceId()
+    // Find the lowest available id starting from the current NextInstanceId (which should be the lowest according to the logic in FreeInstanceId())
     size_t nextFreedId = _freeInstanceIds.find_next(_nextInstanceId++);
     if (nextFreedId == InstanceIds::npos)
     {

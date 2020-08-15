@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -18,6 +18,7 @@
 #ifndef TRINITY_CHATCOMMANDTAGS_H
 #define TRINITY_CHATCOMMANDTAGS_H
 
+#include "advstd.h"
 #include "ChatCommandHelpers.h"
 #include "Hyperlinks.h"
 #include "Optional.h"
@@ -45,7 +46,7 @@ namespace ChatCommands
 \****************************************************************************************/
 struct ContainerTag {};
 template <typename T>
-struct tag_base<T, std::enable_if_t<advstd::is_base_of_v<ContainerTag, T>>>
+struct tag_base<T, std::enable_if_t<std::is_base_of_v<ContainerTag, T>>>
 {
     using type = typename T::value_type;
 };

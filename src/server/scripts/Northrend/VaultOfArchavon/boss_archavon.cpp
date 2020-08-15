@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -76,14 +76,14 @@ class boss_archavon : public CreatureScript
             {
             }
 
-            void JustEngagedWith(Unit* /*who*/) override
+            void JustEngagedWith(Unit* who) override
             {
                 events.ScheduleEvent(EVENT_ROCK_SHARDS, 15s);
                 events.ScheduleEvent(EVENT_CHOKING_CLOUD, 30s);
                 events.ScheduleEvent(EVENT_STOMP, 45s);
                 events.ScheduleEvent(EVENT_BERSERK, 5min);
 
-                _JustEngagedWith();
+                BossAI::JustEngagedWith(who);
             }
 
             // Below UpdateAI may need review/debug.
@@ -102,12 +102,12 @@ class boss_archavon : public CreatureScript
                     switch (eventId)
                     {
                         case EVENT_ROCK_SHARDS:
-                            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0))
+                            if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0))
                                 DoCast(target, SPELL_ROCK_SHARDS);
                             events.ScheduleEvent(EVENT_ROCK_SHARDS, 15s);
                             break;
                         case EVENT_CHOKING_CLOUD:
-                            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, -10.0f, true))
+                            if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, -10.0f, true))
                             {
                                 DoCast(target, SPELL_CRUSHING_LEAP, true); //10y~80y, ignore range
                                 Talk(EMOTE_LEAP, target);
@@ -188,7 +188,7 @@ class npc_archavon_warder : public CreatureScript
                     switch (eventId)
                     {
                         case EVENT_ROCK_SHOWER:
-                            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0))
+                            if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0))
                                 DoCast(target, SPELL_ROCK_SHOWER);
                             events.ScheduleEvent(EVENT_ROCK_SHARDS, 6s);
                             break;

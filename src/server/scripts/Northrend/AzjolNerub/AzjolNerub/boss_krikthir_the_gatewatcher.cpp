@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -294,15 +294,15 @@ class boss_krik_thir : public CreatureScript
                 DoMeleeAttackIfReady();
             }
 
-            void SpellHit(Unit* /*whose*/, SpellInfo const* spell) override
+            void SpellHit(WorldObject* /*caster*/, SpellInfo const* spellInfo) override
             {
-                if (spell->Id == SPELL_SUBBOSS_AGGRO_TRIGGER)
+                if (spellInfo->Id == SPELL_SUBBOSS_AGGRO_TRIGGER)
                     DoZoneInCombat();
             }
 
-            void SpellHitTarget(Unit* /*who*/, SpellInfo const* spell) override
+            void SpellHitTarget(WorldObject* /*target*/, SpellInfo const* spellInfo) override
             {
-                if (spell->Id == SPELL_SUBBOSS_AGGRO_TRIGGER)
+                if (spellInfo->Id == SPELL_SUBBOSS_AGGRO_TRIGGER)
                     Talk(SAY_SEND_GROUP);
             }
 
@@ -350,6 +350,7 @@ struct npc_gatewatcher_petAI : public ScriptedAI
         }
         _JustEngagedWith();
         ScriptedAI::JustEngagedWith(who);
+        me->SetCombatPulseDelay(5);
     }
 
     void SetData(uint32 data, uint32 value) override
@@ -380,9 +381,9 @@ struct npc_gatewatcher_petAI : public ScriptedAI
             JustEngagedWith(who);
     }
 
-    void SpellHit(Unit* /*whose*/, SpellInfo const* spell) override
+    void SpellHit(WorldObject* /*caster*/, SpellInfo const* spellInfo) override
     {
-        if (spell->Id == SPELL_SUBBOSS_AGGRO_TRIGGER)
+        if (spellInfo->Id == SPELL_SUBBOSS_AGGRO_TRIGGER)
             DoZoneInCombat();
     }
 
@@ -452,7 +453,7 @@ class npc_watcher_gashra : public CreatureScript
                             _events.Repeat(randtime(Seconds(12), Seconds(20)));
                             break;
                         case EVENT_WEB_WRAP:
-                            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 100.0f))
+                            if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 100.0f))
                                 DoCast(target, SPELL_WEB_WRAP);
                             _events.Repeat(randtime(Seconds(13), Seconds(19)));
                             break;
@@ -530,7 +531,7 @@ class npc_watcher_narjil : public CreatureScript
                             _events.Repeat(randtime(Seconds(23), Seconds(27)));
                             break;
                         case EVENT_WEB_WRAP:
-                            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 100, true))
+                            if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 100, true))
                                 DoCast(target, SPELL_WEB_WRAP);
                             _events.Repeat(randtime(Seconds(13), Seconds(19)));
                             break;
@@ -608,7 +609,7 @@ class npc_watcher_silthik : public CreatureScript
                             _events.Repeat(randtime(Seconds(13), Seconds(19)));
                             break;
                         case EVENT_WEB_WRAP:
-                            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 100, true))
+                            if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 100, true))
                                 DoCast(target, SPELL_WEB_WRAP);
                             _events.Repeat(randtime(Seconds(13), Seconds(17)));
                             break;
@@ -732,7 +733,7 @@ class npc_anub_ar_skirmisher : public CreatureScript
                     switch (eventId)
                     {
                         case EVENT_ANUBAR_CHARGE:
-                            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 100.0f, true))
+                            if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 100.0f, true))
                                 DoCast(target, SPELL_CHARGE);
                             _events.Repeat(randtime(Seconds(20), Seconds(25)));
                             break;
@@ -752,10 +753,14 @@ class npc_anub_ar_skirmisher : public CreatureScript
                 DoMeleeAttackIfReady();
             }
 
-            void SpellHitTarget(Unit* target, SpellInfo const* spell) override
+            void SpellHitTarget(WorldObject* target, SpellInfo const* spellInfo) override
             {
-                if (spell->Id == SPELL_CHARGE && target)
-                    DoCast(target, SPELL_FIXATE_TRIGGER);
+                Unit* unitTarget = target->ToUnit();
+                if (!unitTarget)
+                    return;
+
+                if (spellInfo->Id == SPELL_CHARGE)
+                    DoCast(unitTarget, SPELL_FIXATE_TRIGGER);
             }
         };
 
@@ -800,7 +805,7 @@ class npc_anub_ar_shadowcaster : public CreatureScript
                     switch (eventId)
                     {
                         case EVENT_SHADOW_BOLT:
-                            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 100.0f, true))
+                            if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 100.0f, true))
                                 DoCast(target, SPELL_SHADOW_BOLT);
                             _events.Repeat(randtime(Seconds(2), Seconds(4)));
                             break;
@@ -898,7 +903,7 @@ class npc_gatewatcher_web_wrap : public CreatureScript
             void JustDied(Unit* /*killer*/) override
             {
                 if (TempSummon* meSummon = me->ToTempSummon())
-                    if (Unit* summoner = meSummon->GetSummoner())
+                    if (Unit* summoner = meSummon->GetSummonerUnit())
                         summoner->RemoveAurasDueToSpell(SPELL_WEB_WRAP_WRAPPED);
             }
         };

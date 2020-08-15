@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -41,7 +40,7 @@
     RaiseException(EXCEPTION_ASSERTION_FAILURE, 0, 2, execeptionArgs);
 #else
 // should be easily accessible in gdb
-extern "C" TC_COMMON_API char const* TrinityAssertionFailedMessage = nullptr;
+extern "C" { TC_COMMON_API char const* TrinityAssertionFailedMessage = nullptr; }
 #define Crash(message) \
     TrinityAssertionFailedMessage = strdup(message); \
     *((volatile int*)nullptr) = 0; \
@@ -125,6 +124,20 @@ void Abort(char const* file, int line, char const* function)
     std::string formattedMessage = StringFormat("\n%s:%i in %s ABORTED.\n", file, line, function);
     fprintf(stderr, "%s", formattedMessage.c_str());
     fflush(stderr);
+    Crash(formattedMessage.c_str());
+}
+
+void Abort(char const* file, int line, char const* function, char const* message, ...)
+{
+    va_list args;
+    va_start(args, message);
+
+    std::string formattedMessage = StringFormat("\n%s:%i in %s ABORTED:\n", file, line, function) + FormatAssertionMessage(message, args) + '\n';
+    va_end(args);
+
+    fprintf(stderr, "%s", formattedMessage.c_str());
+    fflush(stderr);
+
     Crash(formattedMessage.c_str());
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -18,9 +18,9 @@
 #ifndef TRINITY_HYPERLINKS_H
 #define TRINITY_HYPERLINKS_H
 
-#include "advstd.h"
 #include "ObjectGuid.h"
 #include <string>
+#include <type_traits>
 #include <utility>
 
 struct AchievementEntry;
@@ -107,7 +107,7 @@ namespace LinkTags {
         }
 
         template <typename T>
-        static std::enable_if_t<advstd::is_integral_v<T> && advstd::is_unsigned_v<T>, bool> StoreTo(T& val, char const* pos, size_t len)
+        static std::enable_if_t<std::is_integral_v<T> && std::is_unsigned_v<T>, bool> StoreTo(T& val, char const* pos, size_t len)
         {
             try { val = std::stoull(std::string(pos, len)); }
             catch (...) { return false; }
@@ -115,7 +115,7 @@ namespace LinkTags {
         }
 
         template <typename T>
-        static std::enable_if_t<advstd::is_integral_v<T> && advstd::is_signed_v<T>, bool> StoreTo(T& val, char const* pos, size_t len)
+        static std::enable_if_t<std::is_integral_v<T> && std::is_signed_v<T>, bool> StoreTo(T& val, char const* pos, size_t len)
         {
             try { val = std::stoll(std::string(pos, len)); }
             catch (...) { return false; }

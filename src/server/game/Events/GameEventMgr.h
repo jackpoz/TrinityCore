@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -166,7 +165,7 @@ class TC_GAME_API GameEventMgr
         typedef std::pair<ObjectGuid::LowType /*guid*/, uint32 /*npcflag*/> GuidNPCFlagPair;
         typedef std::list<GuidNPCFlagPair> NPCFlagList;
         typedef std::vector<NPCFlagList> GameEventNPCFlagMap;
-        typedef std::vector<uint32> GameEventBitmask;
+        typedef std::vector<uint32> GameEventBattlegroundMap;
         GameEventQuestMap mGameEventCreatureQuests;
         GameEventQuestMap mGameEventGameObjectQuests;
         GameEventNPCVendorMap mGameEventVendors;
@@ -175,7 +174,7 @@ class TC_GAME_API GameEventMgr
         //GameEventGuidMap  mGameEventGameobjectGuids;
         GameEventIdMap    mGameEventPoolIds;
         GameEventDataMap  mGameEvent;
-        GameEventBitmask  mGameEventBattlegroundHolidays;
+        GameEventBattlegroundMap mGameEventBattlegroundHolidays;
         QuestIdToEventConditionMap mQuestToEventConditions;
         GameEventNPCFlagMap mGameEventNPCFlags;
         ActiveEvents m_ActiveEvents;
@@ -190,6 +189,6 @@ class TC_GAME_API GameEventMgr
 #define sGameEventMgr GameEventMgr::instance()
 
 TC_GAME_API bool IsHolidayActive(HolidayIds id);
-TC_GAME_API bool IsEventActive(uint16 event_id);
+TC_GAME_API bool IsEventActive(uint16 eventId);
 
 #endif

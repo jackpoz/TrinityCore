@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -107,6 +107,12 @@ Group* GroupMgr::GetGroupByGUID(ObjectGuid::LowType groupId) const
         return itr->second;
 
     return nullptr;
+}
+
+void GroupMgr::Update(uint32 diff)
+{
+    for (auto group : GroupStore)
+        group.second->Update(diff);
 }
 
 void GroupMgr::AddGroup(Group* group)
@@ -237,7 +243,7 @@ void GroupMgr::LoadGroups()
                 diff = 0;                                   // default for both difficaly types
             }
 
-            InstanceSave* save = sInstanceSaveMgr->AddInstanceSave(mapEntry->MapID, fields[2].GetUInt32(), Difficulty(diff), time_t(fields[5].GetUInt32()), fields[6].GetUInt64() == 0, true);
+            InstanceSave* save = sInstanceSaveMgr->AddInstanceSave(mapEntry->ID, fields[2].GetUInt32(), Difficulty(diff), time_t(fields[5].GetUInt64()), fields[6].GetUInt64() == 0, true);
             group->BindToInstance(save, fields[3].GetBool(), true);
             ++count;
         }

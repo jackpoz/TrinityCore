@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -92,9 +92,9 @@ class boss_varos : public CreatureScript
                 Initialize();
             }
 
-            void JustEngagedWith(Unit* /*who*/) override
+            void JustEngagedWith(Unit* who) override
             {
-                _JustEngagedWith();
+                BossAI::JustEngagedWith(who);
 
                 Talk(SAY_AGGRO);
             }
@@ -203,9 +203,9 @@ class npc_azure_ring_captain : public CreatureScript
                 me->SetReactState(REACT_AGGRESSIVE);
             }
 
-            void SpellHitTarget(Unit* target, SpellInfo const* spell) override
+            void SpellHitTarget(WorldObject* target, SpellInfo const* spellInfo) override
             {
-                if (spell->Id == SPELL_ICE_BEAM)
+                if (spellInfo->Id == SPELL_ICE_BEAM)
                 {
                     target->CastSpell(target, SPELL_SUMMON_ARCANE_BEAM, true);
                     me->DespawnOrUnsummon();
@@ -239,7 +239,7 @@ class npc_azure_ring_captain : public CreatureScript
                     case ACTION_CALL_DRAGON_EVENT:
                         if (Creature* varos = ObjectAccessor::GetCreature(*me, instance->GetGuidData(DATA_VAROS)))
                         {
-                            if (Unit* victim = varos->AI()->SelectTarget(SELECT_TARGET_RANDOM, 0))
+                            if (Unit* victim = varos->AI()->SelectTarget(SelectTargetMethod::Random, 0))
                             {
                                 me->SetReactState(REACT_PASSIVE);
                                 me->SetWalk(false);
@@ -282,10 +282,10 @@ class spell_varos_centrifuge_shield : public SpellScriptLoader
                 if (Unit* caster = GetCaster())
                 {
                     // flags taken from sniffs
-                    if (caster->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_UNK_15|UNIT_FLAG_IMMUNE_TO_NPC|UNIT_FLAG_IMMUNE_TO_PC|UNIT_FLAG_UNK_6))
+                    if (caster->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SWIMMING|UNIT_FLAG_IMMUNE_TO_NPC|UNIT_FLAG_IMMUNE_TO_PC|UNIT_FLAG_UNK_6))
                     {
                         caster->ToCreature()->SetReactState(REACT_PASSIVE);
-                        caster->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_UNK_15|UNIT_FLAG_UNK_6);
+                        caster->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SWIMMING|UNIT_FLAG_UNK_6);
                         caster->SetImmuneToAll(true, true);
                     }
                 }
@@ -296,7 +296,7 @@ class spell_varos_centrifuge_shield : public SpellScriptLoader
                 if (Unit* caster = GetCaster())
                 {
                     caster->ToCreature()->SetReactState(REACT_AGGRESSIVE);
-                    caster->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_UNK_15|UNIT_FLAG_UNK_6);
+                    caster->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SWIMMING|UNIT_FLAG_UNK_6);
                     caster->SetImmuneToAll(false);
                 }
             }

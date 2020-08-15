@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -40,13 +40,14 @@ ScriptReloadMgr* ScriptReloadMgr::instance()
 #include "BuiltInConfig.h"
 #include "Config.h"
 #include "GitRevision.h"
+#include "CryptoHash.h"
 #include "Log.h"
 #include "MPSCQueue.h"
 #include "Regex.h"
 #include "ScriptMgr.h"
-#include "SHA1.h"
 #include "StartProcess.h"
 #include "Timer.h"
+#include "Util.h"
 #include "World.h"
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/filesystem.hpp>
@@ -275,7 +276,7 @@ Optional<std::shared_ptr<ScriptModule>>
                          path.generic_string().c_str());
         }
 
-        return boost::none;
+        return {};
     }
 
     // Use RAII to release the library on failure.
@@ -302,7 +303,7 @@ Optional<std::shared_ptr<ScriptModule>>
         TC_LOG_ERROR("scripts.hotswap", "Could not extract all required functions from the shared library \"%s\"!",
             path.generic_string().c_str());
 
-        return boost::none;
+        return {};
     }
 }
 
@@ -368,7 +369,6 @@ static int InvokeCMakeCommand(T&&... args)
 {
     auto const executable = BuiltInConfig::GetCMakeCommand();
     return Trinity::StartProcess(executable, {
-        executable,
         std::forward<T>(args)...
     }, "scripts.hotswap");
 }
@@ -379,7 +379,6 @@ static std::shared_ptr<Trinity::AsyncProcessResult> InvokeAsyncCMakeCommand(T&&.
 {
     auto const executable = BuiltInConfig::GetCMakeCommand();
     return Trinity::StartAsyncProcess(executable, {
-        executable,
         std::forward<T>(args)...
     }, "scripts.hotswap");
 }
@@ -758,7 +757,7 @@ private:
         auto path = fs::temp_directory_path();
         path /= Trinity::StringFormat("tc_script_cache_%s_%s",
             GitRevision::GetBranch(),
-            CalculateSHA1Hash(sConfigMgr->GetFilename()).c_str());
+            ByteArrayToHexStr(Trinity::Crypto::SHA1::GetDigestOf(sConfigMgr->GetFilename())).c_str());
 
         return path;
     }
@@ -936,7 +935,7 @@ private:
         }
 
         // Create the source listener
-        auto listener = Trinity::make_unique<SourceUpdateListener>(
+        auto listener = std::make_unique<SourceUpdateListener>(
             sScriptReloadMgr->GetSourceDirectory() / module_name,
             module_name);
 
@@ -1358,7 +1357,7 @@ private:
                         return;
 
                     TC_LOG_INFO("scripts.hotswap", ">> Found outdated CMAKE_INSTALL_PREFIX (\"%s\"), "
-                        "worldserver is currently installed at %s...",
+                        "worldserver is currently installed at %s",
                         value.generic_string().c_str(), current_path.generic_string().c_str());
                 }
                 else

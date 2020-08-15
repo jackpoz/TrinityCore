@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -127,7 +127,7 @@ class boss_falric : public CreatureScript
                         events.ScheduleEvent(EVENT_QUIVERING_STRIKE, 10s);
                         break;
                     case EVENT_IMPENDING_DESPAIR:
-                        if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 45.0f, true))
+                        if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 45.0f, true))
                         {
                             Talk(SAY_IMPENDING_DESPAIR);
                             DoCast(target, SPELL_IMPENDING_DESPAIR);

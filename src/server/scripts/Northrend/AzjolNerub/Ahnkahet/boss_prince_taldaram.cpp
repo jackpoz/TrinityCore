@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -111,9 +111,9 @@ class boss_prince_taldaram : public CreatureScript
                     me->SummonCreatureGroup(SUMMON_GROUP_CONTROLLERS);
             }
 
-            void JustEngagedWith(Unit* /*who*/) override
+            void JustEngagedWith(Unit* who) override
             {
-                _JustEngagedWith();
+                BossAI::JustEngagedWith(who);
                 Talk(SAY_AGGRO);
                 events.ScheduleEvent(EVENT_BLOODTHIRST, 10s);
                 events.ScheduleEvent(EVENT_VANISH, 25s, 35s);
@@ -186,17 +186,17 @@ class boss_prince_taldaram : public CreatureScript
                                 _flameSphereTargetGUID = victim->GetGUID();
                                 DoCast(victim, SPELL_CONJURE_FLAME_SPHERE);
                             }
-                            events.ScheduleEvent(EVENT_CONJURE_FLAME_SPHERES, 15000);
+                            events.ScheduleEvent(EVENT_CONJURE_FLAME_SPHERES, 15s);
                             break;
                         case EVENT_VANISH:
                         {
                             if (me->GetThreatManager().GetThreatListSize() > 1)
                             {
-                                if (Unit* embraceTarget = SelectTarget(SELECT_TARGET_RANDOM, 0, 100.0f, true))
+                                if (Unit* embraceTarget = SelectTarget(SelectTargetMethod::Random, 0, 100.0f, true))
                                     _embraceTargetGUID = embraceTarget->GetGUID();
                                 Talk(SAY_VANISH);
                                 DoCast(me, SPELL_VANISH);
-                                events.DelayEvents(500);
+                                events.DelayEvents(500ms);
                                 events.ScheduleEvent(EVENT_START_FEEDING, 2s);
                             }
                             events.ScheduleEvent(EVENT_VANISH, 25s, 35s);
@@ -378,7 +378,7 @@ class npc_prince_taldaram_flame_sphere : public CreatureScript
                         }
                         case EVENT_DESPAWN:
                             DoCast(me, SPELL_FLAME_SPHERE_DEATH_EFFECT, true);
-                            me->DespawnOrUnsummon(1000);
+                            me->DespawnOrUnsummon(1s);
                             break;
                         default:
                             break;

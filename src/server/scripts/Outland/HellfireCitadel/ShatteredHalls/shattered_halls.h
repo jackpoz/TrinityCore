@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -91,7 +90,7 @@ enum SHActions
     ACTION_EXECUTIONER_TAUNT = 1
 };
 
-Position const Executioner = { 152.8524f, -83.63912f, 2.021005f, 0.06981317f };
+extern Position const Executioner;
 
 struct FactionSpawnerHelper
 {

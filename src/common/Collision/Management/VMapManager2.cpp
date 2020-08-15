@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -42,13 +41,13 @@ namespace VMAP
 
     VMapManager2::~VMapManager2(void)
     {
-        for (InstanceTreeMap::iterator i = iInstanceMapTrees.begin(); i != iInstanceMapTrees.end(); ++i)
+        for (std::pair<uint32 const, StaticMapTree*>& iInstanceMapTree : iInstanceMapTrees)
         {
-            delete i->second;
+            delete iInstanceMapTree.second;
         }
-        for (ModelFileMap::iterator i = iLoadedModelFiles.begin(); i != iLoadedModelFiles.end(); ++i)
+        for (std::pair<std::string const, ManagedModel>& iLoadedModelFile : iLoadedModelFiles)
         {
-            delete i->second.getModel();
+            delete iLoadedModelFile.second.getModel();
         }
     }
 
@@ -115,7 +114,7 @@ namespace VMAP
             if (thread_safe_environment)
                 instanceTree = iInstanceMapTrees.insert(InstanceTreeMap::value_type(mapId, nullptr)).first;
             else
-                ASSERT(false, "Invalid mapId %u tile [%u, %u] passed to VMapManager2 after startup in thread unsafe environment",
+                ABORT_MSG("Invalid mapId %u tile [%u, %u] passed to VMapManager2 after startup in thread unsafe environment",
                 mapId, tileX, tileY);
         }
 
@@ -288,7 +287,7 @@ namespace VMAP
             int32 adtId, rootId, groupId;
             uint32 flags;
             if (getAreaInfo(mapId, x, y, data.floorZ, flags, adtId, rootId, groupId))
-                data.areaInfo = boost::in_place(adtId, rootId, groupId, flags);
+                data.areaInfo.emplace(adtId, rootId, groupId, flags);
             return;
         }
         InstanceTreeMap::const_iterator instanceTree = GetMapTree(mapId);
@@ -305,10 +304,10 @@ namespace VMAP
                 float liquidLevel;
                 if (!reqLiquidType || (GetLiquidFlagsPtr(liquidType) & reqLiquidType))
                     if (info.hitInstance->GetLiquidLevel(pos, info, liquidLevel))
-                        data.liquidInfo = boost::in_place(liquidType, liquidLevel);
+                        data.liquidInfo.emplace(liquidType, liquidLevel);
 
                 if (!IsVMAPDisabledForPtr(mapId, VMAP_DISABLE_AREAFLAG))
-                    data.areaInfo = boost::in_place(info.hitInstance->adtId, info.rootId, info.hitModel->GetWmoID(), info.hitModel->GetMogpFlags());
+                    data.areaInfo.emplace(info.hitInstance->adtId, info.rootId, info.hitModel->GetWmoID(), info.hitModel->GetMogpFlags());
             }
         }
     }

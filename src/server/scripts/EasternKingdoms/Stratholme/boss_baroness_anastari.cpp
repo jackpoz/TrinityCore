@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -100,7 +100,7 @@ struct boss_baroness_anastari : public BossAI
                     events.Repeat(13s);
                     break;
                 case EVENT_SPELL_POSSESS:
-                    if (Unit* possessTarget = SelectTarget(SELECT_TARGET_RANDOM, 1, 0, true, false))
+                    if (Unit* possessTarget = SelectTarget(SelectTargetMethod::Random, 1, 0, true, false))
                     {
                         DoCast(possessTarget, SPELL_POSSESS, true);
                         DoCast(possessTarget, SPELL_POSSESSED, true);

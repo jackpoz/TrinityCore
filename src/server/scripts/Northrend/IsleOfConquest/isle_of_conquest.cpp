@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -190,6 +190,7 @@ class spell_ioc_parachute_ic : public SpellScriptLoader
 
             void HandleTriggerSpell(AuraEffect const* /*aurEff*/)
             {
+                PreventDefaultAction();
                 if (Player* target = GetTarget()->ToPlayer())
                     if (target->m_movementInfo.fallTime > 2000 && !target->GetTransport())
                         target->CastSpell(target, SPELL_PARACHUTE_IC, true);
@@ -248,7 +249,7 @@ class spell_ioc_launch : public SpellScriptLoader
                 if (!GetCaster()->ToCreature() || !GetExplTargetDest())
                     return;
 
-                GetCaster()->ToCreature()->m_Events.AddEvent(new StartLaunchEvent(*GetExplTargetDest(), GetHitPlayer()->GetGUID().GetCounter()), GetCaster()->ToCreature()->m_Events.CalculateTime(2500));
+                GetCaster()->ToCreature()->m_Events.AddEvent(new StartLaunchEvent(*GetExplTargetDest(), GetHitPlayer()->GetGUID().GetCounter()), GetCaster()->ToCreature()->m_Events.CalculateTime(2500ms));
             }
 
             void Register() override

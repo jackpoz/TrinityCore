@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -94,9 +93,9 @@ public:
             Initialize();
         }
 
-        void JustEngagedWith(Unit* /*who*/) override
+        void JustEngagedWith(Unit* who) override
         {
-            _JustEngagedWith();
+            BossAI::JustEngagedWith(who);
 
             DoCast(me, SPELL_ESSENCEOFTHERED);
             me->SetHealth(me->CountPctFromMaxHealth(30));
@@ -115,7 +114,7 @@ public:
         {
             PlayerGUID = target->GetGUID();
             me->RemoveFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_GOSSIP);
-            events.ScheduleEvent(EVENT_SPEECH_1, 1000);
+            events.ScheduleEvent(EVENT_SPEECH_1, 1s);
         }
 
         void KilledUnit(Unit* victim) override
@@ -141,17 +140,17 @@ public:
                             Talk(SAY_LINE1);
                             me->SetStandState(UNIT_STAND_STATE_STAND);
                             me->HandleEmoteCommand(EMOTE_ONESHOT_TALK);
-                            events.ScheduleEvent(EVENT_SPEECH_2, 12000);
+                            events.ScheduleEvent(EVENT_SPEECH_2, 12s);
                             break;
                         case EVENT_SPEECH_2:
                             Talk(SAY_LINE2);
                             me->HandleEmoteCommand(EMOTE_ONESHOT_TALK);
-                            events.ScheduleEvent(EVENT_SPEECH_3, 12000);
+                            events.ScheduleEvent(EVENT_SPEECH_3, 12s);
                             break;
                         case EVENT_SPEECH_3:
                             Talk(SAY_LINE3);
                             me->HandleEmoteCommand(EMOTE_ONESHOT_TALK);
-                            events.ScheduleEvent(EVENT_SPEECH_4, 16000);
+                            events.ScheduleEvent(EVENT_SPEECH_4, 16s);
                             break;
                         case EVENT_SPEECH_4:
                             me->SetFaction(FACTION_DRAGONFLIGHT_BLACK);
@@ -194,7 +193,7 @@ public:
                         {
                             //selects a random target that isn't the current victim and is a mana user (selects mana users) but not pets
                             //it also ignores targets who have the aura. We don't want to place the debuff on the same target twice.
-                            if (Unit *target = SelectTarget(SELECT_TARGET_RANDOM, 1, [&](Unit* u) { return u && !u->IsPet() && u->GetPowerType() == POWER_MANA && !u->HasAura(SPELL_BURNINGADRENALINE); }))
+                            if (Unit *target = SelectTarget(SelectTargetMethod::Random, 1, [&](Unit* u) { return u && !u->IsPet() && u->GetPowerType() == POWER_MANA && !u->HasAura(SPELL_BURNINGADRENALINE); }))
                             {
                                 me->CastSpell(target, SPELL_BURNINGADRENALINE, true);
                             }

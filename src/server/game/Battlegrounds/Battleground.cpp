@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -28,6 +27,7 @@
 #include "GameTime.h"
 #include "GridNotifiersImpl.h"
 #include "Group.h"
+#include "MiscPackets.h"
 #include "Object.h"
 #include "ObjectAccessor.h"
 #include "ObjectMgr.h"
@@ -268,7 +268,7 @@ inline void Battleground::_ProcessOfflineQueue()
                 if (isBattleground() && sWorld->getBoolConfig(CONFIG_BATTLEGROUND_TRACK_DESERTERS) &&
                     (GetStatus() == STATUS_IN_PROGRESS || GetStatus() == STATUS_WAIT_JOIN))
                 {
-                    PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_INS_DESERTER_TRACK);
+                    CharacterDatabasePreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_INS_DESERTER_TRACK);
                     stmt->setUInt32(0, itr->first.GetCounter());
                     stmt->setUInt8(1, BG_DESERTION_TYPE_OFFLINE);
                     CharacterDatabase.Execute(stmt);
@@ -604,20 +604,16 @@ void Battleground::SendBroadcastText(uint32 id, ChatMsg msgType, WorldObject con
 
 void Battleground::PlaySoundToAll(uint32 soundID)
 {
-    WorldPacket data;
-    sBattlegroundMgr->BuildPlaySoundPacket(&data, soundID);
-    SendPacketToAll(&data);
+    SendPacketToAll(WorldPackets::Misc::PlaySound(soundID).Write());
 }
 
-void Battleground::PlaySoundToTeam(uint32 SoundID, uint32 TeamID)
+void Battleground::PlaySoundToTeam(uint32 soundID, uint32 teamID)
 {
-    WorldPacket data;
     for (BattlegroundPlayerMap::const_iterator itr = m_Players.begin(); itr != m_Players.end(); ++itr)
-        if (Player* player = _GetPlayerForTeam(TeamID, itr, "PlaySoundToTeam"))
-        {
-            sBattlegroundMgr->BuildPlaySoundPacket(&data, SoundID);
-            player->SendDirectMessage(&data);
-        }
+    {
+        if (Player* player = _GetPlayerForTeam(teamID, itr, "PlaySoundToTeam"))
+            player->SendDirectMessage(WorldPackets::Misc::PlaySound(soundID).Write());
+    }
 }
 
 void Battleground::CastSpellOnTeam(uint32 SpellID, uint32 TeamID)
@@ -695,7 +691,7 @@ void Battleground::EndBattleground(uint32 winner)
         SetWinner(PVP_TEAM_NEUTRAL);
     }
 
-    PreparedStatement* stmt = nullptr;
+    CharacterDatabasePreparedStatement* stmt = nullptr;
     uint64 battlegroundId = 1;
     if (isBattleground() && sWorld->getBoolConfig(CONFIG_BATTLEGROUND_STORE_STATISTICS_ENABLE))
     {
@@ -861,7 +857,7 @@ void Battleground::RemovePlayerAtLeave(ObjectGuid guid, bool Transport, bool Sen
     }
     else
     {
-        SQLTransaction trans(nullptr);
+        CharacterDatabaseTransaction trans(nullptr);
         Player::OfflineResurrect(guid, trans);
     }
 
@@ -1285,7 +1281,7 @@ void Battleground::RelocateDeadPlayers(ObjectGuid guideGuid)
                 closestGrave = GetClosestGraveyard(player);
 
             if (closestGrave)
-                player->TeleportTo(GetMapId(), closestGrave->x, closestGrave->y, closestGrave->z, player->GetOrientation());
+                player->TeleportTo(GetMapId(), closestGrave->Loc.X, closestGrave->Loc.Y, closestGrave->Loc.Z, player->GetOrientation());
         }
         ghostList.clear();
     }
@@ -1424,11 +1420,22 @@ void Battleground::SpawnBGObject(uint32 type, uint32 respawntime)
         if (GameObject* obj = map->GetGameObject(BgObjects[type]))
         {
             if (respawntime)
+            {
                 obj->SetLootState(GO_JUST_DEACTIVATED);
-            else
-                if (obj->getLootState() == GO_JUST_DEACTIVATED)
-                    // Change state from GO_JUST_DEACTIVATED to GO_READY in case battleground is starting again
-                    obj->SetLootState(GO_READY);
+
+                if (GameObjectOverride const* goOverride = obj->GetGameObjectOverride())
+                    if (goOverride->Flags & GO_FLAG_NODESPAWN)
+                    {
+                        // This function should be called in GameObject::Update() but in case of
+                        // GO_FLAG_NODESPAWN flag the function is never called, so we call it here
+                        obj->SendObjectDeSpawnAnim(obj->GetGUID());
+                    }
+            }
+            else if (obj->getLootState() == GO_JUST_DEACTIVATED)
+            {
+                // Change state from GO_JUST_DEACTIVATED to GO_READY in case battleground is starting again
+                obj->SetLootState(GO_READY);
+            }
             obj->SetRespawnTime(respawntime);
             map->AddToMap(obj);
         }
@@ -1530,6 +1537,22 @@ bool Battleground::DelObject(uint32 type)
     return false;
 }
 
+bool Battleground::RemoveObjectFromWorld(uint32 type)
+{
+    if (!BgObjects[type])
+        return true;
+
+    if (GameObject* obj = GetBgMap()->GetGameObject(BgObjects[type]))
+    {
+        obj->RemoveFromWorld();
+        BgObjects[type].Clear();
+        return true;
+    }
+    TC_LOG_INFO("bg.battleground", "Battleground::RemoveObjectFromWorld: gameobject (type: %u, %s) not found for BG (map: %u, instance id: %u)!",
+        type, BgObjects[type].ToString().c_str(), m_MapId, m_InstanceID);
+    return false;
+}
+
 bool Battleground::AddSpiritGuide(uint32 type, float x, float y, float z, float o, TeamId teamId /*= TEAM_NEUTRAL*/)
 {
     uint32 entry = (teamId == TEAM_ALLIANCE) ? BG_CREATURE_ENTRY_A_SPIRITGUIDE : BG_CREATURE_ENTRY_H_SPIRITGUIDE;
@@ -1596,6 +1619,12 @@ void Battleground::EndNow()
 // buffs are in their positions when battleground starts
 void Battleground::HandleTriggerBuff(ObjectGuid go_guid)
 {
+    if (!FindBgMap())
+    {
+        TC_LOG_ERROR("bg.battleground", "Battleground::HandleTriggerBuff called with null bg map, %s", go_guid.ToString().c_str());
+        return;
+    }
+
     GameObject* obj = GetBgMap()->GetGameObject(go_guid);
     if (!obj || obj->GetGoType() != GAMEOBJECT_TYPE_TRAP || !obj->isSpawned())
         return;
@@ -1760,7 +1789,7 @@ void Battleground::StartTimedAchievement(AchievementCriteriaTimedTypes type, uin
 void Battleground::SetBracket(PvPDifficultyEntry const* bracketEntry)
 {
     m_BracketId = bracketEntry->GetBracketId();
-    SetLevelRange(bracketEntry->minLevel, bracketEntry->maxLevel);
+    SetLevelRange(bracketEntry->MinLevel, bracketEntry->MaxLevel);
 }
 
 void Battleground::RewardXPAtKill(Player* killer, Player* victim)

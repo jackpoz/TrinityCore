@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -98,12 +97,12 @@ class boss_baron_geddon : public CreatureScript
                             events.ScheduleEvent(EVENT_INFERNO, 45s);
                             break;
                         case EVENT_IGNITE_MANA:
-                            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 0.0f, true, true, -SPELL_IGNITE_MANA))
+                            if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 0.0f, true, true, -SPELL_IGNITE_MANA))
                                 DoCast(target, SPELL_IGNITE_MANA);
                             events.ScheduleEvent(EVENT_IGNITE_MANA, 30s);
                             break;
                         case EVENT_LIVING_BOMB:
-                            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 0.0f, true))
+                            if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 0.0f, true))
                                 DoCast(target, SPELL_LIVING_BOMB);
                             events.ScheduleEvent(EVENT_LIVING_BOMB, 35s);
                             break;

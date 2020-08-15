@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -152,11 +151,11 @@ public:
             } else ArcingSmash_Timer -= diff;
 
             //Whirlwind_Timer
-                   if (Whirlwind_Timer <= diff)
-                   {
-                        DoCastVictim(SPELL_WHIRLWIND);
-                        Whirlwind_Timer = 55000;
-                   } else Whirlwind_Timer -= diff;
+            if (Whirlwind_Timer <= diff)
+            {
+                DoCastVictim(SPELL_WHIRLWIND);
+                Whirlwind_Timer = 55000;
+            } else Whirlwind_Timer -= diff;
 
             //MightyBlow_Timer
             if (MightyBlow_Timer <= diff)
@@ -181,7 +180,7 @@ public:
                 //Charging_Timer
                 if (Charging_Timer <= diff)
                 {
-                    if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0))
+                    if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0))
                     {
                         AttackStart(target);
                         DoCast(target, SPELL_BERSERKER_C);
@@ -291,7 +290,7 @@ public:
             //DeathCoil Timer /need correct timer
             if (DeathCoil_Timer <= diff)
             {
-                if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0))
+                if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0))
                     DoCast(target, SPELL_DEATH_COIL);
                 DeathCoil_Timer = 20000;
             } else DeathCoil_Timer -= diff;
@@ -364,7 +363,7 @@ public:
             //GreaterPolymorph_Timer
             if (GreaterPolymorph_Timer <= diff)
             {
-                if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0))
+                if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0))
                     DoCast(target, SPELL_GREATER_POLYMORPH);
 
                 GreaterPolymorph_Timer = urand(15000, 20000);

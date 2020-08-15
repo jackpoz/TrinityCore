@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -60,7 +60,7 @@ public:
             events.ScheduleEvent(EVENT_FROSTBOLT, 8s);
             events.ScheduleEvent(EVENT_CHILL_NOVA, 12s);
             events.ScheduleEvent(EVENT_FREEZE, 18s);
-            events.ScheduleEvent(EVENT_FEAR, 45000);
+            events.ScheduleEvent(EVENT_FEAR, 45s);
         }
 
         void UpdateAI(uint32 diff) override
@@ -82,7 +82,7 @@ public:
                         events.ScheduleEvent(EVENT_ICE_ARMOR, 3min);
                         break;
                     case EVENT_FROSTBOLT:
-                        if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 40.0f, true))
+                        if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 40.0f, true))
                             DoCast(target, SPELL_FROSTBOLT);
                         events.ScheduleEvent(EVENT_FROSTBOLT, 8s);
                         break;
@@ -100,7 +100,7 @@ public:
                         break;
                     case EVENT_FROSTVOLLEY:
                         DoCastVictim(SPELL_FROSTVOLLEY);
-                        events.ScheduleEvent(EVENT_FROSTVOLLEY, 15000);
+                        events.ScheduleEvent(EVENT_FROSTVOLLEY, 15s);
                         break;
                     default:
                         break;

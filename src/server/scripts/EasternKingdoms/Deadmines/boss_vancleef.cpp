@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -46,7 +46,7 @@ Position const BlackguardPositions[] =
 struct boss_vancleef : public BossAI
 {
     public:
-        boss_vancleef(Creature* creature) : BossAI(creature, DATA_VANCLEEF), _guardsCalled(false), _health25(false), _health33(false), _health66(false) { }
+        boss_vancleef(Creature* creature) : BossAI(creature, BOSS_VANCLEEF), _guardsCalled(false), _health25(false), _health33(false), _health66(false) { }
 
         void Reset() override
         {
@@ -86,7 +86,7 @@ struct boss_vancleef : public BossAI
         void SummonBlackguards()
         {
             for (Position BlackguardPosition : BlackguardPositions)
-                DoSummon(NPC_BLACKGUARD, BlackguardPosition, 60000, TEMPSUMMON_CORPSE_TIMED_DESPAWN);
+                DoSummon(NPC_BLACKGUARD, BlackguardPosition, 1min, TEMPSUMMON_CORPSE_TIMED_DESPAWN);
         }
 
         void DamageTaken(Unit* /*attacker*/, uint32& /*damage*/) override

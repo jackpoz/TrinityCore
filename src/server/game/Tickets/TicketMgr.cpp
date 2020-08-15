@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -89,12 +88,12 @@ bool GmTicket::LoadFromDB(Field* fields)
     return true;
 }
 
-void GmTicket::SaveToDB(SQLTransaction& trans) const
+void GmTicket::SaveToDB(CharacterDatabaseTransaction& trans) const
 {
     //  0    1       2         3          4          5        6     7     8     9           10           11          12        13        14        15         16        17         18          19
     // id, type, playerGuid, name, description, createTime, mapId, posX, posY, posZ, lastModifiedTime, closedBy, assignedTo, comment, response, completed, escalated, viewed, needMoreHelp, resolvedBy
     uint8 index = 0;
-    PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_REP_GM_TICKET);
+    CharacterDatabasePreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_REP_GM_TICKET);
     stmt->setUInt32(  index, _id);
     stmt->setUInt8 (++index, uint8(_type));
     stmt->setUInt32(++index, _playerGuid.GetCounter());
@@ -121,7 +120,7 @@ void GmTicket::SaveToDB(SQLTransaction& trans) const
 
 void GmTicket::DeleteFromDB()
 {
-    PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_GM_TICKET);
+    CharacterDatabasePreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_GM_TICKET);
     stmt->setUInt32(0, _id);
     CharacterDatabase.Execute(stmt);
 }
@@ -179,8 +178,8 @@ std::string GmTicket::FormatMessageString(ChatHandler& handler, bool detailed) c
     std::stringstream ss;
     ss << handler.PGetParseString(LANG_COMMAND_TICKETLISTGUID, _id);
     ss << handler.PGetParseString(LANG_COMMAND_TICKETLISTNAME, _playerName.c_str());
-    ss << handler.PGetParseString(LANG_COMMAND_TICKETLISTAGECREATE, (secsToTimeString(curTime - _createTime, true, false)).c_str());
-    ss << handler.PGetParseString(LANG_COMMAND_TICKETLISTAGE, (secsToTimeString(curTime - _lastModifiedTime, true, false)).c_str());
+    ss << handler.PGetParseString(LANG_COMMAND_TICKETLISTAGECREATE, (secsToTimeString(curTime - _createTime, TimeFormat::ShortText)).c_str());
+    ss << handler.PGetParseString(LANG_COMMAND_TICKETLISTAGE, (secsToTimeString(curTime - _lastModifiedTime, TimeFormat::ShortText)).c_str());
 
     std::string name;
     if (sCharacterCache->GetCharacterNameByGuid(_assignedTo, name))
@@ -300,7 +299,7 @@ void TicketMgr::ResetTickets()
 
     _lastTicketId = 0;
 
-    PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_ALL_GM_TICKETS);
+    CharacterDatabasePreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_ALL_GM_TICKETS);
 
     CharacterDatabase.Execute(stmt);
 }
@@ -322,7 +321,7 @@ void TicketMgr::LoadTickets()
     _lastTicketId = 0;
     _openTicketCount = 0;
 
-    PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_GM_TICKETS);
+    CharacterDatabasePreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_GM_TICKETS);
     PreparedQueryResult result = CharacterDatabase.Query(stmt);
     if (!result)
     {
@@ -375,7 +374,7 @@ void TicketMgr::AddTicket(GmTicket* ticket)
     _ticketList[ticket->GetId()] = ticket;
     if (!ticket->IsClosed())
         ++_openTicketCount;
-    SQLTransaction trans = SQLTransaction(nullptr);
+    CharacterDatabaseTransaction trans = CharacterDatabaseTransaction(nullptr);
     ticket->SaveToDB(trans);
 }
 
@@ -383,7 +382,7 @@ void TicketMgr::CloseTicket(uint32 ticketId, ObjectGuid source)
 {
     if (GmTicket* ticket = GetTicket(ticketId))
     {
-        SQLTransaction trans = SQLTransaction(nullptr);
+        CharacterDatabaseTransaction trans = CharacterDatabaseTransaction(nullptr);
         ticket->SetClosedBy(source);
         if (source)
             --_openTicketCount;
@@ -395,7 +394,7 @@ void TicketMgr::ResolveAndCloseTicket(uint32 ticketId, ObjectGuid source)
 {
     if (GmTicket* ticket = GetTicket(ticketId))
     {
-        SQLTransaction trans = SQLTransaction(nullptr);
+        CharacterDatabaseTransaction trans = CharacterDatabaseTransaction(nullptr);
         ticket->SetClosedBy(source);
         ticket->SetResolvedBy(source);
         if (source)
@@ -446,7 +445,7 @@ void TicketMgr::ShowEscalatedList(ChatHandler& handler) const
 
 void TicketMgr::SendTicket(WorldSession* session, GmTicket* ticket) const
 {
-    WorldPacket data(SMSG_GMTICKET_GETTICKET, (ticket ? (4 + 4 + 1 + 4 + 4 + 4 + 1 + 1) : 4));
+    WorldPacket data(SMSG_GMTICKET_GETTICKET, (4 + 4 + 1 + 4 + 4 + 4 + 1 + 1));
 
     if (ticket)
         ticket->WritePacket(data);

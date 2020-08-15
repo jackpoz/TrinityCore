@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -110,10 +110,10 @@ struct generic_boss_controllerAI : public BossAI
             _Reset();
     }
 
-    void JustEngagedWith(Unit* /*who*/) override
+    void JustEngagedWith(Unit* who) override
     {
         if (!IsInGhostForm)
-            _JustEngagedWith();
+            BossAI::JustEngagedWith(who);
     }
 
     void JustDied(Unit* /*killer*/) override
@@ -203,7 +203,7 @@ class boss_skarvald_the_constructor : public CreatureScript
                 switch (eventId)
                 {
                     case EVENT_SKARVALD_CHARGE:
-                        if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, SkarvaldChargePredicate(me)))
+                        if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, SkarvaldChargePredicate(me)))
                             DoCast(target, SPELL_CHARGE);
                         events.ScheduleEvent(EVENT_CHARGE, 5s, 10s);
                         break;
@@ -266,12 +266,12 @@ class boss_dalronn_the_controller : public CreatureScript
                 switch (eventId)
                 {
                     case EVENT_SHADOW_BOLT:
-                        if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 45.0f, true))
+                        if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 45.0f, true))
                             DoCast(target, SPELL_SHADOW_BOLT);
                         events.ScheduleEvent(EVENT_SHADOW_BOLT, 2100ms); //give a 100ms pause to try cast other spells
                         break;
                     case EVENT_DEBILITATE:
-                        if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 50.0f, true))
+                        if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 50.0f, true))
                             DoCast(target, SPELL_DEBILITATE);
                         events.ScheduleEvent(EVENT_DEBILITATE, 5s, 10s);
                         break;

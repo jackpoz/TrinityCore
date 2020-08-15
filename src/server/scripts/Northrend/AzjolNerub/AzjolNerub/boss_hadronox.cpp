@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -261,8 +261,8 @@ public:
             me->GetCreatureListWithEntryInGrid(triggers, NPC_WORLDTRIGGER_LARGE);
             for (Creature* trigger : triggers)
                 if (trigger->HasAura(SPELL_SUMMON_CHAMPION_PERIODIC) || trigger->HasAura(SPELL_WEB_FRONT_DOORS) || trigger->HasAura(SPELL_WEB_SIDE_DOORS))
-                    _DespawnAtEvade(25, trigger);
-            _DespawnAtEvade(25);
+                    _DespawnAtEvade(25s, trigger);
+            _DespawnAtEvade(25s);
             summons.DespawnAll();
             for (ObjectGuid gNerubian : _anubar)
                 if (Creature* nerubian = ObjectAccessor::GetCreature(*me, gNerubian))
@@ -312,7 +312,7 @@ public:
                         events.Repeat(randtime(Seconds(7), Seconds(9)));
                         break;
                     case EVENT_ACID_CLOUD:
-                        if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 100.0f))
+                        if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 100.0f))
                             DoCast(target, SPELL_ACID_CLOUD);
                         events.Repeat(randtime(Seconds(16), Seconds(23)));
                         break;
@@ -769,7 +769,7 @@ struct npc_hadronox_foeAI : public ScriptedAI
                         me->GetMotionMaster()->MovePoint(MOVE_DOWNSTAIRS_2, downstairsMoves2[_mySpawn]);
                         break;
                     }
-                    // intentional missing break
+                    [[fallthrough]];
                 case MOVE_HADRONOX:
                 case MOVE_HADRONOX_REAL:
                 {

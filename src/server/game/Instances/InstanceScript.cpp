@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -64,7 +63,7 @@ void InstanceScript::SaveToDB()
     if (data.empty())
         return;
 
-    PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_UPD_INSTANCE_DATA);
+    CharacterDatabasePreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_UPD_INSTANCE_DATA);
     stmt->setUInt32(0, GetCompletedEncounterMask());
     stmt->setString(1, data);
     stmt->setUInt32(2, instance->GetInstanceId());
@@ -524,7 +523,7 @@ void InstanceScript::DoCloseDoorOrButton(ObjectGuid guid)
         TC_LOG_DEBUG("scripts", "InstanceScript: DoCloseDoorOrButton failed");
 }
 
-void InstanceScript::DoRespawnGameObject(ObjectGuid guid, uint32 timeToDespawn /*= MINUTE*/)
+void InstanceScript::DoRespawnGameObject(ObjectGuid guid, Seconds timeToDespawn /*= 1min */)
 {
     if (GameObject* go = instance->GetGameObject(guid))
     {
@@ -544,7 +543,7 @@ void InstanceScript::DoRespawnGameObject(ObjectGuid guid, uint32 timeToDespawn /
         if (go->isSpawned())
             return;
 
-        go->SetRespawnTime(timeToDespawn);
+        go->SetRespawnTime(timeToDespawn.count());
     }
     else
         TC_LOG_DEBUG("scripts", "InstanceScript: DoRespawnGameObject failed");
@@ -616,33 +615,74 @@ void InstanceScript::DoStopTimedAchievement(AchievementCriteriaTimedTypes type, 
                 player->RemoveTimedAchievement(type, entry);
 }
 
-// Remove Auras due to Spell on all players in instance
-void InstanceScript::DoRemoveAurasDueToSpellOnPlayers(uint32 spell)
+void InstanceScript::DoRemoveAurasDueToSpellOnPlayers(uint32 spell, bool includePets /*= false*/, bool includeControlled /*= false*/)
 {
-    Map::PlayerList const& PlayerList = instance->GetPlayers();
-    if (!PlayerList.isEmpty())
+    Map::PlayerList const& playerList = instance->GetPlayers();
+    for (auto itr = playerList.begin(); itr != playerList.end(); ++itr)
+        DoRemoveAurasDueToSpellOnPlayer(itr->GetSource(), spell, includePets, includeControlled);
+}
+
+void InstanceScript::DoRemoveAurasDueToSpellOnPlayer(Player* player, uint32 spell, bool includePets /*= false*/, bool includeControlled /*= false*/)
+{
+    if (!player)
+        return;
+
+    player->RemoveAurasDueToSpell(spell);
+
+    if (!includePets)
+        return;
+
+    for (uint8 itr2 = 0; itr2 < MAX_SUMMON_SLOT; ++itr2)
     {
-        for (Map::PlayerList::const_iterator itr = PlayerList.begin(); itr != PlayerList.end(); ++itr)
-        {
-            if (Player* player = itr->GetSource())
-            {
-                player->RemoveAurasDueToSpell(spell);
-                if (Pet* pet = player->GetPet())
-                    pet->RemoveAurasDueToSpell(spell);
-            }
-        }
+        if (ObjectGuid summonGUID = player->m_SummonSlot[itr2])
+            if (Creature* summon = instance->GetCreature(summonGUID))
+                summon->RemoveAurasDueToSpell(spell);
+    }
+
+    if (!includeControlled)
+        return;
+
+    for (auto itr2 = player->m_Controlled.begin(); itr2 != player->m_Controlled.end(); ++itr2)
+    {
+        if (Unit* controlled = *itr2)
+            if (controlled->IsInWorld() && controlled->GetTypeId() == TYPEID_UNIT)
+                controlled->RemoveAurasDueToSpell(spell);
     }
 }
 
-// Cast spell on all players in instance
-void InstanceScript::DoCastSpellOnPlayers(uint32 spell)
+void InstanceScript::DoCastSpellOnPlayers(uint32 spell, bool includePets /*= false*/, bool includeControlled /*= false*/)
 {
-    Map::PlayerList const& PlayerList = instance->GetPlayers();
+    Map::PlayerList const& playerList = instance->GetPlayers();
+    for (auto itr = playerList.begin(); itr != playerList.end(); ++itr)
+        DoCastSpellOnPlayer(itr->GetSource(), spell, includePets, includeControlled);
+}
 
-    if (!PlayerList.isEmpty())
-        for (Map::PlayerList::const_iterator i = PlayerList.begin(); i != PlayerList.end(); ++i)
-            if (Player* player = i->GetSource())
-                player->CastSpell(player, spell, true);
+void InstanceScript::DoCastSpellOnPlayer(Player* player, uint32 spell, bool includePets /*= false*/, bool includeControlled /*= false*/)
+{
+    if (!player)
+        return;
+
+    player->CastSpell(player, spell, true);
+
+    if (!includePets)
+        return;
+
+    for (uint8 itr2 = 0; itr2 < MAX_SUMMON_SLOT; ++itr2)
+    {
+        if (ObjectGuid summonGUID = player->m_SummonSlot[itr2])
+            if (Creature* summon = instance->GetCreature(summonGUID))
+                summon->CastSpell(player, spell, true);
+    }
+
+    if (!includeControlled)
+        return;
+
+    for (auto itr2 = player->m_Controlled.begin(); itr2 != player->m_Controlled.end(); ++itr2)
+    {
+        if (Unit* controlled = *itr2)
+            if (controlled->IsInWorld() && controlled->GetTypeId() == TYPEID_UNIT)
+                controlled->CastSpell(player, spell, true);
+    }
 }
 
 bool InstanceScript::ServerAllowsTwoSideGroups()
@@ -702,11 +742,11 @@ void InstanceScript::UpdateEncounterState(EncounterCreditType type, uint32 credi
     {
         if (encounter->creditType == type && encounter->creditEntry == creditEntry)
         {
-            completedEncounters |= 1 << encounter->dbcEntry->encounterIndex;
+            completedEncounters |= 1 << encounter->dbcEntry->Bit;
             if (encounter->lastEncounterDungeon)
             {
                 dungeonId = encounter->lastEncounterDungeon;
-                TC_LOG_DEBUG("lfg", "UpdateEncounterState: Instance %s (instanceId %u) completed encounter %s. Credit Dungeon: %u", instance->GetMapName(), instance->GetInstanceId(), encounter->dbcEntry->encounterName[0], dungeonId);
+                TC_LOG_DEBUG("lfg", "UpdateEncounterState: Instance %s (instanceId %u) completed encounter %s. Credit Dungeon: %u", instance->GetMapName(), instance->GetInstanceId(), encounter->dbcEntry->Name[0], dungeonId);
                 break;
             }
         }

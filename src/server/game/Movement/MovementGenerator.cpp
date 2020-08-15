@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -22,9 +21,21 @@
 #include "MovementDefines.h"
 #include "PathGenerator.h"
 #include "RandomMovementGenerator.h"
+#include "UnitAI.h"
 #include "WaypointMovementGenerator.h"
 
 MovementGenerator::~MovementGenerator() { }
+
+std::string MovementGenerator::GetDebugInfo() const
+{
+    std::stringstream sstr;
+    sstr << std::boolalpha
+        << "Mode: " << std::to_string(Mode)
+        << " Priority: " << std::to_string(Priority)
+        << " Flags: " << Flags
+        << " BaseUniteState: " << BaseUnitState;
+    return sstr.str();
+}
 
 IdleMovementFactory::IdleMovementFactory() : MovementGeneratorCreator(IDLE_MOTION_TYPE) { }
 
@@ -46,4 +57,10 @@ WaypointMovementFactory::WaypointMovementFactory() : MovementGeneratorCreator(WA
 MovementGenerator* WaypointMovementFactory::Create(Unit* /*object*/) const
 {
     return new WaypointMovementGenerator<Creature>();
+}
+
+void MovementGenerator::NotifyAIOnFinalize(Unit* object)
+{
+    if (UnitAI* ai = object->GetAI())
+        ai->OnMovementGeneratorFinalized(GetMovementGeneratorType());
 }

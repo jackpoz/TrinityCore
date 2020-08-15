@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -83,10 +83,10 @@ class boss_vexallus : public CreatureScript
                 Talk(SAY_KILL);
             }
 
-            void JustEngagedWith(Unit* /*who*/) override
+            void JustEngagedWith(Unit* who) override
             {
                 Talk(SAY_AGGRO);
-                _JustEngagedWith();
+                BossAI::JustEngagedWith(who);
 
                 events.ScheduleEvent(EVENT_CHAIN_LIGHTNING, 8s);
                 events.ScheduleEvent(EVENT_ARCANE_SHOCK, 5s);
@@ -94,7 +94,7 @@ class boss_vexallus : public CreatureScript
 
             void JustSummoned(Creature* summoned) override
             {
-                if (Unit* temp = SelectTarget(SELECT_TARGET_RANDOM, 0))
+                if (Unit* temp = SelectTarget(SelectTargetMethod::Random, 0))
                     summoned->GetMotionMaster()->MoveFollow(temp, 0, 0);
 
                 summons.Summon(summoned);
@@ -147,12 +147,12 @@ class boss_vexallus : public CreatureScript
                     switch (eventId)
                     {
                         case EVENT_CHAIN_LIGHTNING:
-                            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 0.0f, true))
+                            if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 0.0f, true))
                                 DoCast(target, SPELL_CHAIN_LIGHTNING);
                             events.ScheduleEvent(EVENT_CHAIN_LIGHTNING, 8s);
                             break;
                         case EVENT_ARCANE_SHOCK:
-                            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 20.0f, true))
+                            if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 20.0f, true))
                                 DoCast(target, SPELL_ARCANE_SHOCK);
                             events.ScheduleEvent(EVENT_ARCANE_SHOCK, 8s);
                             break;

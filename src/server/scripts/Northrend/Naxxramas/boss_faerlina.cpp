@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -96,9 +96,9 @@ class boss_faerlina : public CreatureScript
                 SummonAdds();
             }
 
-            void JustEngagedWith(Unit* /*who*/) override
+            void JustEngagedWith(Unit* who) override
             {
-                _JustEngagedWith();
+                BossAI::JustEngagedWith(who);
                 Talk(SAY_AGGRO);
                 summons.DoZoneInCombat();
                 events.ScheduleEvent(EVENT_POISON, randtime(Seconds(10), Seconds(15)));
@@ -124,13 +124,17 @@ class boss_faerlina : public CreatureScript
                 Talk(SAY_DEATH);
             }
 
-            void SpellHit(Unit* caster, SpellInfo const* spell) override
+            void SpellHit(WorldObject* caster, SpellInfo const* spellInfo) override
             {
-                if (spell->Id == SPELL_WIDOWS_EMBRACE_HELPER)
+                Unit* unitCaster = caster->ToUnit();
+                if (!unitCaster)
+                    return;
+
+                if (spellInfo->Id == SPELL_WIDOWS_EMBRACE_HELPER)
                 {
                     ++_frenzyDispels;
                     Talk(EMOTE_WIDOW_EMBRACE, caster);
-                    Unit::Kill(me, caster);
+                    Unit::Kill(me, unitCaster);
                 }
             }
 
@@ -162,7 +166,7 @@ class boss_faerlina : public CreatureScript
                             events.Repeat(randtime(Seconds(8), Seconds(15)));
                             break;
                         case EVENT_FIRE:
-                            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0))
+                            if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0))
                                 DoCast(target, SPELL_RAIN_OF_FIRE);
                             events.Repeat(randtime(Seconds(6), Seconds(18)));
                             break;

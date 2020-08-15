@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -68,12 +68,15 @@ class boss_thorngrin_the_tender : public CreatureScript
                 Initialize();
             }
 
-            void JustEngagedWith(Unit* /*who*/) override
+            void JustEngagedWith(Unit* who) override
             {
-                _JustEngagedWith();
+                BossAI::JustEngagedWith(who);
                 Talk(SAY_AGGRO);
                 events.ScheduleEvent(EVENT_SACRIFICE, 5700ms);
-                events.ScheduleEvent(EVENT_HELLFIRE, IsHeroic() ? urand(17400, 19300) : 18000);
+                if (IsHeroic())
+                    events.ScheduleEvent(EVENT_HELLFIRE, 17400ms, 19300ms);
+                else
+                    events.ScheduleEvent(EVENT_HELLFIRE, 18s);
                 events.ScheduleEvent(EVENT_ENRAGE, 12s);
             }
 
@@ -117,17 +120,20 @@ class boss_thorngrin_the_tender : public CreatureScript
                     switch (eventId)
                     {
                         case EVENT_SACRIFICE:
-                            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 1, 0.0f, true))
+                            if (Unit* target = SelectTarget(SelectTargetMethod::Random, 1, 0.0f, true))
                             {
                                 Talk(SAY_CAST_SACRIFICE);
                                 DoCast(target, SPELL_SACRIFICE, true);
                             }
-                            events.ScheduleEvent(EVENT_SACRIFICE, 29400);
+                            events.ScheduleEvent(EVENT_SACRIFICE, 29400ms);
                             break;
                         case EVENT_HELLFIRE:
                             Talk(SAY_CAST_HELLFIRE);
                             DoCastVictim(SPELL_HELLFIRE, true);
-                            events.ScheduleEvent(EVENT_HELLFIRE, IsHeroic() ? urand(17400, 19300) : 18000);
+                            if (IsHeroic())
+                                events.ScheduleEvent(EVENT_HELLFIRE, 17400ms, 19300ms);
+                            else
+                                events.ScheduleEvent(EVENT_HELLFIRE, 18s);
                             break;
                         case EVENT_ENRAGE:
                             Talk(EMOTE_ENRAGE);

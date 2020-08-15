@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -79,7 +79,7 @@ class boss_moragg : public CreatureScript
 
                 scheduler.Schedule(Seconds(15), [this](TaskContext task)
                 {
-                    if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 50.0f, true))
+                    if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 50.0f, true))
                         DoCast(target, SPELL_OPTIC_LINK);
                     task.Repeat(Seconds(25));
                 });
@@ -112,7 +112,7 @@ class spell_moragg_ray : public SpellScriptLoader
                 PreventDefaultAction();
 
                 if (UnitAI* AI = GetTarget()->GetAI())
-                    if (Unit* target = AI->SelectTarget(SELECT_TARGET_RANDOM, 0, 45.0f, true))
+                    if (Unit* target = AI->SelectTarget(SelectTargetMethod::Random, 0, 45.0f, true))
                     {
                         uint32 triggerSpell = GetSpellInfo()->Effects[aurEff->GetEffIndex()].TriggerSpell;
                         GetTarget()->CastSpell(target, triggerSpell, aurEff);

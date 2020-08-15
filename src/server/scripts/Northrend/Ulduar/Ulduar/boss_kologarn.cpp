@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -112,20 +112,19 @@ class boss_kologarn : public CreatureScript
 
                 DoCast(SPELL_KOLOGARN_REDUCE_PARRY);
                 SetCombatMovement(false);
-                Reset();
             }
 
             bool left, right;
             ObjectGuid eyebeamTarget;
 
-            void JustEngagedWith(Unit* /*who*/) override
+            void JustEngagedWith(Unit* who) override
             {
                 Talk(SAY_AGGRO);
 
                 events.ScheduleEvent(EVENT_MELEE_CHECK, 6s);
                 events.ScheduleEvent(EVENT_SMASH, 5s);
                 events.ScheduleEvent(EVENT_SWEEP, 19s);
-                events.ScheduleEvent(EVENT_STONE_GRIP, 25000);
+                events.ScheduleEvent(EVENT_STONE_GRIP, 25s);
                 events.ScheduleEvent(EVENT_FOCUSED_EYEBEAM, 21s);
                 events.ScheduleEvent(EVENT_ENRAGE, 10min);
 
@@ -134,7 +133,7 @@ class boss_kologarn : public CreatureScript
                         if (Unit* arm = vehicle->GetPassenger(i))
                             DoZoneInCombat(arm->ToCreature());
 
-                _JustEngagedWith();
+                BossAI::JustEngagedWith(who);
             }
 
             void Reset() override
@@ -211,6 +210,7 @@ class boss_kologarn : public CreatureScript
 
             void JustSummoned(Creature* summon) override
             {
+                BossAI::JustSummoned(summon);
                 switch (summon->GetEntry())
                 {
                     case NPC_FOCUSED_EYEBEAM:
@@ -221,7 +221,7 @@ class boss_kologarn : public CreatureScript
                         break;
                     case NPC_RUBBLE:
                         summons.Summon(summon);
-                        // absence of break intended
+                        [[fallthrough]];
                     default:
                         return;
                 }
@@ -303,7 +303,7 @@ class boss_kologarn : public CreatureScript
                             break;
                         }
                         case EVENT_FOCUSED_EYEBEAM:
-                            if (Unit* eyebeamTargetUnit = SelectTarget(SELECT_TARGET_MAXDISTANCE, 0, 0, true))
+                            if (Unit* eyebeamTargetUnit = SelectTarget(SelectTargetMethod::MaxDistance, 0, 0, true))
                             {
                                 eyebeamTarget = eyebeamTargetUnit->GetGUID();
                                 DoCast(me, SPELL_SUMMON_FOCUSED_EYEBEAM, true);
@@ -360,7 +360,7 @@ class spell_ulduar_rubble_summon : public SpellScriptLoader
 };
 
 // predicate function to select non main tank target
-class StoneGripTargetSelector : public std::unary_function<Unit*, bool>
+class StoneGripTargetSelector
 {
     public:
         StoneGripTargetSelector(Creature* me, Unit const* victim) : _me(me), _victim(victim) { }
@@ -617,9 +617,18 @@ class spell_kologarn_stone_shout : public SpellScriptLoader
         {
             PrepareSpellScript(spell_kologarn_stone_shout_SpellScript);
 
-            void FilterTargets(std::list<WorldObject*>& unitList)
+            void FilterTargets(std::list<WorldObject*>& targets)
             {
-                unitList.remove_if(PlayerOrPetCheck());
+                targets.remove_if([](WorldObject* object) -> bool
+                {
+                    if (object->GetTypeId() == TYPEID_PLAYER)
+                        return false;
+
+                    if (Creature* creature = object->ToCreature())
+                        return !creature->IsPet();
+
+                    return true;
+                });
             }
 
             void Register() override

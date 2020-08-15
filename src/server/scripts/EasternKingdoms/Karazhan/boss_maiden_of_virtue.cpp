@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -65,9 +65,9 @@ public:
             _JustDied();
         }
 
-        void JustEngagedWith(Unit* /*who*/) override
+        void JustEngagedWith(Unit* who) override
         {
-            _JustEngagedWith();
+            BossAI::JustEngagedWith(who);
             Talk(SAY_AGGRO);
 
             DoCastSelf(SPELL_HOLYGROUND, true);
@@ -97,12 +97,12 @@ public:
                         events.Repeat(Seconds(35));
                         break;
                     case EVENT_HOLYFIRE:
-                        if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 50, true))
+                        if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 50, true))
                             DoCast(target, SPELL_HOLYFIRE);
                         events.Repeat(Seconds(8), Seconds(19));
                         break;
                     case EVENT_HOLYWRATH:
-                        if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 80, true))
+                        if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 80, true))
                             DoCast(target, SPELL_HOLYWRATH);
                         events.Repeat(Seconds(15), Seconds(25));
                         break;

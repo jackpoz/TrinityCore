@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -182,9 +182,6 @@ enum NAXInstanceEvents
 
     // Dialogue that happens after each wing.
     EVENT_KELTHUZAD_WING_TAUNT,
-
-    // Periodic Frogger summon
-    EVENT_SUMMON_FROGGER_WAVE,
 
     // Dialogue that happens after Sapphiron's death.
     EVENT_DIALOGUE_SAPPHIRON_KELTHUZAD,

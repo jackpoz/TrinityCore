@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2006-2007 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -129,10 +128,10 @@ class boss_archaedas : public CreatureScript
                 me->SetControlled(false, UNIT_STATE_ROOT);
             }
 
-            void SpellHit(Unit* /*caster*/, SpellInfo const* spell) override
+            void SpellHit(WorldObject* /*caster*/, SpellInfo const* spellInfo) override
             {
                 // Being woken up from the altar, start the awaken sequence
-                if (spell->Id == SPELL_ARCHAEDAS_AWAKEN)
+                if (spellInfo->Id == SPELL_ARCHAEDAS_AWAKEN)
                 {
                     Talk(SAY_AGGRO);
                     iAwakenTimer = 4000;
@@ -280,10 +279,10 @@ class npc_archaedas_minions : public CreatureScript
                 bAmIAwake = true;
             }
 
-            void SpellHit(Unit * /*caster*/, SpellInfo const* spell) override
+            void SpellHit(WorldObject* /*caster*/, SpellInfo const* spellInfo) override
             {
                 // time to wake up, start animation
-                if (spell->Id == SPELL_ARCHAEDAS_AWAKEN)
+                if (spellInfo->Id == SPELL_ARCHAEDAS_AWAKEN)
                 {
                     iAwakenTimer = 5000;
                     bWakingUp = true;

@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -114,7 +113,7 @@ class boss_sulfuron : public CreatureScript
                             events.ScheduleEvent(EVENT_KNOCKDOWN, 12s, 15s);
                             break;
                         case EVENT_FLAMESPEAR:
-                            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 0.0f, true))
+                            if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 0.0f, true))
                                 DoCast(target, SPELL_FLAMESPEAR);
                             events.ScheduleEvent(EVENT_FLAMESPEAR, 12s, 16s);
                             break;
@@ -185,12 +184,12 @@ class npc_flamewaker_priest : public CreatureScript
                             events.ScheduleEvent(EVENT_HEAL, 15s, 20s);
                             break;
                         case EVENT_SHADOW_WORD_PAIN:
-                            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 0.0f, true, true, -SPELL_SHADOWWORDPAIN))
+                            if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 0.0f, true, true, -SPELL_SHADOWWORDPAIN))
                                 DoCast(target, SPELL_SHADOWWORDPAIN);
                             events.ScheduleEvent(EVENT_SHADOW_WORD_PAIN, 18s, 26s);
                             break;
                         case EVENT_IMMOLATE:
-                            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 0.0f, true, true, -SPELL_IMMOLATE))
+                            if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 0.0f, true, true, -SPELL_IMMOLATE))
                                 DoCast(target, SPELL_IMMOLATE);
                             events.ScheduleEvent(EVENT_IMMOLATE, 15s, 25s);
                             break;

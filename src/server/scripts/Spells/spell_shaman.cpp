@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -87,6 +87,8 @@ enum ShamanSpells
     SPELL_SHAMAN_CHAIN_LIGHTNING_OVERLOAD_R1    = 45297,
     SPELL_SHAMAN_LIGHTNING_SHIELD_DAMAGE_R1     = 26364,
     SPELL_SHAMAN_SHAMANISTIC_RAGE_PROC          = 30824,
+    SPELL_SHAMAN_STONECLAW_TOTEM                = 55277,
+    SPELL_SHAMAN_GLYPH_OF_STONECLAW_TOTEM       = 63298,
     SPELL_SHAMAN_MAELSTROM_POWER                = 70831,
     SPELL_SHAMAN_T10_ENHANCEMENT_4P_BONUS       = 70832,
     SPELL_SHAMAN_BLESSING_OF_THE_ETERNALS_R1    = 51554,
@@ -317,9 +319,8 @@ class spell_sha_bloodlust : public SpellScriptLoader
 
             void Register() override
             {
-                OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_sha_bloodlust_SpellScript::RemoveInvalidTargets, EFFECT_0, TARGET_UNIT_CASTER_AREA_RAID);
-                OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_sha_bloodlust_SpellScript::RemoveInvalidTargets, EFFECT_1, TARGET_UNIT_CASTER_AREA_RAID);
-                OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_sha_bloodlust_SpellScript::RemoveInvalidTargets, EFFECT_2, TARGET_UNIT_CASTER_AREA_RAID);
+                OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_sha_bloodlust_SpellScript::RemoveInvalidTargets, EFFECT_ALL, TARGET_UNIT_CASTER_AREA_RAID);
+
                 AfterHit += SpellHitFn(spell_sha_bloodlust_SpellScript::ApplyDebuff);
             }
         };
@@ -1780,6 +1781,44 @@ class spell_sha_shamanistic_rage : public SpellScriptLoader
         }
 };
 
+class spell_sha_stoneclaw_totem : public SpellScript
+{
+    PrepareSpellScript(spell_sha_stoneclaw_totem);
+
+    void HandleScriptEffect(SpellEffIndex /* effIndex */)
+    {
+        Unit* target = GetHitUnit();
+
+        // Cast Absorb on totems
+        for (uint8 slot = SUMMON_SLOT_TOTEM_FIRE; slot < MAX_TOTEM_SLOT; ++slot)
+        {
+            if (!target->m_SummonSlot[slot])
+                continue;
+
+            Creature* totem = target->GetMap()->GetCreature(target->m_SummonSlot[slot]);
+            if (totem && totem->IsTotem())
+            {
+                CastSpellExtraArgs args(TRIGGERED_FULL_MASK);
+                args.AddSpellMod(SPELLVALUE_BASE_POINT0, GetEffectValue());
+                GetCaster()->CastSpell(totem, SPELL_SHAMAN_STONECLAW_TOTEM, args);
+            }
+        }
+
+        // Glyph of Stoneclaw Totem
+        if (AuraEffect* aur = target->GetAuraEffect(SPELL_SHAMAN_GLYPH_OF_STONECLAW_TOTEM, 0))
+        {
+            CastSpellExtraArgs args(TRIGGERED_FULL_MASK);
+            args.AddSpellMod(SPELLVALUE_BASE_POINT0, GetEffectValue() * aur->GetAmount());
+            GetCaster()->CastSpell(target, SPELL_SHAMAN_STONECLAW_TOTEM, args);
+        }
+    }
+
+    void Register() override
+    {
+        OnEffectHitTarget += SpellEffectFn(spell_sha_stoneclaw_totem::HandleScriptEffect, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
+    }
+};
+
 // 58877 - Spirit Hunt
 class spell_sha_spirit_hunt : public SpellScriptLoader
 {
@@ -1948,7 +1987,7 @@ public:
         void HandleDummy(AuraEffect const* aurEff)
         {
             Unit* target = GetTarget();
-            for (uint8 i = SUMMON_SLOT_TOTEM; i < MAX_TOTEM_SLOT; ++i)
+            for (uint8 i = SUMMON_SLOT_TOTEM_FIRE; i < MAX_TOTEM_SLOT; ++i)
                 if (!target->m_SummonSlot[i])
                     return;
 
@@ -1997,7 +2036,7 @@ class spell_sha_t3_6p_bonus : public SpellScriptLoader
                 Unit* caster = eventInfo.GetActor();
                 Unit* target = eventInfo.GetProcTarget();
 
-                switch (target->getClass())
+                switch (target->GetClass())
                 {
                     case CLASS_PALADIN:
                     case CLASS_PRIEST:
@@ -2385,6 +2424,7 @@ void AddSC_shaman_spell_scripts()
     new spell_sha_nature_guardian();
     new spell_sha_sentry_totem();
     new spell_sha_shamanistic_rage();
+    RegisterSpellScript(spell_sha_stoneclaw_totem);
     new spell_sha_spirit_hunt();
     new spell_sha_static_shock();
     new spell_sha_tidal_force_dummy();

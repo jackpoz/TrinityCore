@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -46,6 +46,7 @@ class FlightPathMovementGenerator : public MovementGeneratorMedium<Player, Fligh
         TaxiPathNodeList const& GetPath() { return _path; }
         uint32 GetPathAtMapEnd() const;
         bool HasArrived() const { return _currentNode >= _path.size(); }
+        uint32 GetPathId(size_t index) const;
 
         void LoadPath(Player* owner); // called from MotionMaster
         void SetCurrentNodeAfterTeleport();
@@ -53,6 +54,8 @@ class FlightPathMovementGenerator : public MovementGeneratorMedium<Player, Fligh
         void DoEventIfAny(Player* owner, TaxiPathNodeEntry const* node, bool departure);
         void InitEndGridInfo();
         void PreloadEndGrid();
+
+        std::string GetDebugInfo() const override;
 
     private:
         float _endGridX; //! X coord of last node location

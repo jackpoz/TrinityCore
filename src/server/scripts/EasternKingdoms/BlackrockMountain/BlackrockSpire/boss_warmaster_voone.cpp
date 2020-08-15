@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -54,14 +53,14 @@ public:
             _Reset();
         }
 
-        void JustEngagedWith(Unit* /*who*/) override
+        void JustEngagedWith(Unit* who) override
         {
-            _JustEngagedWith();
+            BossAI::JustEngagedWith(who);
             events.ScheduleEvent(EVENT_SNAP_KICK, 8s);
-            events.ScheduleEvent(EVENT_CLEAVE,   14 * IN_MILLISECONDS);
+            events.ScheduleEvent(EVENT_CLEAVE, 14s);
             events.ScheduleEvent(EVENT_UPPERCUT, 20s);
             events.ScheduleEvent(EVENT_MORTAL_STRIKE, 12s);
-            events.ScheduleEvent(EVENT_PUMMEL,   32 * IN_MILLISECONDS);
+            events.ScheduleEvent(EVENT_PUMMEL, 32s);
             events.ScheduleEvent(EVENT_THROW_AXE, 1s);
         }
 

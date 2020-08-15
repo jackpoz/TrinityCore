@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -24,7 +23,6 @@
 #include "Log.h"
 #include "ObjectMgr.h"
 #include "Player.h"
-#include "UpdateFields.h"
 #include "World.h"
 
 // static data
@@ -768,7 +766,7 @@ DumpReturn PlayerDumpReader::LoadDump(std::string const& file, uint32 account, s
     bool incHighest = true;
     if (guid && guid < sObjectMgr->GetGenerator<HighGuid::Player>().GetNextAfterMaxUsed())
     {
-        PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_CHECK_GUID);
+        CharacterDatabasePreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_CHECK_GUID);
         stmt->setUInt32(0, guid);
 
         if (PreparedQueryResult result = CharacterDatabase.Query(stmt))
@@ -785,7 +783,7 @@ DumpReturn PlayerDumpReader::LoadDump(std::string const& file, uint32 account, s
 
     if (ObjectMgr::CheckPlayerName(name, sWorld->GetDefaultDbcLocale(), true) == CHAR_NAME_SUCCESS)
     {
-        PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_CHECK_NAME);
+        CharacterDatabasePreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_CHECK_NAME);
         stmt->setString(0, name);
 
         if (PreparedQueryResult result = CharacterDatabase.Query(stmt))
@@ -821,7 +819,7 @@ DumpReturn PlayerDumpReader::LoadDump(std::string const& file, uint32 account, s
     // for logs
     size_t lineNumber = 0;
 
-    SQLTransaction trans = CharacterDatabase.BeginTransaction();
+    CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction();
     while (!feof(fin.get()))
     {
         if (!fgets(buf, BUFFER_SIZE, fin.get()))
@@ -927,17 +925,17 @@ DumpReturn PlayerDumpReader::LoadDump(std::string const& file, uint32 account, s
                 level = uint8(atoul(GetColumn(ts, line, "level").c_str()));
                 if (name.empty())
                 {
-                    // check if the original name already exists
-                    name = GetColumn(ts, line, "name");
+                    // generate a temporary name
+                    std::string guidPart = Trinity::StringFormat("%X", guid);
+                    std::size_t maxCharsFromOriginalName = MAX_PLAYER_NAME - guidPart.length();
 
-                    PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_CHECK_NAME);
-                    stmt->setString(0, name);
-                    PreparedQueryResult result = CharacterDatabase.Query(stmt);
+                    name = GetColumn(ts, line, "name").substr(0, maxCharsFromOriginalName) + guidPart;
 
                     // characters.at_login set to "rename on login"
-                    if (result)
-                        if (!ChangeColumn(ts, line, "at_login", "1"))
-                            return DUMP_FILE_BROKEN;
+                    if (!ChangeColumn(ts, line, "name", name))
+                        return DUMP_FILE_BROKEN;
+                    if (!ChangeColumn(ts, line, "at_login", "1"))
+                        return DUMP_FILE_BROKEN;
                 }
                 else if (!ChangeColumn(ts, line, "name", name)) // characters.name
                     return DUMP_FILE_BROKEN;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -134,6 +134,12 @@ enum PaladinSpellIcons
 {
     PALADIN_ICON_ID_RETRIBUTION_AURA             = 555,
     PALADIN_ICON_ID_HAMMER_OF_THE_RIGHTEOUS      = 3023
+};
+
+enum MiscSpellIcons
+{
+    SPELL_ICON_ID_STRENGTH_OF_WRYNN              = 1704,
+    SPELL_ICON_ID_HELLSCREAM_WARSONG             = 937
 };
 
 // 31850 - Ardent Defender
@@ -311,11 +317,11 @@ class spell_pal_avenging_wrath : public SpellScriptLoader
             void HandleApply(AuraEffect const* aurEff, AuraEffectHandleModes /*mode*/)
             {
                 Unit* target = GetTarget();
-                if (AuraEffect const* aurEff = target->GetAuraEffectOfRankedSpell(SPELL_PALADIN_SANCTIFIED_WRATH_TALENT_R1, EFFECT_2))
+                if (AuraEffect const* sanctifiedWrathAurEff = target->GetAuraEffectOfRankedSpell(SPELL_PALADIN_SANCTIFIED_WRATH_TALENT_R1, EFFECT_2))
                 {
-                    CastSpellExtraArgs args(aurEff);
-                    args.AddSpellMod(SPELLVALUE_BASE_POINT0, aurEff->GetAmount())
-                        .AddSpellMod(SPELLVALUE_BASE_POINT1, aurEff->GetAmount());
+                    CastSpellExtraArgs args(sanctifiedWrathAurEff);
+                    args.AddSpellMod(SPELLVALUE_BASE_POINT0, sanctifiedWrathAurEff->GetAmount())
+                        .AddSpellMod(SPELLVALUE_BASE_POINT1, sanctifiedWrathAurEff->GetAmount());
                     target->CastSpell(target, SPELL_PALADIN_SANCTIFIED_WRATH, args);
                 }
 
@@ -393,7 +399,7 @@ class spell_pal_blessing_of_faith : public SpellScriptLoader
                 if (Unit* unitTarget = GetHitUnit())
                 {
                     uint32 spell_id = 0;
-                    switch (unitTarget->getClass())
+                    switch (unitTarget->GetClass())
                     {
                         case CLASS_DRUID:
                             spell_id = SPELL_PALADIN_BLESSING_OF_LOWER_CITY_DRUID;
@@ -792,6 +798,7 @@ class spell_pal_glyph_of_holy_light : public SpellScriptLoader
             {
                 uint32 const maxTargets = GetSpellInfo()->MaxAffectedTargets;
 
+                targets.remove(GetCaster());
                 if (targets.size() > maxTargets)
                 {
                     targets.sort(Trinity::HealthPctOrderPred());
@@ -833,8 +840,15 @@ class spell_pal_glyph_of_holy_light_dummy : public SpellScriptLoader
                 if (!healInfo || !healInfo->GetHeal())
                     return;
 
+                uint32 basePoints = healInfo->GetSpellInfo()->Effects[EFFECT_0].BasePoints + healInfo->GetSpellInfo()->Effects[EFFECT_0].DieSides;
+                uint32 healAmount;
+                if (healInfo->GetEffectiveHeal() >= basePoints)
+                    healAmount = healInfo->GetEffectiveHeal();
+                else
+                    healAmount = healInfo->GetHeal();
+
                 CastSpellExtraArgs args(aurEff);
-                args.AddSpellBP0(CalculatePct(healInfo->GetHeal(), aurEff->GetAmount()));
+                args.AddSpellBP0(CalculatePct(healAmount, aurEff->GetAmount()));
                 eventInfo.GetActor()->CastSpell(eventInfo.GetProcTarget(), SPELL_PALADIN_GLYPH_OF_HOLY_LIGHT_HEAL, args);
             }
 
@@ -1930,6 +1944,12 @@ class spell_pal_sacred_shield : public SpellScriptLoader
                     // Battleground - Dampening
                     else if (AuraEffect const* auraEffBattlegroudDampening = caster->GetAuraEffect(SPELL_GENERIC_BATTLEGROUND_DAMPENING, EFFECT_0))
                         AddPct(amount, auraEffBattlegroudDampening->GetAmount());
+
+                    // ICC buff
+                    if (AuraEffect const* auraStrengthOfWrynn = caster->GetAuraEffect(SPELL_AURA_MOD_HEALING_DONE_PERCENT, SPELLFAMILY_GENERIC, SPELL_ICON_ID_STRENGTH_OF_WRYNN, EFFECT_2))
+                        AddPct(amount, auraStrengthOfWrynn->GetAmount());
+                    else if (AuraEffect const* auraHellscreamsWarsong = caster->GetAuraEffect(SPELL_AURA_MOD_HEALING_DONE_PERCENT, SPELLFAMILY_GENERIC, SPELL_ICON_ID_HELLSCREAM_WARSONG, EFFECT_2))
+                        AddPct(amount, auraHellscreamsWarsong->GetAmount());
                 }
             }
 
@@ -1972,7 +1992,7 @@ class spell_pal_sacred_shield_dummy : public SpellScriptLoader
                 if (!caster)
                     return;
 
-                std::chrono::steady_clock::time_point now = GameTime::GetGameTimeSteadyPoint();
+                TimePoint now = GameTime::Now();
                 if (_cooldownEnd > now)
                     return;
 
@@ -1990,7 +2010,7 @@ class spell_pal_sacred_shield_dummy : public SpellScriptLoader
             }
 
             // Cooldown tracking can't be done in DB because of T8 bonus
-            std::chrono::steady_clock::time_point _cooldownEnd = std::chrono::steady_clock::time_point::min();
+            TimePoint _cooldownEnd = std::chrono::steady_clock::time_point::min();
         };
 
         AuraScript* GetAuraScript() const override
@@ -2034,7 +2054,7 @@ class spell_pal_seal_of_righteousness : public SpellScriptLoader
                 float mws = GetTarget()->GetAttackTime(BASE_ATTACK);
                 mws /= 1000.0f;
 
-                int32 bp = int32(mws * (0.022f * ap + 0.044f * sph));
+                int32 bp = std::lroundf(mws * (0.022f * ap + 0.044f * sph));
                 CastSpellExtraArgs args(aurEff);
                 args.AddSpellBP0(bp);
                 GetTarget()->CastSpell(victim, SPELL_PALADIN_SEAL_OF_RIGHTEOUSNESS, args);
@@ -2311,7 +2331,7 @@ class spell_pal_t3_6p_bonus : public SpellScriptLoader
                 Unit* caster = eventInfo.GetActor();
                 Unit* target = eventInfo.GetProcTarget();
 
-                switch (target->getClass())
+                switch (target->GetClass())
                 {
                     case CLASS_PALADIN:
                     case CLASS_PRIEST:

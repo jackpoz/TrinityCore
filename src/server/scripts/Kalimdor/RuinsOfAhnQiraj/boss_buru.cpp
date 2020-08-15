@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -87,7 +86,7 @@ class boss_buru : public CreatureScript
 
             void JustEngagedWith(Unit* who) override
             {
-                _JustEngagedWith();
+                BossAI::JustEngagedWith(who);
                 Talk(EMOTE_TARGET, who);
                 DoCast(me, SPELL_THORNS);
 
@@ -121,7 +120,7 @@ class boss_buru : public CreatureScript
                 events.ScheduleEvent(EVENT_GATHERING_SPEED, 9s);
                 events.ScheduleEvent(EVENT_FULL_SPEED, 1min);
 
-                if (Unit* victim = SelectTarget(SELECT_TARGET_RANDOM, 0, 0.0f, true))
+                if (Unit* victim = SelectTarget(SelectTargetMethod::Random, 0, 0.0f, true))
                 {
                     ResetThreatList();
                     AttackStart(victim);
@@ -133,7 +132,7 @@ class boss_buru : public CreatureScript
             {
                 ChaseNewVictim();
                 Eggs.push_back(EggGUID);
-                events.ScheduleEvent(EVENT_RESPAWN_EGG, 100000);
+                events.ScheduleEvent(EVENT_RESPAWN_EGG, 100s);
             }
 
             void UpdateAI(uint32 diff) override
@@ -219,7 +218,7 @@ class npc_buru_egg : public CreatureScript
             {
                 if (who->GetEntry() == NPC_HATCHLING)
                     if (Creature* buru = ObjectAccessor::GetCreature(*me, _instance->GetGuidData(DATA_BURU)))
-                        if (Unit* target = buru->AI()->SelectTarget(SELECT_TARGET_RANDOM))
+                        if (Unit* target = buru->AI()->SelectTarget(SelectTargetMethod::Random))
                             who->AI()->AttackStart(target);
             }
 

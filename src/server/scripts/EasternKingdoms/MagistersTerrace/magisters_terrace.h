@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -38,8 +38,6 @@ enum MTDataTypes
     DATA_DELRISSA_DEATH_COUNT,
 
     // Additional data
-    DATA_KAELTHAS_INTRO_STATE,
-
     DATA_KALECGOS,
     DATA_ESCAPE_ORB
 };
@@ -80,8 +78,6 @@ enum MTGameObjectIds
     GO_SUNWELL_RAID_GATE_4      = 187770,
     GO_SUNWELL_RAID_GATE_5      = 187896,
     GO_ASYLUM_DOOR              = 188064,
-    GO_KAEL_STATUE_1            = 188165,
-    GO_KAEL_STATUE_2            = 188166,
     GO_ESCAPE_ORB               = 188173
 };
 

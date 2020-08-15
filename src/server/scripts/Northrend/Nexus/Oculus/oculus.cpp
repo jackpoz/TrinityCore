@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -220,18 +220,18 @@ class npc_image_belgaristrasz : public CreatureScript
         {
             npc_image_belgaristraszAI(Creature* creature) : ScriptedAI(creature) { }
 
-            void IsSummonedBy(Unit* summoner) override
+            void IsSummonedBy(WorldObject* summoner) override
             {
                 if (summoner->GetEntry() == NPC_VAROS)
                 {
                    Talk(SAY_VAROS);
-                   me->DespawnOrUnsummon(60000);
+                   me->DespawnOrUnsummon(60s);
                 }
 
                 if (summoner->GetEntry() == NPC_UROM)
                 {
                    Talk(SAY_UROM);
-                   me->DespawnOrUnsummon(60000);
+                   me->DespawnOrUnsummon(60s);
                 }
             }
         };
@@ -266,10 +266,10 @@ class npc_ruby_emerald_amber_drake : public CreatureScript
                 Initialize();
             }
 
-            void SpellHit(Unit* /*caster*/, SpellInfo const* spell) override
+            void SpellHit(WorldObject* /*caster*/, SpellInfo const* spellInfo) override
             {
                 if (Unit* creator = ObjectAccessor::GetUnit(*me, me->GetCreatorGUID()))
-                    if (spell->Id == SPELL_GPS)
+                    if (spellInfo->Id == SPELL_GPS)
                     {
                         if (_instance->GetBossState(DATA_EREGOS) == DONE)
                             Talk(WHISPER_GPS_END, creator);
@@ -286,7 +286,7 @@ class npc_ruby_emerald_amber_drake : public CreatureScript
                     }
             }
 
-            void IsSummonedBy(Unit* summoner) override
+            void IsSummonedBy(WorldObject* summoner) override
             {
                 if (_instance->GetBossState(DATA_EREGOS) == IN_PROGRESS)
                     if (Creature* eregos = me->FindNearestCreature(NPC_EREGOS, 450.0f, true))
@@ -297,13 +297,13 @@ class npc_ruby_emerald_amber_drake : public CreatureScript
                 switch (me->GetEntry())
                 {
                     case NPC_RUBY_DRAKE_VEHICLE:
-                        me->CastSpell(summoner, SPELL_RIDE_RUBY_DRAKE_QUE);
+                        me->CastSpell(summoner, SPELL_RIDE_RUBY_DRAKE_QUE, true);
                         break;
                     case NPC_EMERALD_DRAKE_VEHICLE:
-                        me->CastSpell(summoner, SPELL_RIDE_EMERALD_DRAKE_QUE);
+                        me->CastSpell(summoner, SPELL_RIDE_EMERALD_DRAKE_QUE, true);
                         break;
                     case NPC_AMBER_DRAKE_VEHICLE:
-                        me->CastSpell(summoner, SPELL_RIDE_AMBER_DRAKE_QUE);
+                        me->CastSpell(summoner, SPELL_RIDE_AMBER_DRAKE_QUE, true);
                         break;
                     default:
                         return;
@@ -344,7 +344,7 @@ class npc_ruby_emerald_amber_drake : public CreatureScript
                 if (_healthWarning)
                 {
                     if (me->GetHealthPct() <= 40.0f)
-                        _events.ScheduleEvent(EVENT_LOW_HEALTH, 0);
+                        _events.ScheduleEvent(EVENT_LOW_HEALTH, 0ms);
                 }
 
                 _events.Update(diff);
@@ -377,7 +377,7 @@ class npc_ruby_emerald_amber_drake : public CreatureScript
                             break;
                         case EVENT_TAKE_OFF:
                         {
-                            me->DespawnOrUnsummon(2050);
+                            me->DespawnOrUnsummon(2050ms);
                             me->SetOrientation(2.5f);
                             me->SetSpeedRate(MOVE_FLIGHT, 1.0f);
                             Talk(SAY_DRAKES_TAKEOFF);

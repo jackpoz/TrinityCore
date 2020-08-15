@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -167,7 +167,7 @@ struct boss_kalecgos : public BossAI
 
         _EnterEvadeMode();
         instance->SendEncounterUnit(ENCOUNTER_FRAME_DISENGAGE, me);
-        instance->DoRemoveAurasDueToSpellOnPlayers(SPELL_SPECTRAL_REALM_AURA);
+        instance->DoRemoveAurasDueToSpellOnPlayers(SPELL_SPECTRAL_REALM_AURA, true, true);
         summons.DespawnAll();
         DespawnPortals();
 
@@ -208,13 +208,13 @@ struct boss_kalecgos : public BossAI
             damage = 0;
     }
 
-    void JustEngagedWith(Unit* /*who*/) override
+    void JustEngagedWith(Unit* who) override
     {
         instance->SendEncounterUnit(ENCOUNTER_FRAME_ENGAGE, me);
         Talk(SAY_EVIL_AGGRO);
-        _JustEngagedWith();
+        BossAI::JustEngagedWith(who);
 
-        if (Creature* kalecgosHuman = me->SummonCreature(NPC_KALECGOS_HUMAN, KalecgosSummonPos, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 1000))
+        if (Creature* kalecgosHuman = me->SummonCreature(NPC_KALECGOS_HUMAN, KalecgosSummonPos, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 1s))
             if (Creature* sathrovar = instance->GetCreature(DATA_SATHROVARR))
             {
                 sathrovar->SetInCombatWith(kalecgosHuman);
@@ -462,9 +462,9 @@ struct boss_sathrovarr : public BossAI
         events.ScheduleEvent(EVENT_CHECK_TIMER, 1s);
     }
 
-    void JustEngagedWith(Unit* /*who*/) override
+    void JustEngagedWith(Unit* who) override
     {
-        _JustEngagedWith();
+        BossAI::JustEngagedWith(who);
         Talk(SAY_SATH_AGGRO);
     }
 
@@ -474,12 +474,16 @@ struct boss_sathrovarr : public BossAI
             kalecgos->AI()->EnterEvadeMode(why);
     }
 
-    void SpellHit(Unit* caster, SpellInfo const* spell) override
+    void SpellHit(WorldObject* caster, SpellInfo const* spellInfo) override
     {
-        if (spell->Id == SPELL_TAP_CHECK_DAMAGE)
+        Unit* unitCaster = caster->ToUnit();
+        if (!unitCaster)
+            return;
+
+        if (spellInfo->Id == SPELL_TAP_CHECK_DAMAGE)
         {
             DoCastSelf(SPELL_TELEPORT_BACK, true);
-            Unit::Kill(caster, me);
+            Unit::Kill(unitCaster, me);
         }
     }
 
@@ -504,7 +508,7 @@ struct boss_sathrovarr : public BossAI
     {
         _JustDied();
         Talk(SAY_SATH_DEATH);
-        instance->DoRemoveAurasDueToSpellOnPlayers(SPELL_SPECTRAL_REALM_AURA);
+        instance->DoRemoveAurasDueToSpellOnPlayers(SPELL_SPECTRAL_REALM_AURA, true, true);
         if (Creature* kalecgos = instance->GetCreature(DATA_KALECGOS_DRAGON))
             kalecgos->AI()->DoAction(ACTION_START_OUTRO);
     }
@@ -523,7 +527,7 @@ struct boss_sathrovarr : public BossAI
             {
                 CastSpellExtraArgs args(TRIGGERED_FULL_MASK);
                 args.AddSpellMod(SPELLVALUE_MAX_TARGETS, 1);
-                if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, CurseAgonySelector(me)))
+                if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, CurseAgonySelector(me)))
                     DoCast(target, SPELL_AGONY_CURSE, args);
                 else
                     DoCastVictim(SPELL_AGONY_CURSE, args);

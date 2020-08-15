@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -23,6 +23,7 @@
 #include "MovementGenerator.h"
 #include "Optional.h"
 #include "Position.h"
+#include "Timer.h"
 
 class PathGenerator;
 class Unit;
@@ -45,14 +46,14 @@ class FollowMovementGenerator : public MovementGenerator, public AbstractFollowe
         void UnitSpeedChanged() override { _lastTargetPosition.reset(); }
 
     private:
-        static constexpr uint32 CHECK_INTERVAL = 500;
+        static constexpr uint32 CHECK_INTERVAL = 100;
 
         void UpdatePetSpeed(Unit* owner);
 
         float const _range;
         ChaseAngle const _angle;
 
-        uint32 _checkTimer = CHECK_INTERVAL;
+        TimeTracker _checkTimer;
         std::unique_ptr<PathGenerator> _path;
         Optional<Position> _lastTargetPosition;
 };

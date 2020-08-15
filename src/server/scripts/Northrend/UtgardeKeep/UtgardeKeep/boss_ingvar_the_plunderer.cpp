@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -154,11 +154,11 @@ class boss_ingvar_the_plunderer : public CreatureScript
                 events.ScheduleEvent(EVENT_JUST_TRANSFORMED, 500ms, 0, PHASE_EVENT);
             }
 
-            void JustEngagedWith(Unit* /*who*/) override
+            void JustEngagedWith(Unit* who) override
             {
                 if (events.IsInPhase(PHASE_EVENT) || events.IsInPhase(PHASE_UNDEAD)) // ingvar gets multiple JustEngagedWith calls
                     return;
-                _JustEngagedWith();
+                BossAI::JustEngagedWith(who);
 
                 Talk(SAY_AGGRO);
                 events.SetPhase(PHASE_HUMAN);
@@ -185,9 +185,9 @@ class boss_ingvar_the_plunderer : public CreatureScript
             {
                 events.SetPhase(PHASE_UNDEAD);
                 events.ScheduleEvent(EVENT_DARK_SMASH, 14s, 18s, 0, PHASE_UNDEAD);
-                events.ScheduleEvent(EVENT_DREADFUL_ROAR, 0, 0, PHASE_UNDEAD);
+                events.ScheduleEvent(EVENT_DREADFUL_ROAR, 0ms, 0, PHASE_UNDEAD);
                 events.ScheduleEvent(EVENT_WOE_STRIKE, 10s, 14s, 0, PHASE_UNDEAD);
-                events.ScheduleEvent(EVENT_SHADOW_AXE, 30*IN_MILLISECONDS, 0, PHASE_UNDEAD);
+                events.ScheduleEvent(EVENT_SHADOW_AXE, 30s, 0, PHASE_UNDEAD);
             }
 
             void KilledUnit(Unit* who) override
@@ -251,9 +251,9 @@ class boss_ingvar_the_plunderer : public CreatureScript
                             events.ScheduleEvent(EVENT_WOE_STRIKE, 10s, 14s, 0, PHASE_UNDEAD);
                             break;
                         case EVENT_SHADOW_AXE:
-                            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 1, 0.0f, true))
+                            if (Unit* target = SelectTarget(SelectTargetMethod::Random, 1, 0.0f, true))
                                 DoCast(target, SPELL_SHADOW_AXE_SUMMON);
-                            events.ScheduleEvent(EVENT_SHADOW_AXE, 30*IN_MILLISECONDS, 0, PHASE_UNDEAD);
+                            events.ScheduleEvent(EVENT_SHADOW_AXE, 30s, 0, PHASE_UNDEAD);
                             break;
                         default:
                             break;
@@ -312,7 +312,7 @@ class npc_annhylde_the_caller : public CreatureScript
                             ingvar->CastSpell(ingvar, SPELL_SCOURG_RESURRECTION_DUMMY, true);
                             DoCast(ingvar, SPELL_SCOURG_RESURRECTION_BEAM);
                         }
-                        _events.ScheduleEvent(EVENT_RESURRECT_1, 8000);
+                        _events.ScheduleEvent(EVENT_RESURRECT_1, 8s);
                         break;
                     case 2:
                         me->DespawnOrUnsummon();
@@ -340,7 +340,7 @@ class npc_annhylde_the_caller : public CreatureScript
                                 ingvar->RemoveAura(SPELL_INGVAR_FEIGN_DEATH);
                                 ingvar->CastSpell(ingvar, SPELL_SCOURG_RESURRECTION_HEAL, false);
                             }
-                            _events.ScheduleEvent(EVENT_RESURRECT_2, 3000);
+                            _events.ScheduleEvent(EVENT_RESURRECT_2, 3s);
                             break;
                         case EVENT_RESURRECT_2:
                             if (Creature* ingvar = ObjectAccessor::GetCreature(*me, _instance->GetGuidData(DATA_INGVAR)))
@@ -398,7 +398,7 @@ class npc_ingvar_throw_dummy : public CreatureScript
                 if (type == EFFECT_MOTION_TYPE && id == EVENT_CHARGE)
                 {
                     me->CastSpell(me, SPELL_SHADOW_AXE_PERIODIC_DAMAGE, true);
-                    me->DespawnOrUnsummon(10000);
+                    me->DespawnOrUnsummon(10s);
                 }
             }
         };

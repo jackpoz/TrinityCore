@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -175,7 +174,7 @@ uint32 GenerateEnchSuffixFactor(uint32 item_id)
     if (!itemProto->RandomSuffix)
         return 0;
 
-    RandomPropertiesPointsEntry const* randomProperty = sRandomPropertiesPointsStore.LookupEntry(itemProto->ItemLevel);
+    RandPropPointsEntry const* randomProperty = sRandPropPointsStore.LookupEntry(itemProto->ItemLevel);
     if (!randomProperty)
         return 0;
 
@@ -231,11 +230,11 @@ uint32 GenerateEnchSuffixFactor(uint32 item_id)
     switch (itemProto->Quality)
     {
         case ITEM_QUALITY_UNCOMMON:
-            return randomProperty->UncommonPropertiesPoints[suffixFactor];
+            return randomProperty->Good[suffixFactor];
         case ITEM_QUALITY_RARE:
-            return randomProperty->RarePropertiesPoints[suffixFactor];
+            return randomProperty->Superior[suffixFactor];
         case ITEM_QUALITY_EPIC:
-            return randomProperty->EpicPropertiesPoints[suffixFactor];
+            return randomProperty->Epic[suffixFactor];
         case ITEM_QUALITY_LEGENDARY:
         case ITEM_QUALITY_ARTIFACT:
             return 0;                                       // not have random properties

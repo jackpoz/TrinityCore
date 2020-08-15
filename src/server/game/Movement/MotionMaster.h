@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -47,7 +46,11 @@ enum MotionMasterFlags : uint8
 {
     MOTIONMASTER_FLAG_NONE                          = 0x0,
     MOTIONMASTER_FLAG_UPDATE                        = 0x1, // Update in progress
-    MOTIONMASTER_FLAG_STATIC_INITIALIZATION_PENDING = 0x2
+    MOTIONMASTER_FLAG_STATIC_INITIALIZATION_PENDING = 0x2, // Static movement (MOTION_SLOT_DEFAULT) hasn't been initialized
+    MOTIONMASTER_FLAG_INITIALIZATION_PENDING        = 0x4, // MotionMaster is stalled until signaled
+    MOTIONMASTER_FLAG_INITIALIZING                  = 0x8, // MotionMaster is initializing
+
+    MOTIONMASTER_FLAG_DELAYED = MOTIONMASTER_FLAG_UPDATE | MOTIONMASTER_FLAG_INITIALIZATION_PENDING
 };
 
 enum MotionMasterDelayedActionType : uint8
@@ -82,26 +85,37 @@ struct MovementGeneratorInformation
     std::string TargetName;
 };
 
-class MotionMasterDelayedAction
+static bool EmptyValidator()
 {
-    public:
-        explicit MotionMasterDelayedAction(std::function<void()>&& action, MotionMasterDelayedActionType type) : Action(std::move(action)), Type(type) { }
-        ~MotionMasterDelayedAction() { }
-
-        void Resolve() { Action(); }
-
-        std::function<void()> Action;
-        uint8 Type;
-};
+    return true;
+}
 
 class TC_GAME_API MotionMaster
 {
     public:
+        typedef std::function<void()> DelayedActionDefine;
+        typedef std::function<bool()> DelayedActionValidator;
+
+        class DelayedAction
+        {
+            public:
+                explicit DelayedAction(DelayedActionDefine&& action, DelayedActionValidator&& validator, MotionMasterDelayedActionType type) : Action(std::move(action)), Validator(std::move(validator)), Type(type) { }
+                explicit DelayedAction(DelayedActionDefine&& action, MotionMasterDelayedActionType type) : Action(std::move(action)), Validator(EmptyValidator), Type(type) { }
+                ~DelayedAction() { }
+
+                void Resolve() { if (Validator()) Action(); }
+
+                DelayedActionDefine Action;
+                DelayedActionValidator Validator;
+                uint8 Type;
+        };
+
         explicit MotionMaster(Unit* unit);
         ~MotionMaster();
 
         void Initialize();
         void InitializeDefault();
+        void AddToWorld();
 
         bool Empty() const;
         uint32 Size() const;
@@ -122,7 +136,7 @@ class TC_GAME_API MotionMaster
         // Removes first found movement
         // NOTE: MOTION_SLOT_DEFAULT will be autofilled with IDLE_MOTION_TYPE
         void Remove(MovementGeneratorType type, MovementSlot slot = MOTION_SLOT_ACTIVE);
-        // NOTE: NOTE: MOTION_SLOT_DEFAULT wont be affected
+        // NOTE: MOTION_SLOT_DEFAULT wont be affected
         void Clear();
         // Removes all movements for the given MovementSlot
         // NOTE: MOTION_SLOT_DEFAULT will be autofilled with IDLE_MOTION_TYPE
@@ -138,7 +152,7 @@ class TC_GAME_API MotionMaster
 
         void MoveIdle();
         void MoveTargetedHome();
-        void MoveRandom(float spawndist = 0.0f);
+        void MoveRandom(float wanderDistance = 0.0f);
         void MoveFollow(Unit* target, float dist, ChaseAngle angle, MovementSlot slot = MOTION_SLOT_ACTIVE);
         void MoveChase(Unit* target, Optional<ChaseRange> dist = {}, Optional<ChaseAngle> angle = {});
         void MoveChase(Unit* target, float dist, float angle) { MoveChase(target, ChaseRange(dist), ChaseAngle(angle)); }
@@ -176,7 +190,7 @@ class TC_GAME_API MotionMaster
         void MovePath(uint32 pathId, bool repeatable);
         void MovePath(WaypointPath& path, bool repeatable);
         void MoveRotate(uint32 id, uint32 time, RotateDirection direction);
-        void MoveFormation(uint32 id, Position destination, uint32 moveType, bool forceRun = false, bool forceOrientation = false);
+        void MoveFormation(Unit* leader, float range, float angle, uint32 point1, uint32 point2);
 
         void LaunchMoveSpline(Movement::MoveSplineInit&& init, uint32 id = 0, MovementGeneratorPriority priority = MOTION_PRIORITY_NORMAL, MovementGeneratorType type = EFFECT_MOTION_TYPE);
     private:
@@ -188,6 +202,8 @@ class TC_GAME_API MotionMaster
         bool HasFlag(uint8 const flag) const { return (_flags & flag) != 0; }
         void RemoveFlag(uint8 const flag) { _flags &= ~flag; }
 
+        void ResolveDelayedActions();
+        void Remove(MotionMasterContainer::iterator iterator, bool active, bool movementInform);
         void Pop(bool active, bool movementInform);
         void DirectInitialize();
         void DirectClear();
@@ -205,7 +221,7 @@ class TC_GAME_API MotionMaster
         MovementGeneratorPointer _defaultGenerator;
         MotionMasterContainer _generators;
         MotionMasterUnitStatesContainer _baseUnitStatesMap;
-        std::deque<MotionMasterDelayedAction> _delayedActions;
+        std::deque<DelayedAction> _delayedActions;
         uint8 _flags;
 };
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -77,9 +77,9 @@ public:
             Talk(SAY_DEATH);
         }
 
-        void JustEngagedWith(Unit* /*who*/) override
+        void JustEngagedWith(Unit* who) override
         {
-            _JustEngagedWith();
+            BossAI::JustEngagedWith(who);
             Talk(SAY_AGGRO);
 
             events.ScheduleEvent(EVENT_HATEFUL_BOLT, 12s);
@@ -102,7 +102,7 @@ public:
             switch (eventId)
             {
                 case EVENT_HATEFUL_BOLT:
-                    if (Unit* target = SelectTarget(SELECT_TARGET_MAXTHREAT, 1))
+                    if (Unit* target = SelectTarget(SelectTargetMethod::MaxThreat, 1))
                         DoCast(target, SPELL_HATEFUL_BOLT);
                     events.Repeat(Seconds(7), Seconds(15));
                     break;

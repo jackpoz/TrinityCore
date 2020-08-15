@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -89,9 +89,9 @@ struct boss_amanitar : public BossAI
 {
     boss_amanitar(Creature* creature) : BossAI(creature, DATA_AMANITAR) { }
 
-    void JustEngagedWith(Unit* /*who*/) override
+    void JustEngagedWith(Unit* who) override
     {
-        _JustEngagedWith();
+        BossAI::JustEngagedWith(who);
         events.ScheduleEvent(EVENT_ROOT, 5s, 9s);
         events.ScheduleEvent(EVENT_BASH, 10s, 14s);
         events.ScheduleEvent(EVENT_BOLT, 15s, 20s);
@@ -104,7 +104,7 @@ struct boss_amanitar : public BossAI
     {
         _EnterEvadeMode();
         summons.DespawnAll();
-        instance->DoRemoveAurasDueToSpellOnPlayers(SPELL_MINI);
+        instance->DoRemoveAurasDueToSpellOnPlayers(SPELL_MINI, true, true);
         _DespawnAtEvade();
     }
 
@@ -112,7 +112,7 @@ struct boss_amanitar : public BossAI
     {
         _JustDied();
         DoCastAOE(SPELL_REMOVE_MUSHROOM_POWER);
-        instance->DoRemoveAurasDueToSpellOnPlayers(SPELL_MINI);
+        instance->DoRemoveAurasDueToSpellOnPlayers(SPELL_MINI, true, true);
     }
 
     void JustSummoned(Creature* summon) override
@@ -129,7 +129,7 @@ struct boss_amanitar : public BossAI
 
     void SpawnMushroom(Position const pos)
     {
-        me->SummonCreature(roll_chance_i(40) ? NPC_HEALTHY_MUSHROOM : NPC_POISONOUS_MUSHROOM, pos, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 4000);
+        me->SummonCreature(roll_chance_i(40) ? NPC_HEALTHY_MUSHROOM : NPC_POISONOUS_MUSHROOM, pos, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 4s);
     }
 
     void UpdateAI(uint32 diff) override
@@ -151,7 +151,7 @@ struct boss_amanitar : public BossAI
                         SpawnMushroom(pos);
                     break;
                 case EVENT_MINI:
-                    if (SelectTarget(SELECT_TARGET_RANDOM, 0, 0.0f, true, true, -SPELL_MINI))
+                    if (SelectTarget(SelectTargetMethod::Random, 0, 0.0f, true, true, -SPELL_MINI))
                     {
                         DoCastAOE(SPELL_MINI);
                         events.Repeat(Seconds(30));
@@ -160,7 +160,7 @@ struct boss_amanitar : public BossAI
                         events.Repeat(Seconds(1));
                     break;
                 case EVENT_ROOT:
-                    if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 1, 100.0f, true))
+                    if (Unit* target = SelectTarget(SelectTargetMethod::Random, 1, 100.0f, true))
                         DoCast(target, SPELL_ENTANGLING_ROOTS, true);
                     events.Repeat(Seconds(10), Seconds(15));
                     break;
@@ -169,7 +169,7 @@ struct boss_amanitar : public BossAI
                     events.Repeat(Seconds(7), Seconds(12));
                     break;
                 case EVENT_BOLT:
-                    if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 100.0f, true))
+                    if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 100.0f, true))
                         DoCast(target, SPELL_VENOM_BOLT_VOLLEY, true);
                     events.Repeat(Seconds(18), Seconds(22));
                     break;

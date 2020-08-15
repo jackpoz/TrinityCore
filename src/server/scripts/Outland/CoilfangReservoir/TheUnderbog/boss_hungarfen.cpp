@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -90,17 +89,17 @@ public:
 
             if (Mushroom_Timer <= diff)
             {
-                if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0))
-                    me->SummonCreature(17990, target->GetPositionX() + (rand32() % 8), target->GetPositionY() + (rand32() % 8), target->GetPositionZ(), float(rand32() % 5), TEMPSUMMON_TIMED_DESPAWN, 22000);
+                if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0))
+                    me->SummonCreature(17990, target->GetPositionX() + (rand32() % 8), target->GetPositionY() + (rand32() % 8), target->GetPositionZ(), float(rand32() % 5), TEMPSUMMON_TIMED_DESPAWN, 22s);
                 else
-                    me->SummonCreature(17990, me->GetPositionX() + (rand32() % 8), me->GetPositionY() + (rand32() % 8), me->GetPositionZ(), float(rand32() % 5), TEMPSUMMON_TIMED_DESPAWN, 22000);
+                    me->SummonCreature(17990, me->GetPositionX() + (rand32() % 8), me->GetPositionY() + (rand32() % 8), me->GetPositionZ(), float(rand32() % 5), TEMPSUMMON_TIMED_DESPAWN, 22s);
 
                 Mushroom_Timer = 10000;
             } else Mushroom_Timer -= diff;
 
             if (AcidGeyser_Timer <= diff)
             {
-                if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0))
+                if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0))
                     DoCast(target, SPELL_ACID_GEYSER);
                 AcidGeyser_Timer = 10000 + rand32() % 7500;
             } else AcidGeyser_Timer -= diff;

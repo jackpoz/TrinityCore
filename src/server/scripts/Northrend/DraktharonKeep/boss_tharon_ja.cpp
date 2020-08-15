@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -90,10 +90,10 @@ class boss_tharon_ja : public CreatureScript
                 me->RestoreDisplayId();
             }
 
-            void JustEngagedWith(Unit* /*who*/) override
+            void JustEngagedWith(Unit* who) override
             {
                 Talk(SAY_AGGRO);
-                _JustEngagedWith();
+                BossAI::JustEngagedWith(who);
 
                 events.ScheduleEvent(EVENT_DECAY_FLESH, 20s);
                 events.ScheduleEvent(EVENT_CURSE_OF_LIFE, 1s);
@@ -131,7 +131,7 @@ class boss_tharon_ja : public CreatureScript
                     switch (eventId)
                     {
                         case EVENT_CURSE_OF_LIFE:
-                            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 100.0f, true))
+                            if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 100.0f, true))
                                 DoCast(target, SPELL_CURSE_OF_LIFE);
                             events.ScheduleEvent(EVENT_CURSE_OF_LIFE, 10s, 15s);
                             return;
@@ -140,17 +140,17 @@ class boss_tharon_ja : public CreatureScript
                             events.ScheduleEvent(EVENT_SHADOW_VOLLEY, 8s, 10s);
                             return;
                         case EVENT_RAIN_OF_FIRE:
-                            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 100.0f, true))
+                            if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 100.0f, true))
                                 DoCast(target, SPELL_RAIN_OF_FIRE);
                             events.ScheduleEvent(EVENT_RAIN_OF_FIRE, 14s, 18s);
                             return;
                         case EVENT_LIGHTNING_BREATH:
-                            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 100.0f, true))
+                            if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 100.0f, true))
                                 DoCast(target, SPELL_LIGHTNING_BREATH);
                             events.ScheduleEvent(EVENT_LIGHTNING_BREATH, 6s, 7s);
                             return;
                         case EVENT_EYE_BEAM:
-                            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 100.0f, true))
+                            if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 100.0f, true))
                                 DoCast(target, SPELL_EYE_BEAM);
                             events.ScheduleEvent(EVENT_EYE_BEAM, 4s, 6s);
                             return;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -111,7 +111,9 @@ public:
                 //THIS GOB IS A TRAP - What shall i do? =(
                 //Cast it spell? Copyed Heigan method
                 floorEruption->SendCustomAnim(floorEruption->GetGoAnimProgress());
-                floorEruption->CastSpell(nullptr, Difficulty(instance->GetSpawnMode()) == RAID_DIFFICULTY_10MAN_NORMAL ? 17731 : 69294); //pFloorEruption->GetGOInfo()->trap.spellId
+                CastSpellExtraArgs args;
+                args.OriginalCaster = onyxiaGUID;
+                floorEruption->CastSpell(floorEruption, floorEruption->GetGOInfo()->trap.spellId, args);
 
                 //Get all immediatly nearby floors
                 std::list<GameObject*> nearFloorList;

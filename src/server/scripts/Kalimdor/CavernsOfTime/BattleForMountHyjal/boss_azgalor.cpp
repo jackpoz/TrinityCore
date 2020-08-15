@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -148,13 +148,13 @@ public:
 
             if (RainTimer <= diff)
             {
-                DoCast(SelectTarget(SELECT_TARGET_RANDOM, 0, 30, true), SPELL_RAIN_OF_FIRE);
+                DoCast(SelectTarget(SelectTargetMethod::Random, 0, 30, true), SPELL_RAIN_OF_FIRE);
                 RainTimer = 20000 + rand32() % 15000;
             } else RainTimer -= diff;
 
             if (DoomTimer <= diff)
             {
-                DoCast(SelectTarget(SELECT_TARGET_RANDOM, 1, 100, true), SPELL_DOOM);//never on tank
+                DoCast(SelectTarget(SelectTargetMethod::Random, 1, 100, true), SPELL_DOOM);//never on tank
                 DoomTimer = 45000 + rand32() % 5000;
             } else DoomTimer -= diff;
 
@@ -264,7 +264,7 @@ public:
 
             if (CrippleTimer <= diff)
             {
-                DoCast(SelectTarget(SELECT_TARGET_RANDOM, 0, 100, true), SPELL_CRIPPLE);
+                DoCast(SelectTarget(SelectTargetMethod::Random, 0, 100, true), SPELL_CRIPPLE);
                 CrippleTimer = 25000 + rand32() % 5000;
             } else CrippleTimer -= diff;
 

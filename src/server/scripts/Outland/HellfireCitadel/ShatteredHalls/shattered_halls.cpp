@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -24,6 +24,8 @@
 #include "shattered_halls.h"
 #include "SpellScript.h"
 #include "TemporarySummon.h"
+
+Position const Executioner = { 152.8524f, -83.63912f, 2.021005f, 0.06981317f };
 
 class at_nethekurse_exit : public AreaTriggerScript
 {
@@ -143,10 +145,13 @@ class boss_shattered_executioner : public CreatureScript
                     {
                         case 3:
                             me->RemoveLootMode(LOOT_MODE_HARD_MODE_1);
+                            [[fallthrough]];
                         case 2:
                             me->RemoveLootMode(LOOT_MODE_HARD_MODE_2);
+                            [[fallthrough]];
                         case 1:
                             me->RemoveLootMode(LOOT_MODE_HARD_MODE_3);
+                            [[fallthrough]];
                         default:
                             break;
                     }

@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -208,15 +207,15 @@ public:
                 switch (waypointId)
                 {
                     case 23:
-                        me->SummonCreature(SPAWN_FIRST, -8350.96f, -4445.79f, 10.10f, 6.20f, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 25000);
-                        me->SummonCreature(SPAWN_FIRST, -8355.96f, -4447.79f, 10.10f, 6.27f, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 25000);
-                        me->SummonCreature(SPAWN_FIRST, -8353.96f, -4442.79f, 10.10f, 6.08f, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 25000);
+                        me->SummonCreature(SPAWN_FIRST, -8350.96f, -4445.79f, 10.10f, 6.20f, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 25s);
+                        me->SummonCreature(SPAWN_FIRST, -8355.96f, -4447.79f, 10.10f, 6.27f, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 25s);
+                        me->SummonCreature(SPAWN_FIRST, -8353.96f, -4442.79f, 10.10f, 6.08f, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 25s);
                         Talk(SAY_OOX_AMBUSH);
                         break;
                     case 56:
-                        me->SummonCreature(SPAWN_SECOND_1, -7510.07f, -4795.50f, 9.35f, 6.06f, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 25000);
-                        me->SummonCreature(SPAWN_SECOND_2, -7515.07f, -4797.50f, 9.35f, 6.22f, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 25000);
-                        me->SummonCreature(SPAWN_SECOND_2, -7518.07f, -4792.50f, 9.35f, 6.22f, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 25000);
+                        me->SummonCreature(SPAWN_SECOND_1, -7510.07f, -4795.50f, 9.35f, 6.06f, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 25s);
+                        me->SummonCreature(SPAWN_SECOND_2, -7515.07f, -4797.50f, 9.35f, 6.22f, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 25s);
+                        me->SummonCreature(SPAWN_SECOND_2, -7518.07f, -4792.50f, 9.35f, 6.22f, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 25s);
                         Talk(SAY_OOX_AMBUSH);
                         if (Creature* scoff = me->FindNearestCreature(SPAWN_SECOND_2, 30))
                             scoff->AI()->Talk(SAY_OOX17_AMBUSH_REPLY);
@@ -279,8 +278,7 @@ enum Tooga
     QUEST_TOOGA                 = 1560,
     NPC_TORTA                   = 6015,
 
-    POINT_ID_TO_WATER           = 1,
-    FACTION_TOOG_ESCORTEE       = 113
+    POINT_ID_TO_WATER           = 1
 };
 
 Position const ToWaterLoc = {-7032.664551f, -4906.199219f, -1.606446f, 0.0f};
@@ -327,7 +325,7 @@ public:
                 if (me->IsWithinDistInMap(who, INTERACTION_DISTANCE))
                 {
                     Player* player = GetLeaderForFollower();
-                    if (player && player->GetQuestStatus(QUEST_TOOGA) == QUEST_STATUS_INCOMPLETE)
+                    if (player)
                         player->GroupEventHappens(QUEST_TOOGA, me);
 
                     TortaGUID = who->GetGUID();
@@ -340,10 +338,7 @@ public:
         {
             FollowerAI::MovementInform(MotionType, PointId);
 
-            if (MotionType != POINT_MOTION_TYPE)
-                return;
-
-            if (PointId == POINT_ID_TO_WATER)
+            if ((MotionType == POINT_MOTION_TYPE) && (PointId == POINT_ID_TO_WATER))
                 SetFollowComplete();
         }
 
@@ -417,7 +412,7 @@ public:
         void QuestAccept(Player* player, Quest const* quest) override
         {
             if (quest->GetQuestId() == QUEST_TOOGA)
-                StartFollow(player, FACTION_TOOG_ESCORTEE, quest);
+                StartFollow(player, FACTION_ESCORTEE_N_NEUTRAL_PASSIVE, QUEST_TOOGA);
         }
     };
 
