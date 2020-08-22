@@ -152,7 +152,7 @@ public:
     }
 
 private:
-    std::aligned_storage_t<sizeof(T), alignof(T)> _dummy;
+    std::aligned_storage_t<sizeof(T), alignof(T)> _dummy; //-V730_NOINIT
     T* _dummyPtr;
     std::atomic<T*> _head;
     std::atomic<T*> _tail;
