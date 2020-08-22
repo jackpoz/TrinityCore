@@ -948,7 +948,7 @@ class TC_GAME_API Unit : public WorldObject
                                      DamageInfo* damageInfo, HealInfo* healInfo);
         void TriggerAurasProcOnEvent(ProcEventInfo& eventInfo, AuraApplicationProcContainer& procAuras);
 
-        void HandleEmoteCommand(uint32 emoteId);
+        void HandleEmoteCommand(Emote emoteId);
         void AttackerStateUpdate (Unit* victim, WeaponAttackType attType = BASE_ATTACK, bool extra = false);
 
         void CalculateMeleeDamage(Unit* victim, CalcDamageInfo* damageInfo, WeaponAttackType attackType = BASE_ATTACK);
@@ -1686,6 +1686,11 @@ class TC_GAME_API Unit : public WorldObject
 
         float GetCollisionHeight() const override;
 
+        // returns if the unit is ignoring any combat interaction
+        bool IsIgnoringCombat() const { return _isIgnoringCombat; }
+        // enables/disables combat interaction of this unit.
+        void SetIgnoringCombat(bool apply) { _isIgnoringCombat = apply; }
+
         std::string GetDebugInfo() const override;
     protected:
         explicit Unit (bool isWorldObject);
@@ -1832,6 +1837,8 @@ class TC_GAME_API Unit : public WorldObject
 
         SpellHistory* m_spellHistory;
         PositionUpdateInfo _positionUpdateInfo;
+
+        bool _isIgnoringCombat;
 };
 
 namespace Trinity
