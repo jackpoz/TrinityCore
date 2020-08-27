@@ -705,7 +705,7 @@ void WorldSession::HandleStableSwapPet(WorldPacket& recvData)
 
         SendPetStableResult(STABLE_SUCCESS_UNSTABLE);
     }
-}
+} //-V773
 
 void WorldSession::HandleRepairItemOpcode(WorldPacket& recvData)
 {

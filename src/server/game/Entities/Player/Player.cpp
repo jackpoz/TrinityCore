@@ -26746,7 +26746,7 @@ Pet* Player::SummonPet(uint32 entry, float x, float y, float z, float ang, PetTy
                 pet->SetName(new_name);
         }
 
-        return nullptr;
+        return nullptr; //-V773
     }
 
     // petentry == 0 for hunter "call pet" (current pet summoned if any)

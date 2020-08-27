@@ -146,6 +146,7 @@ class TC_COMMON_API Log
 #ifdef PERFORMANCE_PROFILING
 #define TC_LOG_MESSAGE_BODY(filterType__, level__, ...) ((void)0)
 #elif TRINITY_PLATFORM != TRINITY_PLATFORM_WINDOWS
+//-V:check_args:510
 void check_args(char const*, ...) ATTR_PRINTF(1, 2);
 void check_args(std::string const&, ...);
 

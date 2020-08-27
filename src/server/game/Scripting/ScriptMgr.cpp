@@ -793,7 +793,7 @@ public:
                         "so the script can't work.", script->GetName().c_str());
 
                     // Error that should be fixed ASAP.
-                    sScriptRegistryCompositum->QueueForDelayedDelete(std::move(script_ptr));
+                    sScriptRegistryCompositum->QueueForDelayedDelete(std::move(script_ptr)); //-V779
                     ABORT();
                     return;
                 }
