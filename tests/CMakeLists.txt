@@ -17,7 +17,13 @@ add_executable(tests-common ${COMMON_SOURCES})
 
 target_link_libraries(tests-common
   PRIVATE
+    trinity-core-interface
     common
     Catch2::Catch2)
 
 catch_discover_tests(tests-common)
+
+set_target_properties(tests-common
+    PROPERTIES
+      FOLDER
+        "tests")
