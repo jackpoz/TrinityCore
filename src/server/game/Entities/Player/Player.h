@@ -474,7 +474,6 @@ enum QuestSaveType
 //               quest
 typedef std::map<uint32, QuestSaveType> QuestStatusSaveMap;
 
-
 enum QuestSlotOffsets
 {
     QUEST_ID_OFFSET     = 0,
@@ -2166,6 +2165,7 @@ class TC_GAME_API Player : public Unit, public GridObject<Player>
         bool SetHover(bool enable, bool packetOnly = false, bool updateAnimationTier = true) override;
 
         bool CanFly() const override { return m_movementInfo.HasMovementFlag(MOVEMENTFLAG_CAN_FLY); }
+        bool CanEnterWater() const override { return true; }
 
         std::string GetMapAreaAndZoneString() const;
         std::string GetCoordsMapAreaAndZoneString() const;
