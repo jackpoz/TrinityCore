@@ -341,7 +341,7 @@ bool Pet::LoadPetFromDB(Player* owner, uint32 petEntry, uint32 petnumber, bool c
     {
         WorldPackets::Spells::SpellGo spellGo;
         spellGo.Cast.CasterGUID = owner->GetGUID();
-        spellGo.Cast.CasterUnit = owner->GetGUID();
+        spellGo.Cast.CasterUnit = owner->GetGUID(); //-V656
         spellGo.Cast.SpellID = petInfo->CreatedBySpellId;
         spellGo.Cast.CastFlags = CAST_FLAG_UNKNOWN_9;
         spellGo.Cast.CastTime = GameTime::GetGameTimeMS();

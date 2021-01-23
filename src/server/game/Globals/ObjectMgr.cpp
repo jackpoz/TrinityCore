@@ -9173,9 +9173,9 @@ void ObjectMgr::LoadTrainers()
             spell.MoneyCost = fields[2].GetUInt32();
             spell.ReqSkillLine = fields[3].GetUInt32();
             spell.ReqSkillRank = fields[4].GetUInt32();
-            spell.ReqAbility[0] = fields[5].GetUInt32();
-            spell.ReqAbility[1] = fields[6].GetUInt32();
-            spell.ReqAbility[2] = fields[7].GetUInt32();
+            spell.ReqAbility[0] = fields[5].GetUInt32(); //-V557
+            spell.ReqAbility[1] = fields[6].GetUInt32(); //-V557
+            spell.ReqAbility[2] = fields[7].GetUInt32(); //-V557
             spell.ReqLevel = fields[8].GetUInt8();
 
             SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spell.SpellId);
@@ -9199,7 +9199,7 @@ void ObjectMgr::LoadTrainers()
             }
 
             bool allReqValid = true;
-            for (std::size_t i = 0; i < spell.ReqAbility.size(); ++i)
+            for (std::size_t i = 0; i < spell.ReqAbility.size(); ++i) //-V621
             {
                 uint32 requiredSpell = spell.ReqAbility[i];
                 if (requiredSpell && !sSpellMgr->GetSpellInfo(requiredSpell))
