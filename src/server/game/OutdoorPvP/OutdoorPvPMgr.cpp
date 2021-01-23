@@ -23,7 +23,7 @@
 #include "Player.h"
 #include "ScriptMgr.h"
 
-OutdoorPvPMgr::OutdoorPvPMgr() //-V730
+OutdoorPvPMgr::OutdoorPvPMgr()
 {
     m_UpdateTimer = 0;
 }

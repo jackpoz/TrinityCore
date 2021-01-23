@@ -631,8 +631,8 @@ struct GameObjectOverride
 // From `gameobject_template_addon`
 struct GameObjectTemplateAddon : public GameObjectOverride
 {
-    uint32 Mingold; //-V730_NOINIT
-    uint32 Maxgold; //-V730_NOINIT
+    uint32 Mingold;
+    uint32 Maxgold;
     std::array<uint32, 4> artKits = {};
 };
 

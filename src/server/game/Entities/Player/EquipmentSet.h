@@ -33,7 +33,7 @@ enum EquipmentSetUpdateState
 
 #define EQUIPMENT_SET_SLOTS 19
 
-struct EquipmentSetInfo //-V730
+struct EquipmentSetInfo
 {
     /// Data sent in EquipmentSet related packets
     struct EquipmentSetData
