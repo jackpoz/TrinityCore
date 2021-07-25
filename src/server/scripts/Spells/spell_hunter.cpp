@@ -879,7 +879,7 @@ class spell_hun_pet_heart_of_the_phoenix : public SpellScript
     }
 };
 
-// -53234  - Piercing Shots
+// -53234 - Piercing Shots
 class spell_hun_piercing_shots : public AuraScript
 {
     PrepareAuraScript(spell_hun_piercing_shots);
@@ -1177,6 +1177,12 @@ class spell_hun_tame_beast : public SpellScript
 
             if (caster->GetCharmedGUID())
                 return SPELL_FAILED_ALREADY_HAVE_CHARM;
+
+            if (target->GetOwnerGUID())
+            {
+                caster->SendTameFailure(PETTAME_CREATUREALREADYOWNED);
+                return SPELL_FAILED_DONT_REPORT;
+            }
         }
         else
             return SPELL_FAILED_BAD_IMPLICIT_TARGETS;
@@ -1260,7 +1266,7 @@ class spell_hun_thrill_of_the_hunt : public AuraScript
     }
 };
 
-// 67151   - T9 4P Bonus
+// 67151 - Item - Hunter T9 4P Bonus (Steady Shot)
 class spell_hun_t9_4p_bonus : public AuraScript
 {
     PrepareAuraScript(spell_hun_t9_4p_bonus);
