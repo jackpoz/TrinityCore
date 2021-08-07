@@ -7,13 +7,29 @@ trigger:
 - features/3.3.5-mac-build
 
 pool:
-  vmImage: ubuntu-latest
+  vmImage: macOS-latest
 
 steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
-
 - script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+    brew update
+    brew install mysql readline boost
+  displayName: 'Dependencies'
+- script: |
+    mkdir bin
+    cd bin
+    cmake ../ -DWITH_WARNINGS=1 -DWITH_COREDEBUG=0 -DUSE_COREPCH=1 -DUSE_SCRIPTPCH=1 -DTOOLS=1 -DSCRIPTS=dynamic -DSERVERS=1 -DNOJEM=0 -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS="-Werror" -DCMAKE_CXX_FLAGS="-Werror" -DCMAKE_C_FLAGS_DEBUG="-DNDEBUG" -DCMAKE_CXX_FLAGS_DEBUG="-DNDEBUG" -DCMAKE_INSTALL_PREFIX=check_install -DBUILD_TESTING=1
+    cd ..
+  displayName: 'Setup'
+- script: |
+    cd bin
+    make -j 4 -k && make install
+  displayName: 'Build'
+- script: |
+    cd bin
+    make test
+  displayName: 'Unit tests'
+- script: |
+    cd bin/check_install/bin
+    ./authserver --version
+    ./worldserver --version
+  displayName: 'Check executables'
