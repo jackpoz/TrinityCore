@@ -23,6 +23,7 @@
 
 #include "ScriptMgr.h"
 #include "Containers.h"
+#include "CreatureAI.h"
 #include "DBCStores.h"
 #include "Map.h"
 #include "ObjectAccessor.h"
@@ -100,7 +101,14 @@ enum DeathKnightSpells
     SPELL_DK_RUNIC_RETURN                       = 61258,
     SPELL_DK_WANDERING_PLAGUE_DAMAGE            = 50526,
     SPELL_DK_DEATH_COIL_R1                      = 47541,
-    SPELL_DK_DEATH_GRIP_INITIAL                 = 49576
+    SPELL_DK_DEATH_GRIP_INITIAL                 = 49576,
+    SPELL_DK_BLOOD_STRIKE                       = 45902,
+    SPELL_DK_ICY_TOUCH                          = 45477,
+    SPELL_DK_PLAGUE_STRIKE                      = 45462,
+    SPELL_DK_DEATH_STRIKE                       = 49998,
+    SPELL_DK_HEART_STRIKE                       = 55050,
+    SPELL_DK_OBLITERATE                         = 49020,
+    SPELL_DK_RUNE_STRIKE                        = 56815
 };
 
 enum DeathKnightSpellIcons
@@ -109,7 +117,7 @@ enum DeathKnightSpellIcons
     DK_ICON_ID_IMPROVED_DEATH_STRIKE            = 2751
 };
 
-enum Misc
+enum DeathKnightMisc
 {
     NPC_DK_GHOUL                                = 26125,
     NPC_DK_DANCING_RUNE_WEAPON                  = 27893,
@@ -244,7 +252,7 @@ private:
 
     bool Load() override
     {
-        absorbPct = GetSpellInfo()->Effects[EFFECT_0].CalcValue(GetCaster());
+        absorbPct = GetEffectInfo(EFFECT_0).CalcValue(GetCaster());
         return true;
     }
 
@@ -282,8 +290,8 @@ private:
     uint32 absorbPct, hpPct;
     bool Load() override
     {
-        absorbPct = GetSpellInfo()->Effects[EFFECT_0].CalcValue(GetCaster());
-        hpPct = GetSpellInfo()->Effects[EFFECT_1].CalcValue(GetCaster());
+        absorbPct = GetEffectInfo(EFFECT_0).CalcValue(GetCaster());
+        hpPct = GetEffectInfo(EFFECT_1).CalcValue(GetCaster());
         return true;
     }
 
@@ -335,7 +343,7 @@ private:
 
     bool Load() override
     {
-        absorbPct = GetSpellInfo()->Effects[EFFECT_0].CalcValue(GetCaster());
+        absorbPct = GetEffectInfo(EFFECT_0).CalcValue(GetCaster());
         return true;
     }
 
@@ -344,15 +352,19 @@ private:
         return ValidateSpellInfo({ SPELL_DK_ANTI_MAGIC_SHELL_TALENT });
     }
 
-    void CalculateAmount(AuraEffect const* /*aurEff*/, int32 & amount, bool & /*canBeRecalculated*/)
+    void CalculateAmount(AuraEffect const* /*aurEff*/, int32& amount, bool& /*canBeRecalculated*/)
     {
         SpellInfo const* talentSpell = sSpellMgr->AssertSpellInfo(SPELL_DK_ANTI_MAGIC_SHELL_TALENT);
-        amount = talentSpell->Effects[EFFECT_0].CalcValue(GetCaster());
-        if (Player* player = GetCaster()->ToPlayer())
+        Unit* owner = GetCaster()->GetOwner();
+        if (!owner)
+            return;
+
+        amount = talentSpell->GetEffect(EFFECT_0).CalcValue(owner);
+        if (Player* player = owner->ToPlayer())
             amount += int32(2 * player->GetTotalAttackPowerValue(BASE_ATTACK));
     }
 
-    void Absorb(AuraEffect* /*aurEff*/, DamageInfo & dmgInfo, uint32 & absorbAmount)
+    void Absorb(AuraEffect* /*aurEff*/, DamageInfo& dmgInfo, uint32 &absorbAmount)
     {
         absorbAmount = CalculatePct(dmgInfo.GetDamage(), absorbPct);
     }
@@ -538,7 +550,7 @@ class spell_dk_corpse_explosion : public SpellScript
             SPELL_DK_CORPSE_EXPLOSION_TRIGGERED,
             SPELL_DK_GHOUL_EXPLODE,
             SPELL_DK_CORPSE_EXPLOSION_VISUAL,
-            static_cast<uint32>(spellInfo->Effects[EFFECT_1].CalcValue())
+            static_cast<uint32>(spellInfo->GetEffect(EFFECT_1).CalcValue())
         });
     }
 
@@ -575,11 +587,11 @@ class spell_dk_corpse_explosion : public SpellScript
         if (effIndex == EFFECT_0)
         {
             args.AddSpellBP0(GetEffectValue());
-            GetCaster()->CastSpell(target, GetSpellInfo()->Effects[EFFECT_1].CalcValue(), args);
+            GetCaster()->CastSpell(target, GetEffectInfo(EFFECT_1).CalcValue(), args);
         }
         else if (effIndex == EFFECT_1)
         {
-            args.AddSpellBP0(GetSpell()->CalculateDamage(EFFECT_0));
+            args.AddSpellBP0(GetSpell()->CalculateDamage(GetEffectInfo(EFFECT_0)));
             GetCaster()->CastSpell(target, GetEffectValue(), args);
         }
     }
@@ -613,58 +625,6 @@ class spell_dk_corpse_explosion : public SpellScript
     }
 
     WorldObject* _target = nullptr;
-};
-
-// 49028 - Dancing Rune Weapon
-class spell_dk_dancing_rune_weapon : public AuraScript
-{
-    PrepareAuraScript(spell_dk_dancing_rune_weapon);
-
-    bool Validate(SpellInfo const* /*spellInfo*/) override
-    {
-        if (!sObjectMgr->GetCreatureTemplate(NPC_DK_DANCING_RUNE_WEAPON))
-            return false;
-        return true;
-    }
-
-    // This is a port of the old switch hack in Unit.cpp, it's not correct
-    void HandleProc(AuraEffect const* /*aurEff*/, ProcEventInfo& eventInfo)
-    {
-        PreventDefaultAction();
-        Unit* caster = GetCaster();
-        if (!caster)
-            return;
-
-        Unit* drw = nullptr;
-        for (Unit* controlled : caster->m_Controlled)
-        {
-            if (controlled->GetEntry() == NPC_DK_DANCING_RUNE_WEAPON)
-            {
-                drw = controlled;
-                break;
-            }
-        }
-
-        if (!drw || !drw->GetVictim())
-            return;
-
-        SpellInfo const* spellInfo = eventInfo.GetSpellInfo();
-        if (!spellInfo)
-            return;
-
-        DamageInfo* damageInfo = eventInfo.GetDamageInfo();
-        if (!damageInfo || !damageInfo->GetDamage())
-            return;
-
-        int32 amount = static_cast<int32>(damageInfo->GetDamage()) / 2;
-        drw->SendSpellNonMeleeDamageLog(drw->GetVictim(), spellInfo->Id, amount, spellInfo->GetSchoolMask(), 0, 0, false, 0, false);
-        Unit::DealDamage(drw, drw->GetVictim(), amount, nullptr, SPELL_DIRECT_DAMAGE, spellInfo->GetSchoolMask(), spellInfo, true);
-    }
-
-    void Register() override
-    {
-        OnEffectProc += AuraEffectProcFn(spell_dk_dancing_rune_weapon::HandleProc, EFFECT_1, SPELL_AURA_DUMMY);
-    }
 };
 
 // -43265 - Death and Decay
@@ -933,10 +893,10 @@ class spell_dk_death_strike : public SpellScript
         if (Unit* target = GetHitUnit())
         {
             uint32 count = target->GetDiseasesByCaster(caster->GetGUID());
-            int32 bp = int32(count * caster->CountPctFromMaxHealth(int32(GetSpellInfo()->Effects[EFFECT_0].DamageMultiplier)));
+            int32 bp = int32(count * caster->CountPctFromMaxHealth(int32(GetEffectInfo(EFFECT_0).DamageMultiplier)));
             // Improved Death Strike
             if (AuraEffect const* aurEff = caster->GetAuraEffect(SPELL_AURA_ADD_PCT_MODIFIER, SPELLFAMILY_DEATHKNIGHT, DK_ICON_ID_IMPROVED_DEATH_STRIKE, 0))
-                AddPct(bp, caster->CalculateSpellDamage(aurEff->GetSpellInfo(), EFFECT_2));
+                AddPct(bp, caster->CalculateSpellDamage(aurEff->GetSpellInfo()->GetEffect(EFFECT_2)));
 
             // @todo castspell refactor note: this is not triggered - is this intended??
             CastSpellExtraArgs args;
@@ -959,12 +919,12 @@ class spell_dk_ghoul_explode : public SpellScript
     bool Validate(SpellInfo const* spellInfo) override
     {
         return ValidateSpellInfo({ SPELL_DK_CORPSE_EXPLOSION_TRIGGERED }) &&
-            spellInfo->Effects[EFFECT_2].CalcValue() > 0;
+            spellInfo->GetEffect(EFFECT_2).CalcValue() > 0;
     }
 
     void HandleDamage(SpellEffIndex /*effIndex*/)
     {
-        int32 value = int32(GetCaster()->CountPctFromMaxHealth(GetSpellInfo()->Effects[EFFECT_2].CalcValue(GetCaster())));
+        int32 value = int32(GetCaster()->CountPctFromMaxHealth(GetSpellInfo()->GetEffect(EFFECT_2).CalcValue(GetCaster())));
         SetEffectValue(value);
     }
 
@@ -1080,7 +1040,7 @@ class spell_dk_hysteria : public AuraScript
 
     void PeriodicTick(AuraEffect const* aurEff)
     {
-        uint32 const damage = GetTarget()->CountPctFromMaxHealth(GetTarget()->CalculateSpellDamage(GetSpellInfo(), aurEff->GetEffIndex()));
+        uint32 const damage = GetTarget()->CountPctFromMaxHealth(GetTarget()->CalculateSpellDamage(aurEff->GetSpellEffectInfo()));
         Unit::DealDamage(GetTarget(), GetTarget(), damage, nullptr, SELF_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, nullptr, false);
     }
 
@@ -1307,7 +1267,7 @@ class spell_dk_improved_unholy_presence : public AuraScript
         if (target->HasAura(SPELL_DK_UNHOLY_PRESENCE) && !target->HasAura(SPELL_DK_IMPROVED_UNHOLY_PRESENCE_TRIGGERED))
         {
             // Not listed as any effect, only base points set in dbc
-            int32 basePoints = GetSpellInfo()->Effects[EFFECT_1].CalcValue();
+            int32 basePoints = GetEffectInfo(EFFECT_1).CalcValue();
             CastSpellExtraArgs args(aurEff);
             for (uint32 i = 0; i < MAX_SPELL_EFFECTS; ++i)
                 args.AddSpellMod(SpellValueMod(SPELLVALUE_BASE_POINT0 + i), basePoints);
@@ -1558,7 +1518,7 @@ class spell_dk_presence : public AuraScript
             if (GetId() == SPELL_DK_UNHOLY_PRESENCE)
             {
                 // Not listed as any effect, only base points set
-                int32 bp = impAurEff->GetSpellInfo()->Effects[EFFECT_1].CalcValue();
+                int32 bp = impAurEff->GetSpellInfo()->GetEffect(EFFECT_1).CalcValue();
                 CastSpellExtraArgs args(aurEff);
                 for (uint32 i = 0; i < MAX_SPELL_EFFECTS; ++i)
                     args.AddSpellMod(SpellValueMod(SPELLVALUE_BASE_POINT0 + i), bp);
@@ -1623,8 +1583,8 @@ class spell_dk_raise_dead : public SpellScript
     {
         return ValidateSpellInfo(
         {
-            static_cast<uint32>(spellInfo->Effects[EFFECT_1].CalcValue()),
-            static_cast<uint32>(spellInfo->Effects[EFFECT_2].CalcValue()),
+            static_cast<uint32>(spellInfo->GetEffect(EFFECT_1).CalcValue()),
+            static_cast<uint32>(spellInfo->GetEffect(EFFECT_2).CalcValue()),
             SPELL_DK_RAISE_DEAD_USE_REAGENT,
             SPELL_DK_MASTER_OF_GHOULS
         });
@@ -1705,10 +1665,10 @@ class spell_dk_raise_dead : public SpellScript
         // Do we have talent Master of Ghouls?
         if (GetCaster()->HasAura(SPELL_DK_MASTER_OF_GHOULS))
             // summon as pet
-            return GetSpellInfo()->Effects[EFFECT_2].CalcValue();
+            return GetSpellInfo()->GetEffect(EFFECT_2).CalcValue();
 
         // or guardian
-        return GetSpellInfo()->Effects[EFFECT_1].CalcValue();
+        return GetSpellInfo()->GetEffect(EFFECT_1).CalcValue();
     }
 
     void HandleRaiseDead(SpellEffIndex /*effIndex*/)
@@ -1816,7 +1776,7 @@ class spell_dk_scent_of_blood_trigger : public AuraScript
     // or we would be adding stacks to a possibly existing aura
     void HandleProc(AuraEffect const* aurEff, ProcEventInfo& /*eventInfo*/)
     {
-        GetTarget()->RemoveAurasDueToSpell(GetSpellInfo()->Effects[aurEff->GetEffIndex()].TriggerSpell);
+        GetTarget()->RemoveAurasDueToSpell(aurEff->GetSpellEffectInfo().TriggerSpell);
     }
 
     void Register() override
@@ -1895,7 +1855,7 @@ private:
 
     bool Load() override
     {
-        absorbPct = GetSpellInfo()->Effects[EFFECT_0].CalcValue(GetCaster());
+        absorbPct = GetEffectInfo(EFFECT_0).CalcValue(GetCaster());
         return true;
     }
 
@@ -2144,6 +2104,26 @@ class spell_dk_wandering_plague : public AuraScript
     }
 };
 
+// 50526 - Wandering Plague (Damage)
+class spell_dk_wandering_plague_damage : public SpellScript
+{
+    PrepareSpellScript(spell_dk_wandering_plague_damage);
+
+    void FilterTargets(std::list<WorldObject*>& targets)
+    {
+        targets.remove_if([](WorldObject* object) -> bool
+        {
+            Unit* target = object->ToUnit();
+            return target && target->HasBreakableByDamageCrowdControlAura();
+        });
+    }
+
+    void Register() override
+    {
+        OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_dk_wandering_plague_damage::FilterTargets, EFFECT_0, TARGET_UNIT_DEST_AREA_ENEMY);
+    }
+};
+
 // -52284 - Will of the Necropolis
 class spell_dk_will_of_the_necropolis : public AuraScript
 {
@@ -2170,7 +2150,7 @@ class spell_dk_will_of_the_necropolis : public AuraScript
 
     bool Load() override
     {
-        absorbPct = GetSpellInfo()->Effects[EFFECT_0].CalcValue(GetCaster());
+        absorbPct = GetEffectInfo(EFFECT_0).CalcValue(GetCaster());
         return true;
     }
 
@@ -2187,7 +2167,7 @@ class spell_dk_will_of_the_necropolis : public AuraScript
         SpellInfo const* talentProto = sSpellMgr->AssertSpellInfo(sSpellMgr->GetSpellWithRank(SPELL_DK_WILL_OF_THE_NECROPOLIS_TALENT_R1, rank));
 
         int32 remainingHp = int32(GetTarget()->GetHealth() - dmgInfo.GetDamage());
-        int32 minHp = int32(GetTarget()->CountPctFromMaxHealth(talentProto->Effects[EFFECT_0].CalcValue(GetCaster())));
+        int32 minHp = int32(GetTarget()->CountPctFromMaxHealth(talentProto->GetEffect(EFFECT_0).CalcValue(GetCaster())));
 
         // Damage that would take you below [effect0] health or taken while you are at [effect0]
         if (remainingHp < minHp)
@@ -2261,7 +2241,7 @@ class spell_dk_raise_ally_initial : public SpellScript
 
     bool Validate(SpellInfo const* spellInfo) override
     {
-        return ValidateSpellInfo({ static_cast<uint32>(spellInfo->Effects[EFFECT_0].CalcValue()) });
+        return ValidateSpellInfo({ static_cast<uint32>(spellInfo->GetEffect(EFFECT_0).CalcValue()) });
     }
 
     bool Load() override
@@ -2355,7 +2335,7 @@ public:
             if (!originalCaster)
                 return;
 
-            uint32 entry = uint32(GetSpellInfo()->Effects[effIndex].MiscValue);
+            uint32 entry = uint32(GetEffectInfo().MiscValue);
 
             //! HACK - StatSystem needs further develop to enable update on Puppet stats
             // Using same summon properties as Raise Dead 46585 (Guardian) - EffectMiscValueB = 829
@@ -2638,6 +2618,116 @@ public:
     }
 };
 
+// 51963 - Gargoyle Strike
+class spell_pet_dk_gargoyle_strike : public SpellScript
+{
+    PrepareSpellScript(spell_pet_dk_gargoyle_strike);
+
+    void HandleDamageCalc(SpellEffIndex /*effIndex*/)
+    {
+        int32 damage = 60;
+        if (Unit* caster = GetCaster())
+        {
+            if (caster->GetLevel() >= 60)
+                damage += (caster->GetLevel() - 60) * 4;
+        }
+
+        SetEffectValue(damage);
+    }
+
+    void Register() override
+    {
+        OnEffectLaunchTarget += SpellEffectFn(spell_pet_dk_gargoyle_strike::HandleDamageCalc, EFFECT_0, SPELL_EFFECT_SCHOOL_DAMAGE);
+    }
+};
+
+enum DancingRuneWeaponMisc
+{
+    DATA_INITIAL_TARGET_GUID = 1,
+};
+
+// 49028 - Dancing Rune Weapon
+class spell_dk_dancing_rune_weapon : public AuraScript
+{
+    PrepareAuraScript(spell_dk_dancing_rune_weapon);
+
+    bool Validate(SpellInfo const* /*spellInfo*/) override
+    {
+        return ValidateSpellInfo({
+            SPELL_DK_BLOOD_STRIKE,
+            SPELL_DK_ICY_TOUCH,
+            SPELL_DK_PLAGUE_STRIKE,
+            SPELL_DK_DEATH_COIL_DAMAGE,
+            SPELL_DK_DEATH_STRIKE,
+            SPELL_DK_HEART_STRIKE,
+            SPELL_DK_OBLITERATE,
+            SPELL_DK_RUNE_STRIKE
+        });
+    }
+
+    void HandleTarget(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
+    {
+        Unit* caster = GetCaster();
+        if (!caster)
+            return;
+
+        std::list<Creature*> runeWeapons;
+        caster->GetAllMinionsByEntry(runeWeapons, NPC_DK_DANCING_RUNE_WEAPON);
+        for (Creature* temp : runeWeapons)
+        {
+            if (temp->IsAIEnabled())
+                temp->AI()->SetGUID(GetTarget()->GetGUID(), DATA_INITIAL_TARGET_GUID);
+            temp->GetThreatManager().RegisterRedirectThreat(GetId(), caster->GetGUID(), 100);
+        }
+    }
+
+    bool CheckProc(ProcEventInfo& eventInfo)
+    {
+        if (SpellInfo const* procSpell = eventInfo.GetSpellInfo())
+        {
+            if (procSpell->IsRankOf(sSpellMgr->GetSpellInfo(SPELL_DK_BLOOD_STRIKE)) ||
+                procSpell->IsRankOf(sSpellMgr->GetSpellInfo(SPELL_DK_ICY_TOUCH)) ||
+                procSpell->IsRankOf(sSpellMgr->GetSpellInfo(SPELL_DK_PLAGUE_STRIKE)) ||
+                procSpell->IsRankOf(sSpellMgr->GetSpellInfo(SPELL_DK_DEATH_COIL_DAMAGE)) ||
+                procSpell->IsRankOf(sSpellMgr->GetSpellInfo(SPELL_DK_DEATH_STRIKE)) ||
+                procSpell->IsRankOf(sSpellMgr->GetSpellInfo(SPELL_DK_HEART_STRIKE)) ||
+                procSpell->IsRankOf(sSpellMgr->GetSpellInfo(SPELL_DK_OBLITERATE)) ||
+                procSpell->IsRankOf(sSpellMgr->GetSpellInfo(SPELL_DK_RUNE_STRIKE)))
+                return true;
+        }
+
+        return false;
+    }
+
+    void HandleProc(AuraEffect const* /*aurEff*/, ProcEventInfo& eventInfo)
+    {
+        PreventDefaultAction();
+
+        Unit* owner = GetUnitOwner();
+        if (!owner)
+            return;
+
+        SpellInfo const* procSpell = eventInfo.GetSpellInfo();
+        Unit* runeWeapon = nullptr;
+        for (auto itr = owner->m_Controlled.begin(); itr != owner->m_Controlled.end() && !runeWeapon; itr++)
+            if ((*itr)->GetEntry() == NPC_DK_DANCING_RUNE_WEAPON)
+                runeWeapon = *itr;
+
+        if (!runeWeapon)
+            return;
+
+        if (runeWeapon->IsInCombat() && runeWeapon->GetVictim())
+            runeWeapon->CastSpell(runeWeapon->GetVictim(), procSpell->Id, CastSpellExtraArgs(TriggerCastFlags::TRIGGERED_IGNORE_POWER_AND_REAGENT_COST));
+    }
+
+    void Register() override
+    {
+        AfterEffectApply += AuraEffectApplyFn(spell_dk_dancing_rune_weapon::HandleTarget, EFFECT_2, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
+        DoCheckProc += AuraCheckProcFn(spell_dk_dancing_rune_weapon::CheckProc);
+        OnEffectProc += AuraEffectProcFn(spell_dk_dancing_rune_weapon::HandleProc, EFFECT_1, SPELL_AURA_DUMMY);
+    }
+};
+
 void AddSC_deathknight_spell_scripts()
 {
     RegisterSpellScript(spell_dk_acclimation);
@@ -2651,7 +2741,6 @@ void AddSC_deathknight_spell_scripts()
     RegisterSpellScript(spell_dk_bloodworms);
     RegisterSpellScript(spell_dk_butchery);
     RegisterSpellScript(spell_dk_corpse_explosion);
-    RegisterSpellScript(spell_dk_dancing_rune_weapon);
     RegisterSpellScript(spell_dk_death_and_decay);
     RegisterSpellScript(spell_dk_death_coil);
     RegisterSpellScript(spell_dk_death_gate);
@@ -2689,10 +2778,13 @@ void AddSC_deathknight_spell_scripts()
     RegisterSpellScript(spell_dk_vampiric_blood);
     RegisterSpellScript(spell_dk_vendetta);
     RegisterSpellScript(spell_dk_wandering_plague);
+    RegisterSpellScript(spell_dk_wandering_plague_damage);
     RegisterSpellScript(spell_dk_will_of_the_necropolis);
     RegisterSpellScript(spell_dk_death_grip_initial);
     RegisterSpellScript(spell_dk_raise_ally_initial);
     new spell_dk_raise_ally();
     RegisterSpellScript(spell_dk_ghoul_thrash);
     new spell_dk_blood_tap();
+    RegisterSpellScript(spell_pet_dk_gargoyle_strike);
+    RegisterSpellScript(spell_dk_dancing_rune_weapon);
 }

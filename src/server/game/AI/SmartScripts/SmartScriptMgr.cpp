@@ -311,11 +311,8 @@ void SmartAIMgr::LoadSmartAIFromDB()
             case SMART_EVENT_UPDATE_OOC:
             case SMART_EVENT_UPDATE_IC:
             case SMART_EVENT_HEALTH_PCT:
-            case SMART_EVENT_TARGET_HEALTH_PCT:
             case SMART_EVENT_MANA_PCT:
-            case SMART_EVENT_TARGET_MANA_PCT:
             case SMART_EVENT_RANGE:
-            case SMART_EVENT_FRIENDLY_HEALTH:
             case SMART_EVENT_FRIENDLY_HEALTH_PCT:
             case SMART_EVENT_FRIENDLY_MISSING_BUFF:
             case SMART_EVENT_HAS_AURA:
@@ -328,7 +325,6 @@ void SmartAIMgr::LoadSmartAIFromDB()
                 }
                 break;
             case SMART_EVENT_VICTIM_CASTING:
-            case SMART_EVENT_IS_BEHIND_TARGET:
                 if (temp.event.minMaxRepeat.min == 0 && temp.event.minMaxRepeat.max == 0 && !(temp.event.event_flags & SMART_EVENT_FLAG_NOT_REPEATABLE) && temp.source_type != SMART_SCRIPT_TYPE_TIMED_ACTIONLIST)
                 {
                     temp.event.event_flags |= SMART_EVENT_FLAG_NOT_REPEATABLE;
@@ -460,17 +456,13 @@ SmartScriptHolder& SmartAIMgr::FindLinkedEvent(SmartAIEventList& list, uint32 li
         case SMART_EVENT_IC_LOS:
         case SMART_EVENT_OOC_LOS:
         case SMART_EVENT_DISTANCE_CREATURE:
-        case SMART_EVENT_FRIENDLY_HEALTH:
         case SMART_EVENT_FRIENDLY_HEALTH_PCT:
         case SMART_EVENT_FRIENDLY_IS_CC:
         case SMART_EVENT_FRIENDLY_MISSING_BUFF:
         case SMART_EVENT_ACTION_DONE:
-        case SMART_EVENT_TARGET_HEALTH_PCT:
-        case SMART_EVENT_TARGET_MANA_PCT:
         case SMART_EVENT_RANGE:
         case SMART_EVENT_VICTIM_CASTING:
         case SMART_EVENT_TARGET_BUFFED:
-        case SMART_EVENT_IS_BEHIND_TARGET:
         case SMART_EVENT_INSTANCE_PLAYER_ENTER:
         case SMART_EVENT_TRANSPORT_ADDCREATURE:
         case SMART_EVENT_DATA_SET:
@@ -485,9 +477,6 @@ bool SmartAIMgr::IsTargetValid(SmartScriptHolder const& e)
     if (std::abs(e.target.o) > 2 * float(M_PI))
         TC_LOG_ERROR("sql.sql", "SmartAIMgr: Entry %d SourceType %u Event %u Action %u has abs(`target.o` = %f) > 2*PI (orientation is expressed in radians)",
             e.entryOrGuid, e.GetScriptType(), e.event_id, e.GetActionType(), e.target.o);
-
-    if (e.GetActionType() == SMART_ACTION_INSTALL_AI_TEMPLATE)
-        return true; // AI template has special handling
 
     switch (e.GetTargetType())
     {
@@ -716,13 +705,10 @@ bool SmartAIMgr::CheckUnusedEventParams(SmartScriptHolder const& e)
             case SMART_EVENT_RANGE: return sizeof(SmartEvent::minMaxRepeat);
             case SMART_EVENT_OOC_LOS: return sizeof(SmartEvent::los);
             case SMART_EVENT_RESPAWN: return sizeof(SmartEvent::respawn);
-            case SMART_EVENT_TARGET_HEALTH_PCT: return sizeof(SmartEvent::minMaxRepeat);
             case SMART_EVENT_VICTIM_CASTING: return sizeof(SmartEvent::targetCasting);
-            case SMART_EVENT_FRIENDLY_HEALTH: return sizeof(SmartEvent::friendlyHealth);
             case SMART_EVENT_FRIENDLY_IS_CC: return sizeof(SmartEvent::friendlyCC);
             case SMART_EVENT_FRIENDLY_MISSING_BUFF: return sizeof(SmartEvent::missingBuff);
             case SMART_EVENT_SUMMONED_UNIT: return sizeof(SmartEvent::summoned);
-            case SMART_EVENT_TARGET_MANA_PCT: return sizeof(SmartEvent::minMaxRepeat);
             case SMART_EVENT_ACCEPTED_QUEST: return sizeof(SmartEvent::quest);
             case SMART_EVENT_REWARD_QUEST: return sizeof(SmartEvent::quest);
             case SMART_EVENT_REACHED_HOME: return NO_PARAMS;
@@ -771,7 +757,6 @@ bool SmartAIMgr::CheckUnusedEventParams(SmartScriptHolder const& e)
             case SMART_EVENT_GOSSIP_HELLO: return sizeof(SmartEvent::gossipHello);
             case SMART_EVENT_FOLLOW_COMPLETED: return NO_PARAMS;
             case SMART_EVENT_EVENT_PHASE_CHANGE: return sizeof(SmartEvent::eventPhaseChange);
-            case SMART_EVENT_IS_BEHIND_TARGET: return sizeof(SmartEvent::behindTarget);
             case SMART_EVENT_GAME_EVENT_START: return sizeof(SmartEvent::gameEvent);
             case SMART_EVENT_GAME_EVENT_END: return sizeof(SmartEvent::gameEvent);
             case SMART_EVENT_GO_LOOT_STATE_CHANGED: return sizeof(SmartEvent::goLootStateChanged);
@@ -797,19 +782,17 @@ bool SmartAIMgr::CheckUnusedEventParams(SmartScriptHolder const& e)
     static size_t rawCount = sizeof(SmartEvent::raw) / sizeof(uint32);
     size_t paramsCount = paramsStructSize / sizeof(uint32);
 
-    bool valid = true;
     for (size_t index = paramsCount; index < rawCount; index++)
     {
         uint32 value = ((uint32*)&e.event.raw)[index];
         if (value != 0)
         {
-            TC_LOG_ERROR("sql.sql", "SmartAIMgr: Entry %d SourceType %u Event %u Action %u has unused event_param%zu with value %u, it must be 0, skipped.",
+            TC_LOG_WARN("sql.sql", "SmartAIMgr: Entry %d SourceType %u Event %u Action %u has unused event_param%zu with value %u, it should be 0.",
                 e.entryOrGuid, e.GetScriptType(), e.event_id, e.GetActionType(), index + 1, value);
-            valid = false;
         }
     }
 
-    return valid;
+    return true;
 }
 
 bool SmartAIMgr::CheckUnusedActionParams(SmartScriptHolder const& e)
@@ -837,8 +820,6 @@ bool SmartAIMgr::CheckUnusedActionParams(SmartScriptHolder const& e)
             case SMART_ACTION_CALL_AREAEXPLOREDOREVENTHAPPENS: return sizeof(SmartAction::quest);
             //case SMART_ACTION_RESERVED_16: return sizeof(SmartAction::raw);
             case SMART_ACTION_SET_EMOTE_STATE: return sizeof(SmartAction::emote);
-            case SMART_ACTION_SET_UNIT_FLAG: return sizeof(SmartAction::unitFlag);
-            case SMART_ACTION_REMOVE_UNIT_FLAG: return sizeof(SmartAction::unitFlag);
             case SMART_ACTION_AUTO_ATTACK: return sizeof(SmartAction::autoAttack);
             case SMART_ACTION_ALLOW_COMBAT_MOVEMENT: return sizeof(SmartAction::combatMove);
             case SMART_ACTION_SET_EVENT_PHASE: return sizeof(SmartAction::setEventPhase);
@@ -877,7 +858,6 @@ bool SmartAIMgr::CheckUnusedActionParams(SmartScriptHolder const& e)
             case SMART_ACTION_WP_STOP: return sizeof(SmartAction::wpStop);
             case SMART_ACTION_ADD_ITEM: return sizeof(SmartAction::item);
             case SMART_ACTION_REMOVE_ITEM: return sizeof(SmartAction::item);
-            case SMART_ACTION_INSTALL_AI_TEMPLATE: return sizeof(SmartAction::installTtemplate);
             case SMART_ACTION_SET_RUN: return sizeof(SmartAction::setRun);
             case SMART_ACTION_SET_DISABLE_GRAVITY: return sizeof(SmartAction::setDisableGravity);
             case SMART_ACTION_SET_SWIM: return sizeof(SmartAction::setSwim);
@@ -913,9 +893,6 @@ bool SmartAIMgr::CheckUnusedActionParams(SmartScriptHolder const& e)
             case SMART_ACTION_REMOVE_UNIT_FIELD_BYTES_1: return sizeof(SmartAction::delunitByte);
             case SMART_ACTION_INTERRUPT_SPELL: return sizeof(SmartAction::interruptSpellCasting);
             case SMART_ACTION_SEND_GO_CUSTOM_ANIM: return sizeof(SmartAction::sendGoCustomAnim);
-            case SMART_ACTION_SET_DYNAMIC_FLAG: return sizeof(SmartAction::flag);
-            case SMART_ACTION_ADD_DYNAMIC_FLAG: return sizeof(SmartAction::flag);
-            case SMART_ACTION_REMOVE_DYNAMIC_FLAG: return sizeof(SmartAction::flag);
             case SMART_ACTION_JUMP_TO_POS: return sizeof(SmartAction::jump);
             case SMART_ACTION_SEND_GOSSIP_MENU: return sizeof(SmartAction::sendGossipMenu);
             case SMART_ACTION_GO_SET_LOOT_STATE: return sizeof(SmartAction::setGoLootState);
@@ -963,6 +940,9 @@ bool SmartAIMgr::CheckUnusedActionParams(SmartScriptHolder const& e)
             case SMART_ACTION_SET_HOVER: return sizeof(SmartAction::setHover);
             case SMART_ACTION_SET_HEALTH_PCT: return sizeof(SmartAction::setHealthPct);
             //case SMART_ACTION_CREATE_CONVERSATION: return sizeof(SmartAction::raw);
+            case SMART_ACTION_SET_IMMUNE_PC: return sizeof(SmartAction::setImmunePC);
+            case SMART_ACTION_SET_IMMUNE_NPC: return sizeof(SmartAction::setImmuneNPC);
+            case SMART_ACTION_SET_UNINTERACTIBLE: return sizeof(SmartAction::setUninteractible);
             default:
                 TC_LOG_WARN("sql.sql", "SmartAIMgr: Entry %d SourceType %u Event %u Action %u is using an action with no unused params specified in SmartAIMgr::CheckUnusedActionParams(), please report this.",
                     e.entryOrGuid, e.GetScriptType(), e.event_id, e.GetActionType());
@@ -973,19 +953,17 @@ bool SmartAIMgr::CheckUnusedActionParams(SmartScriptHolder const& e)
     static size_t rawCount = sizeof(SmartAction::raw) / sizeof(uint32);
     size_t paramsCount = paramsStructSize / sizeof(uint32);
 
-    bool valid = true;
     for (size_t index = paramsCount; index < rawCount; index++)
     {
         uint32 value = ((uint32*)&e.action.raw)[index];
         if (value != 0)
         {
-            TC_LOG_ERROR("sql.sql", "SmartAIMgr: Entry %d SourceType %u Event %u Action %u has unused action_param%zu with value %u, it must be 0, skipped.",
+            TC_LOG_WARN("sql.sql", "SmartAIMgr: Entry %d SourceType %u Event %u Action %u has unused action_param%zu with value %u, it should be 0.",
                 e.entryOrGuid, e.GetScriptType(), e.event_id, e.GetActionType(), index + 1, value);
-            valid = false;
         }
     }
 
-    return valid;
+    return true;
 }
 
 bool SmartAIMgr::CheckUnusedTargetParams(SmartScriptHolder const& e)
@@ -1036,19 +1014,17 @@ bool SmartAIMgr::CheckUnusedTargetParams(SmartScriptHolder const& e)
     static size_t rawCount = sizeof(SmartTarget::raw) / sizeof(uint32);
     size_t paramsCount = paramsStructSize / sizeof(uint32);
 
-    bool valid = true;
     for (size_t index = paramsCount; index < rawCount; index++)
     {
         uint32 value = ((uint32*)&e.target.raw)[index];
         if (value != 0)
         {
-            TC_LOG_ERROR("sql.sql", "SmartAIMgr: Entry %d SourceType %u Event %u Action %u has unused target_param%zu with value %u, it must be 0, skipped.",
+            TC_LOG_WARN("sql.sql", "SmartAIMgr: Entry %d SourceType %u Event %u Action %u has unused target_param%zu with value %u, it should be 0.",
                 e.entryOrGuid, e.GetScriptType(), e.event_id, e.GetActionType(), index + 1, value);
-            valid = false;
         }
     }
 
-    return valid;
+    return true;
 }
 
 bool SmartAIMgr::IsEventValid(SmartScriptHolder& e)
@@ -1108,8 +1084,6 @@ bool SmartAIMgr::IsEventValid(SmartScriptHolder& e)
             case SMART_EVENT_UPDATE_OOC:
             case SMART_EVENT_HEALTH_PCT:
             case SMART_EVENT_MANA_PCT:
-            case SMART_EVENT_TARGET_HEALTH_PCT:
-            case SMART_EVENT_TARGET_MANA_PCT:
             case SMART_EVENT_RANGE:
             case SMART_EVENT_DAMAGED:
             case SMART_EVENT_DAMAGED_TARGET:
@@ -1163,13 +1137,6 @@ bool SmartAIMgr::IsEventValid(SmartScriptHolder& e)
                     TC_LOG_ERROR("sql.sql", "SmartAIMgr: Entry %d SourceType %u Event %u Action %u uses non-existent Area entry %u, skipped.", e.entryOrGuid, e.GetScriptType(), e.event_id, e.GetActionType(), e.event.respawn.area);
                     return false;
                 }
-                break;
-            case SMART_EVENT_FRIENDLY_HEALTH:
-                if (!NotNULL(e, e.event.friendlyHealth.radius))
-                    return false;
-
-                if (!IsMinMaxValid(e, e.event.friendlyHealth.repeatMin, e.event.friendlyHealth.repeatMax))
-                    return false;
                 break;
             case SMART_EVENT_FRIENDLY_IS_CC:
                 if (!IsMinMaxValid(e, e.event.friendlyCC.repeatMin, e.event.friendlyCC.repeatMax))
@@ -1297,12 +1264,6 @@ bool SmartAIMgr::IsEventValid(SmartScriptHolder& e)
                     TC_LOG_ERROR("sql.sql", "SmartAIMgr: Entry %d SourceType %u Event %u Action %u uses event phasemask %u and incompatible event_param1 %u, skipped.", e.entryOrGuid, e.GetScriptType(), e.event_id, e.GetActionType(), e.event.event_phase_mask, e.event.eventPhaseChange.phasemask);
                     return false;
                 }
-                break;
-            }
-            case SMART_EVENT_IS_BEHIND_TARGET:
-            {
-                if (!IsMinMaxValid(e, e.event.behindTarget.cooldownMin, e.event.behindTarget.cooldownMax))
-                    return false;
                 break;
             }
             case SMART_EVENT_GAME_EVENT_START:
@@ -1461,9 +1422,29 @@ bool SmartAIMgr::IsEventValid(SmartScriptHolder& e)
             case SMART_EVENT_FOLLOW_COMPLETED:
             case SMART_EVENT_ON_SPELLCLICK:
                 break;
+            // Unused
+            case SMART_EVENT_TARGET_HEALTH_PCT:
+            case SMART_EVENT_FRIENDLY_HEALTH:
+            case SMART_EVENT_TARGET_MANA_PCT:
+            case SMART_EVENT_IS_BEHIND_TARGET:
+                TC_LOG_ERROR("sql.sql", "SmartAIMgr: Unused event_type(%u), Entry %d SourceType %u Event %u, skipped.", e.GetEventType(), e.entryOrGuid, e.GetScriptType(), e.event_id);
+                return false;
             default:
                 TC_LOG_ERROR("sql.sql", "SmartAIMgr: Not handled event_type(%u), Entry %d SourceType %u Event %u Action %u, skipped.", e.GetEventType(), e.entryOrGuid, e.GetScriptType(), e.event_id, e.GetActionType());
                 return false;
+        }
+
+        // Additional check for deprecated
+        switch (e.GetEventType())
+        {
+            // Deprecated
+            case SMART_EVENT_EVENT_PHASE_CHANGE:
+            case SMART_EVENT_WAYPOINT_START:
+            case SMART_EVENT_CHARMED_TARGET:
+                TC_LOG_WARN("sql.sql.deprecation", "SmartAIMgr: Deprecated event_type(%u), Entry %d SourceType %u Event %u Action %u, it might be removed in the future, loaded for now.", e.GetEventType(), e.entryOrGuid, e.GetScriptType(), e.event_id, e.GetActionType());
+                break;
+            default:
+                break;
         }
     }
 
@@ -1597,13 +1578,13 @@ bool SmartAIMgr::IsEventValid(SmartScriptHolder& e)
             if (!IsSpellValid(e, e.action.cast.spell))
                 return false;
 
-            for (SpellEffectInfo const& Effect : sSpellMgr->AssertSpellInfo(e.action.cast.spell)->Effects)
+            for (SpellEffectInfo const& spellEffectInfo : sSpellMgr->AssertSpellInfo(e.action.cast.spell)->GetEffects())
             {
-                if (Effect.IsEffect(SPELL_EFFECT_KILL_CREDIT) || Effect.IsEffect(SPELL_EFFECT_KILL_CREDIT2))
+                if (spellEffectInfo.IsEffect(SPELL_EFFECT_KILL_CREDIT) || spellEffectInfo.IsEffect(SPELL_EFFECT_KILL_CREDIT2))
                 {
-                    if (Effect.TargetA.GetTarget() == TARGET_UNIT_CASTER)
+                    if (spellEffectInfo.TargetA.GetTarget() == TARGET_UNIT_CASTER)
                         TC_LOG_ERROR("sql.sql", "SmartAIMgr: Entry %d SourceType %u Event %u Action %u Effect: SPELL_EFFECT_KILL_CREDIT: (SpellId: %u targetA: %u - targetB: %u) has invalid target for this Action",
-                            e.entryOrGuid, e.GetScriptType(), e.event_id, e.GetActionType(), e.action.cast.spell, Effect.TargetA.GetTarget(), Effect.TargetB.GetTarget());
+                            e.entryOrGuid, e.GetScriptType(), e.event_id, e.GetActionType(), e.action.cast.spell, spellEffectInfo.TargetA.GetTarget(), spellEffectInfo.TargetB.GetTarget());
                 }
             }
             break;
@@ -1793,13 +1774,6 @@ bool SmartAIMgr::IsEventValid(SmartScriptHolder& e)
             if (!sMapStore.LookupEntry(e.action.teleport.mapID))
             {
                 TC_LOG_ERROR("sql.sql", "SmartAIMgr: Entry %d SourceType %u Event %u Action %u uses non-existent Map entry %u, skipped.", e.entryOrGuid, e.GetScriptType(), e.event_id, e.GetActionType(), e.action.teleport.mapID);
-                return false;
-            }
-            break;
-        case SMART_ACTION_INSTALL_AI_TEMPLATE:
-            if (e.action.installTtemplate.id >= SMARTAI_TEMPLATE_END)
-            {
-                TC_LOG_ERROR("sql.sql", "SmartAIMgr: Creature %d Event %u Action %u uses non-existent AI template id %u, skipped.", e.entryOrGuid, e.event_id, e.GetActionType(), e.action.installTtemplate.id);
                 return false;
             }
             break;
@@ -2134,6 +2108,21 @@ bool SmartAIMgr::IsEventValid(SmartScriptHolder& e)
             TC_SAI_IS_BOOLEAN_VALID(e, e.action.setHealthRegen.regenHealth);
             break;
         }
+        case SMART_ACTION_SET_IMMUNE_PC:
+        {
+            TC_SAI_IS_BOOLEAN_VALID(e, e.action.setImmunePC.immunePC);
+            break;
+        }
+        case SMART_ACTION_SET_IMMUNE_NPC:
+        {
+            TC_SAI_IS_BOOLEAN_VALID(e, e.action.setImmuneNPC.immuneNPC);
+            break;
+        }
+        case SMART_ACTION_SET_UNINTERACTIBLE:
+        {
+            TC_SAI_IS_BOOLEAN_VALID(e, e.action.setUninteractible.uninteractible);
+            break;
+        }
         case SMART_ACTION_FOLLOW:
         case SMART_ACTION_SET_ORIENTATION:
         case SMART_ACTION_STORE_TARGET_LIST:
@@ -2153,8 +2142,6 @@ bool SmartAIMgr::IsEventValid(SmartScriptHolder& e)
         case SMART_ACTION_WP_PAUSE:
         case SMART_ACTION_FORCE_DESPAWN:
         case SMART_ACTION_SET_INGAME_PHASE_MASK:
-        case SMART_ACTION_SET_UNIT_FLAG:
-        case SMART_ACTION_REMOVE_UNIT_FLAG:
         case SMART_ACTION_PLAYMOVIE:
         case SMART_ACTION_CLOSE_GOSSIP:
         case SMART_ACTION_TRIGGER_TIMED_EVENT:
@@ -2171,9 +2158,6 @@ bool SmartAIMgr::IsEventValid(SmartScriptHolder& e)
         case SMART_ACTION_SET_UNIT_FIELD_BYTES_1:
         case SMART_ACTION_REMOVE_UNIT_FIELD_BYTES_1:
         case SMART_ACTION_SEND_GO_CUSTOM_ANIM:
-        case SMART_ACTION_SET_DYNAMIC_FLAG:
-        case SMART_ACTION_ADD_DYNAMIC_FLAG:
-        case SMART_ACTION_REMOVE_DYNAMIC_FLAG:
         case SMART_ACTION_JUMP_TO_POS:
         case SMART_ACTION_SEND_GOSSIP_MENU:
         case SMART_ACTION_GO_SET_LOOT_STATE:
@@ -2195,6 +2179,15 @@ bool SmartAIMgr::IsEventValid(SmartScriptHolder& e)
         case SMART_ACTION_DESPAWN_SPAWNGROUP:
         case SMART_ACTION_PLAY_CINEMATIC:
             break;
+        // Unused
+        case SMART_ACTION_SET_UNIT_FLAG:
+        case SMART_ACTION_REMOVE_UNIT_FLAG:
+        case SMART_ACTION_INSTALL_AI_TEMPLATE:
+        case SMART_ACTION_SET_DYNAMIC_FLAG:
+        case SMART_ACTION_ADD_DYNAMIC_FLAG:
+        case SMART_ACTION_REMOVE_DYNAMIC_FLAG:
+            TC_LOG_ERROR("sql.sql", "SmartAIMgr: Unused action_type(%u), event_type(%u), Entry %d SourceType %u Event %u, skipped.", e.GetActionType(), e.GetEventType(), e.entryOrGuid, e.GetScriptType(), e.event_id);
+            return false;
         default:
             TC_LOG_ERROR("sql.sql", "SmartAIMgr: Not handled action_type(%u), event_type(%u), Entry %d SourceType %u Event %u, skipped.", e.GetActionType(), e.GetEventType(), e.entryOrGuid, e.GetScriptType(), e.event_id);
             return false;
@@ -2264,19 +2257,19 @@ void SmartAIMgr::LoadHelperStores()
         if (!spellInfo)
             continue;
 
-        for (uint32 j = 0; j < MAX_SPELL_EFFECTS; ++j)
+        for (SpellEffectInfo const& spellEffectInfo : spellInfo->GetEffects())
         {
-            if (spellInfo->Effects[j].IsEffect(SPELL_EFFECT_SUMMON))
-                SummonCreatureSpellStore.insert(std::make_pair(uint32(spellInfo->Effects[j].MiscValue), std::make_pair(i, SpellEffIndex(j))));
+            if (spellEffectInfo.IsEffect(SPELL_EFFECT_SUMMON))
+                SummonCreatureSpellStore.insert(std::make_pair(uint32(spellEffectInfo.MiscValue), std::make_pair(i, spellEffectInfo.EffectIndex)));
 
-            else if (spellInfo->Effects[j].IsEffect(SPELL_EFFECT_SUMMON_OBJECT_WILD))
-                SummonGameObjectSpellStore.insert(std::make_pair(uint32(spellInfo->Effects[j].MiscValue), std::make_pair(i, SpellEffIndex(j))));
+            else if (spellEffectInfo.IsEffect(SPELL_EFFECT_SUMMON_OBJECT_WILD))
+                SummonGameObjectSpellStore.insert(std::make_pair(uint32(spellEffectInfo.MiscValue), std::make_pair(i, spellEffectInfo.EffectIndex)));
 
-            else if (spellInfo->Effects[j].IsEffect(SPELL_EFFECT_KILL_CREDIT) || spellInfo->Effects[j].IsEffect(SPELL_EFFECT_KILL_CREDIT2))
-                KillCreditSpellStore.insert(std::make_pair(uint32(spellInfo->Effects[j].MiscValue), std::make_pair(i, SpellEffIndex(j))));
+            else if (spellEffectInfo.IsEffect(SPELL_EFFECT_KILL_CREDIT) || spellEffectInfo.IsEffect(SPELL_EFFECT_KILL_CREDIT2))
+                KillCreditSpellStore.insert(std::make_pair(uint32(spellEffectInfo.MiscValue), std::make_pair(i, spellEffectInfo.EffectIndex)));
 
-            else if (spellInfo->Effects[j].IsEffect(SPELL_EFFECT_CREATE_ITEM))
-                CreateItemSpellStore.insert(std::make_pair(uint32(spellInfo->Effects[j].ItemType), std::make_pair(i, SpellEffIndex(j))));
+            else if (spellEffectInfo.IsEffect(SPELL_EFFECT_CREATE_ITEM))
+                CreateItemSpellStore.insert(std::make_pair(uint32(spellEffectInfo.ItemType), std::make_pair(i, spellEffectInfo.EffectIndex)));
         }
     }
 

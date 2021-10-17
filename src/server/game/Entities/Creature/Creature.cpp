@@ -254,7 +254,7 @@ Creature::Creature(bool isWorldObject): Unit(isWorldObject), MapObject(), m_grou
     m_defaultMovementType(IDLE_MOTION_TYPE), m_spawnId(0), m_equipmentId(0), m_originalEquipmentId(0), m_AlreadyCallAssistance(false), m_AlreadySearchedAssistance(false), m_cannotReachTarget(false), m_cannotReachTimer(0),
     m_meleeDamageSchoolMask(SPELL_SCHOOL_MASK_NORMAL), m_originalEntry(0), m_homePosition(), m_transportHomePosition(), m_creatureInfo(nullptr), m_creatureData(nullptr), _waypointPathId(0), _currentWaypointNodeInfo(0, 0),
     m_formation(nullptr), m_triggerJustAppeared(true), m_respawnCompatibilityMode(false), _lastDamagedTime(0),
-    _regenerateHealth(true), _regenerateHealthLock(false), _isMissingSwimmingFlagOutOfCombat(false)
+    _regenerateHealth(true), _regenerateHealthLock(false), _isMissingCanSwimFlagOutOfCombat(false)
 {
     m_regenTimer = CREATURE_REGEN_INTERVAL;
     m_valuesCount = UNIT_END;
@@ -609,9 +609,9 @@ bool Creature::UpdateEntry(uint32 entry, CreatureData const* data /*= nullptr*/,
         }
     }
 
-    // trigger creature is always not selectable and can not be attacked
+    // trigger creature is always uninteractible and can not be attacked
     if (IsTrigger())
-        SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+        SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_UNINTERACTIBLE);
 
     InitializeReactState();
 
@@ -621,7 +621,7 @@ bool Creature::UpdateEntry(uint32 entry, CreatureData const* data /*= nullptr*/,
         ApplySpellImmune(0, IMMUNITY_EFFECT, SPELL_EFFECT_ATTACK_ME, true);
     }
 
-    SetIgnoringCombat((cInfo->flags_extra & CREATURE_FLAG_EXTRA_IGNORE_COMBAT) != 0);
+    SetIsCombatDisallowed((cInfo->flags_extra & CREATURE_FLAG_EXTRA_CANNOT_ENTER_COMBAT) != 0);
 
     LoadTemplateRoot();
     InitializeMovementFlags();
@@ -2209,9 +2209,9 @@ bool Creature::IsImmunedToSpell(SpellInfo const* spellInfo, WorldObject const* c
         return false;
 
     bool immunedToAllEffects = true;
-    for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
+    for (SpellEffectInfo const& spellEffectInfo : spellInfo->GetEffects())
     {
-        if (spellInfo->Effects[i].IsEffect() && !IsImmunedToSpellEffect(spellInfo, i, caster))
+        if (spellEffectInfo.IsEffect() && !IsImmunedToSpellEffect(spellInfo, spellEffectInfo, caster))
         {
             immunedToAllEffects = false;
             break;
@@ -2224,12 +2224,12 @@ bool Creature::IsImmunedToSpell(SpellInfo const* spellInfo, WorldObject const* c
     return Unit::IsImmunedToSpell(spellInfo, caster);
 }
 
-bool Creature::IsImmunedToSpellEffect(SpellInfo const* spellInfo, uint32 index, WorldObject const* caster) const
+bool Creature::IsImmunedToSpellEffect(SpellInfo const* spellInfo, SpellEffectInfo const& spellEffectInfo, WorldObject const* caster) const
 {
-    if (GetCreatureTemplate()->type == CREATURE_TYPE_MECHANICAL && spellInfo->Effects[index].Effect == SPELL_EFFECT_HEAL)
+    if (GetCreatureTemplate()->type == CREATURE_TYPE_MECHANICAL && spellEffectInfo.IsEffect(SPELL_EFFECT_HEAL))
         return true;
 
-    return Unit::IsImmunedToSpellEffect(spellInfo, index, caster);
+    return Unit::IsImmunedToSpellEffect(spellInfo, spellEffectInfo, caster);
 }
 
 bool Creature::isElite() const
@@ -2364,7 +2364,7 @@ bool Creature::CanAssistTo(Unit const* u, Unit const* enemy, bool checkfaction /
     if (IsCivilian())
         return false;
 
-    if (HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE) || IsImmuneToNPC())
+    if (HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_UNINTERACTIBLE) || IsImmuneToNPC())
         return false;
 
     // skip fighting creature
@@ -2719,15 +2719,15 @@ bool Creature::CanEnterWater() const
     return GetMovementTemplate().IsSwimAllowed();
 }
 
-void Creature::RefreshSwimmingFlag(bool recheck)
+void Creature::RefreshCanSwimFlag(bool recheck)
 {
-    if (!_isMissingSwimmingFlagOutOfCombat || recheck)
-        _isMissingSwimmingFlagOutOfCombat = !HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SWIMMING);
+    if (!_isMissingCanSwimFlagOutOfCombat || recheck)
+        _isMissingCanSwimFlagOutOfCombat = !HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_CAN_SWIM);
 
-    // Check if the creature has UNIT_FLAG_SWIMMING and add it if it's missing
+    // Check if the creature has UNIT_FLAG_CAN_SWIM and add it if it's missing
     // Creatures must be able to chase a target in water if they can enter water
-    if (_isMissingSwimmingFlagOutOfCombat && CanEnterWater())
-        SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SWIMMING);
+    if (_isMissingCanSwimFlagOutOfCombat && CanEnterWater())
+        SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_CAN_SWIM);
 }
 
 void Creature::AllLootRemovedFromCorpse()
@@ -3335,7 +3335,7 @@ void Creature::AtEngage(Unit* target)
     if (!(GetCreatureTemplate()->type_flags & CREATURE_TYPE_FLAG_ALLOW_MOUNTED_COMBAT))
         Dismount();
 
-    RefreshSwimmingFlag();
+    RefreshCanSwimFlag();
 
     if (IsPet() || IsGuardian()) // update pets' speed for catchup OOC speed
     {
