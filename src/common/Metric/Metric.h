@@ -89,6 +89,9 @@ private:
     void SendBatch();
     void ScheduleSend();
     void ScheduleOverallStatusLog();
+    bool HasErrorResponse();
+    void ReadResponseTail();
+    bool HandleErrorAndRescheduleIfNeeded();
 
     static std::string FormatInfluxDBValue(bool value);
     template <class T>

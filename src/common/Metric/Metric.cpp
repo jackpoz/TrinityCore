@@ -37,6 +37,8 @@ void Metric::Initialize(std::string const& realmName, Trinity::Asio::IoContext& 
 
 bool Metric::Connect()
 {
+    TC_LOG_DEBUG("metric", "Connecting to send metrics");
+
     auto& stream = static_cast<boost::asio::ip::tcp::iostream&>(GetDataStream());
     stream.connect(_hostname, _port);
     auto error = stream.error();
@@ -144,8 +146,10 @@ void Metric::SendBatch()
     std::stringstream batchedData;
     MetricData* data;
     bool firstLoop = true;
+    uint32 metricsCount = 0;
     while (_queuedData.Dequeue(data))
     {
+        ++metricsCount;
         if (!firstLoop)
             batchedData << "\n";
 
@@ -176,6 +180,8 @@ void Metric::SendBatch()
         delete data;
     }
 
+    TC_LOG_DEBUG("metric", "Sending %u metrics", metricsCount);
+
     // Check if there's any data to send
     if (batchedData.tellp() == std::streampos(0))
     {
@@ -193,26 +199,13 @@ void Metric::SendBatch()
     GetDataStream() << "Content-Transfer-Encoding: binary\r\n";
 
     GetDataStream() << "Content-Length: " << std::to_string(batchedData.tellp()) << "\r\n\r\n";
+    if (HandleErrorAndRescheduleIfNeeded())
+        return;
     GetDataStream() << batchedData.rdbuf();
+    if (HandleErrorAndRescheduleIfNeeded())
+        return;
 
-    std::string http_version;
-    GetDataStream() >> http_version;
-    unsigned int status_code = 0;
-    GetDataStream() >> status_code;
-    if (status_code != 204)
-    {
-        TC_LOG_ERROR("metric", "Error sending data, returned HTTP code: %u", status_code);
-    }
-
-    // Read and ignore the status description
-    std::string status_description;
-    std::getline(GetDataStream(), status_description);
-    // Read headers
-    std::string header;
-    while (std::getline(GetDataStream(), header) && header != "\r")
-        if (header == "Connection: close\r")
-            static_cast<boost::asio::ip::tcp::iostream&>(GetDataStream()).close();
-
+    ReadResponseTail();
     ScheduleSend();
 }
 
@@ -257,6 +250,49 @@ void Metric::ScheduleOverallStatusLog()
             ScheduleOverallStatusLog();
         });
     }
+}
+
+bool Metric::HandleErrorAndRescheduleIfNeeded()
+{
+    if (HasErrorResponse())
+    {
+        ReadResponseTail();
+        ScheduleSend();
+        return true;
+    }
+    else
+        return false;
+}
+
+bool Metric::HasErrorResponse()
+{
+    if (!GetDataStream().rdbuf()->in_avail())
+        return false;
+
+    std::string http_version;
+    GetDataStream() >> http_version;
+    unsigned int status_code = 0;
+    GetDataStream() >> status_code;
+
+    if (status_code != 204)
+    {
+        TC_LOG_ERROR("metric", "Error sending data, returned HTTP code: %u", status_code);
+        return true;
+    }
+    else
+        return false;
+}
+
+void Metric::ReadResponseTail()
+{
+    // Read and ignore the status description
+    std::string status_description;
+    std::getline(GetDataStream(), status_description);
+    // Read headers
+    std::string header;
+    while (std::getline(GetDataStream(), header) && header != "\r")
+        if (header == "Connection: close\r")
+            static_cast<boost::asio::ip::tcp::iostream&>(GetDataStream()).close();
 }
 
 std::string Metric::FormatInfluxDBValue(bool value)
