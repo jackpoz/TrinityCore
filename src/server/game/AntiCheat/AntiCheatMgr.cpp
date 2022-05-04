@@ -18,6 +18,7 @@
 /*
 Nemesis Anti Cheat
 Inspired by the old passive anti cheat (https://github.com/TrinityCore/TrinityCoreCustomChanges/tree/3.3.5-passive_anticheat)
+
 Authors:
 https://github.com/sveN295
 https://github.com/Jinnaix
@@ -262,7 +263,8 @@ void AntiCheatMgr::CheckForJumpHack(uint32 opcode)
 void AntiCheatMgr::CheckForClimbHack(MovementInfo movementInfo, uint32 opcode)
 {
     // These flags already get checked in other cheat detection functions so we can skip these
-    if (player->IsInWater() ||
+    // We check if the player jumped while in water to catch him using low gravity hack there
+    if ((player->IsInWater() && opcode != MSG_MOVE_JUMP) ||
         player->IsFlying() ||
         player->IsFalling())
         return;
@@ -282,6 +284,7 @@ void AntiCheatMgr::CheckForClimbHack(MovementInfo movementInfo, uint32 opcode)
 
     // If the slope of the players movement is bigger than the maximum slope allowed and he is not falling he must be hacking
     if ((slope > maxAngle) &&
+        // This looks a bit weird but having the lastMovementInfo negated and the current movementInfo not doesnt break climb hack but detects low gravity hack as well
         (!_lastMovementInfo.HasMovementFlag(MOVEMENTFLAG_FALLING) || movementInfo.HasMovementFlag(MOVEMENTFLAG_FALLING)))
     {
         _hackCounter++;
@@ -517,4 +520,4 @@ void AntiCheatMgr::CreateCheatReport(std::string hacktype, std::string descripti
     stmt->setString(9, goXYZ); // gm_teleport
 
     LoginDatabase.Execute(stmt);
-} 
+}
