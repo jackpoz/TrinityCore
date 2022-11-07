@@ -68,6 +68,7 @@ public:
     void Relocate(Position const* pos) { *this = *pos; }
 
     void RelocateOffset(Position const& offset);
+    void RelocateOffset(float distance, float angle);
 
     void SetOrientation(float orientation)
     {
@@ -122,6 +123,7 @@ public:
 
     void GetPositionOffsetTo(Position const & endPos, Position & retOffset) const;
     Position GetPositionWithOffset(Position const& offset) const;
+    Position GetPositionWithOffset(float distance, float angle) const;
 
     float GetAbsoluteAngle(float x, float y) const
     {

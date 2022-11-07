@@ -41,6 +41,12 @@ void Position::RelocateOffset(Position const& offset)
     SetOrientation(GetOrientation() + offset.GetOrientation());
 }
 
+void Position::RelocateOffset(float distance, float angle)
+{
+    m_positionX = GetPositionX() + (distance * std::cos(angle));
+    m_positionY = GetPositionY() + (distance * std::sin(angle));
+}
+
 bool Position::IsPositionValid() const
 {
     return Trinity::IsValidMapCoord(m_positionX, m_positionY, m_positionZ, m_orientation);
@@ -61,6 +67,13 @@ Position Position::GetPositionWithOffset(Position const& offset) const
 {
     Position ret(*this);
     ret.RelocateOffset(offset);
+    return ret;
+}
+
+Position Position::GetPositionWithOffset(float distance, float angle) const
+{
+    Position ret(*this);
+    ret.RelocateOffset(distance, angle);
     return ret;
 }
 
