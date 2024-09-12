@@ -79,6 +79,7 @@
 #include "World.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
+#include "AntiCheatMgr.h"
 #include <cmath>
 
 float baseMoveSpeed[MAX_MOVE_TYPE] =
@@ -8658,6 +8659,10 @@ void Unit::UpdateSpeed(UnitMoveType mtype)
     }
 
     SetSpeedRate(mtype, speed);
+
+    // If the Speed Changes we dont want to have a false positive on our speed hack
+    if (Player* player = this->ToPlayer())
+        player->GetAntiCheat()->SetAllowedMovement(true);
 }
 
 float Unit::GetSpeed(UnitMoveType mtype) const
@@ -12713,6 +12718,10 @@ void Unit::_ExitVehicle(Position const* exitPosition)
     /// from the target in the aforementioned function and we don't need to do anything else at this point.
     if (!m_vehicle)
         return;
+
+    // We need to call this so two player mounts dont trigger hack detection
+    if (Player* player = this->ToPlayer())
+        player->GetAntiCheat()->SetAllowedMovement(true);
 
     // This should be done before dismiss, because there may be some aura removal
     VehicleSeatAddon const* seatAddon = m_vehicle->GetSeatAddonForSeatOfPassenger(this);

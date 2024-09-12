@@ -36,6 +36,7 @@
 #include "World.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
+#include "AntiCheatMgr.h"
 #include <boost/accumulators/statistics/variance.hpp>
 #include <boost/accumulators/accumulators.hpp>
 #include <boost/accumulators/statistics.hpp>
@@ -357,6 +358,9 @@ void WorldSession::HandleMovementOpcodes(WorldPacket& recvData)
     // interrupt parachutes upon falling or landing in water
     if (opcode == MSG_MOVE_FALL_LAND || opcode == MSG_MOVE_START_SWIM)
         mover->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_LANDING); // Parachutes
+
+    if (plrMover)
+        plrMover->GetAntiCheat()->HackDetection(movementInfo, opcode);
 
     /* process position-change */
     WorldPacket data(opcode, recvData.size());
