@@ -35,10 +35,10 @@ namespace DBCStoresCLI
             if (!worldMapArea)
                 continue;
 
-            if (worldMapArea->map_id != mapID)
+            if (worldMapArea->MapID != mapID)
                 continue;
 
-            if (worldMapArea->x2 <= x && x <= worldMapArea->x1 && worldMapArea->y2 <= y && y <= worldMapArea->y1)
+            if (worldMapArea->LocBottom <= x && x <= worldMapArea->LocTop && worldMapArea->LocRight <= y && y <= worldMapArea->LocLeft)
             {
                 worldMapAreaId = worldMapArea->ID;
                 break;
@@ -55,7 +55,7 @@ namespace DBCStoresCLI
             if (!worldMapOverlay)
                 continue;
 
-            if (worldMapOverlay->worldMapAreaId == worldMapAreaId)
+            if (worldMapOverlay->MapAreaID == worldMapAreaId)
             {
                 worldMapOverlayId = worldMapOverlay->ID;
                 break;
@@ -77,7 +77,7 @@ namespace DBCStoresCLI
 
             if (achievementCriteria->Asset.WorldMapOverlayID == worldMapOverlayId)
             {
-                achievementId = achievementCriteria->ReferredAchievement;
+                achievementId = achievementCriteria->AchievementID;
                 break;
             }
         }
@@ -94,18 +94,18 @@ namespace DBCStoresCLI
             if (achievementCriteria->Type != ACHIEVEMENT_CRITERIA_TYPE_EXPLORE_AREA)
                 continue;
 
-            if (achievementCriteria->ReferredAchievement == achievementId)
+            if (achievementCriteria->AchievementID == achievementId)
             {
                 auto worldMapOverlay = sWorldMapOverlayStore.LookupEntry(achievementCriteria->Asset.WorldMapOverlayID);
                 if (!worldMapOverlay)
                     continue;
 
-                auto areaTableEntry = sAreaTableStore.LookupEntry(worldMapOverlay->areatableID[0]);
+                auto areaTableEntry = sAreaTableStore.LookupEntry(worldMapOverlay->AreaID[0]);
                 if (!areaTableEntry)
                     continue;
 
                 float x, y, z;
-                Map::GetXYZFromAreaId(areaTableEntry->exploreFlag, mapID, x, y, z);
+                Map::GetXYZFromAreaId(areaTableEntry->AreaBit, mapID, x, y, z);
                 locations->Add(gcnew AchievementExploreLocation(Point(x, y, z), achievementCriteria->ID));
             }
         }
