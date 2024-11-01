@@ -308,7 +308,7 @@ enum ItemClass : uint8
     ITEM_CLASS_QUEST                            = 12,
     ITEM_CLASS_KEY                              = 13,
     ITEM_CLASS_PERMANENT                        = 14,
-    ITEM_CLASS_MISC                             = 15,
+    ITEM_CLASS_MISCELLANEOUS                    = 15,
     ITEM_CLASS_GLYPH                            = 16
 };
 
@@ -321,7 +321,7 @@ enum ItemSubclassConsumable
     ITEM_SUBCLASS_ELIXIR                        = 2,
     ITEM_SUBCLASS_FLASK                         = 3,
     ITEM_SUBCLASS_SCROLL                        = 4,
-    ITEM_SUBCLASS_FOOD                          = 5,
+    ITEM_SUBCLASS_FOOD_DRINK                    = 5,
     ITEM_SUBCLASS_ITEM_ENHANCEMENT              = 6,
     ITEM_SUBCLASS_BANDAGE                       = 7,
     ITEM_SUBCLASS_CONSUMABLE_OTHER              = 8
@@ -359,8 +359,8 @@ enum ItemSubclassWeapon
     ITEM_SUBCLASS_WEAPON_STAFF                  = 10,
     ITEM_SUBCLASS_WEAPON_EXOTIC                 = 11,
     ITEM_SUBCLASS_WEAPON_EXOTIC2                = 12,
-    ITEM_SUBCLASS_WEAPON_FIST                   = 13,
-    ITEM_SUBCLASS_WEAPON_MISC                   = 14,
+    ITEM_SUBCLASS_WEAPON_FIST_WEAPON            = 13,
+    ITEM_SUBCLASS_WEAPON_MISCELLANEOUS          = 14,
     ITEM_SUBCLASS_WEAPON_DAGGER                 = 15,
     ITEM_SUBCLASS_WEAPON_THROWN                 = 16,
     ITEM_SUBCLASS_WEAPON_SPEAR                  = 17,
@@ -392,7 +392,7 @@ enum ItemSubclassGem
 
 enum ItemSubclassArmor
 {
-    ITEM_SUBCLASS_ARMOR_MISC                    = 0,
+    ITEM_SUBCLASS_ARMOR_MISCELLANEOUS           = 0,
     ITEM_SUBCLASS_ARMOR_CLOTH                   = 1,
     ITEM_SUBCLASS_ARMOR_LEATHER                 = 2,
     ITEM_SUBCLASS_ARMOR_MAIL                    = 3,
@@ -466,10 +466,11 @@ enum ItemSubclassRecipe
     ITEM_SUBCLASS_FIRST_AID_MANUAL              = 7,
     ITEM_SUBCLASS_ENCHANTING_FORMULA            = 8,
     ITEM_SUBCLASS_FISHING_MANUAL                = 9,
-    ITEM_SUBCLASS_JEWELCRAFTING_RECIPE          = 10
+    ITEM_SUBCLASS_JEWELCRAFTING_RECIPE          = 10,
+    ITEM_SUBCLASS_INSCRIPTION_TECHNIQUE         = 11
 };
 
-#define MAX_ITEM_SUBCLASS_RECIPE                  11
+#define MAX_ITEM_SUBCLASS_RECIPE                  12
 
 enum ItemSubclassMoney
 {
@@ -559,45 +560,35 @@ const uint32 MaxItemSubclassValues[MAX_ITEM_CLASS] =
     MAX_ITEM_SUBCLASS_GLYPH
 };
 
-inline uint8 ItemSubClassToDurabilityMultiplierId(uint32 ItemClass, uint32 ItemSubClass)
-{
-    switch (ItemClass)
-    {
-        case ITEM_CLASS_WEAPON: return ItemSubClass;
-        case ITEM_CLASS_ARMOR:  return ItemSubClass + 21;
-    }
-    return 0;
-}
-
 #pragma pack(push, 1)
 
 struct _Damage
 {
-    float   DamageMin;
-    float   DamageMax;
-    uint32  DamageType;                                     // id from Resistances.dbc
+    float   DamageMin = 0.0f;
+    float   DamageMax = 0.0f;
+    uint32  DamageType = 0;                                 // id from Resistances.dbc
 };
 
 struct _ItemStat
 {
-    uint32  ItemStatType;
-    int32   ItemStatValue;
+    uint32  ItemStatType = 0;
+    int32   ItemStatValue = 0;
 };
 struct _Spell
 {
-    int32 SpellId;                                         // id from Spell.dbc
-    uint32 SpellTrigger;
-    int32  SpellCharges;
-    float  SpellPPMRate;
-    int32  SpellCooldown;
-    uint32 SpellCategory;                                   // id from SpellCategory.dbc
-    int32  SpellCategoryCooldown;
+    int32 SpellId = 0;                                      // id from Spell.dbc
+    uint32 SpellTrigger = 0;
+    int32  SpellCharges = 0;
+    float  SpellPPMRate = 0.0f;
+    int32  SpellCooldown = -1;
+    uint32 SpellCategory = 0;                               // id from SpellCategory.dbc
+    int32  SpellCategoryCooldown = -1;
 };
 
 struct _Socket
 {
-    uint32 Color;
-    uint32 Content;
+    uint32 Color = 0;
+    uint32 Content = 0;
 };
 
 #pragma pack(pop)
@@ -607,7 +598,7 @@ struct _Socket
 #define MAX_ITEM_PROTO_SPELLS  5
 #define MAX_ITEM_PROTO_STATS  10
 
-struct ItemTemplate
+struct TC_GAME_API ItemTemplate
 {
     friend class ObjectMgr;
 
@@ -639,10 +630,10 @@ struct ItemTemplate
     int32  Stackable;                                       // 0: not allowed, -1: put in player coin info tab and don't limit stacking (so 1 slot)
     uint32 ContainerSlots;
     uint32 StatsCount;
-    _ItemStat ItemStat[MAX_ITEM_PROTO_STATS];
+    std::array<_ItemStat, MAX_ITEM_PROTO_STATS> ItemStat;
     uint32 ScalingStatDistribution;                         // id from ScalingStatDistribution.dbc
     uint32 ScalingStatValue;                                // mask for selecting column in ScalingStatValues.dbc
-    _Damage Damage[MAX_ITEM_PROTO_DAMAGES];
+    std::array<_Damage, MAX_ITEM_PROTO_DAMAGES> Damage;
     uint32 Armor;
     uint32 HolyRes;
     uint32 FireRes;
@@ -653,7 +644,7 @@ struct ItemTemplate
     uint32 Delay;
     uint32 AmmoType;
     float  RangedModRange;
-    _Spell Spells[MAX_ITEM_PROTO_SPELLS];
+    std::array<_Spell, MAX_ITEM_PROTO_SPELLS> Spells;
     uint32 Bonding;
     std::string  Description;
     uint32 PageText;
@@ -672,7 +663,7 @@ struct ItemTemplate
     uint32 Map;                                             // id from Map.dbc
     uint32 BagFamily;                                       // bit mask (1 << id from ItemBagFamily.dbc)
     uint32 TotemCategory;                                   // id from TotemCategory.dbc
-    _Socket Socket[MAX_ITEM_PROTO_SOCKETS];
+    std::array<_Socket, MAX_ITEM_PROTO_SOCKETS> Socket;
     uint32 socketBonus;                                     // id from SpellItemEnchantment.dbc
     uint32 GemProperties;                                   // id from GemProperties.dbc
     uint32 RequiredDisenchantSkill;
@@ -686,7 +677,7 @@ struct ItemTemplate
     uint32 MinMoneyLoot;
     uint32 MaxMoneyLoot;
     uint32 FlagsCu;
-    WorldPacket QueryData[TOTAL_LOCALES];
+    std::array<WorldPacket, TOTAL_LOCALES> QueryData;
 
     // helpers
     bool CanChangeEquipStateInCombat() const;

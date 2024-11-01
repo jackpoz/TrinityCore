@@ -70,18 +70,12 @@ class instance_magisters_terrace : public InstanceMapScript
 
         struct instance_magisters_terrace_InstanceMapScript : public InstanceScript
         {
-            instance_magisters_terrace_InstanceMapScript(InstanceMap* map) : InstanceScript(map)
+            instance_magisters_terrace_InstanceMapScript(InstanceMap* map) : InstanceScript(map), _delrissaDeathCount(0)
             {
                 SetHeaders(DataHeader);
                 SetBossNumber(EncounterCount);
                 LoadObjectData(creatureData, gameObjectData);
                 LoadDoorData(doorData);
-                Initialize();
-            }
-
-            void Initialize() override
-            {
-                _delrissaDeathCount = 0;
             }
 
             uint32 GetData(uint32 type) const override
@@ -125,6 +119,7 @@ class instance_magisters_terrace : public InstanceMapScript
                     case NPC_SUNBLADE_BLOOD_KNIGHT:
                         if (creature->GetDistance(KaelthasTrashGroupDistanceComparisonPos) < 10.0f)
                             _kaelthasPreTrashGUIDs.insert(creature->GetGUID());
+                        break;
                     default:
                         break;
                 }
@@ -164,7 +159,7 @@ class instance_magisters_terrace : public InstanceMapScript
                 {
                     case GO_ESCAPE_ORB:
                         if (GetBossState(DATA_KAELTHAS_SUNSTRIDER) == DONE)
-                            go->RemoveFlag(GAMEOBJECT_FLAGS, GO_FLAG_NOT_SELECTABLE);
+                            go->RemoveFlag(GO_FLAG_NOT_SELECTABLE);
                         break;
                     default:
                         break;
@@ -206,7 +201,7 @@ class instance_magisters_terrace : public InstanceMapScript
                     case DATA_KAELTHAS_SUNSTRIDER:
                         if (state == DONE)
                             if (GameObject* orb = GetGameObject(DATA_ESCAPE_ORB))
-                                orb->RemoveFlag(GAMEOBJECT_FLAGS, GO_FLAG_NOT_SELECTABLE);
+                                orb->RemoveFlag(GO_FLAG_NOT_SELECTABLE);
                         break;
                     default:
                         break;

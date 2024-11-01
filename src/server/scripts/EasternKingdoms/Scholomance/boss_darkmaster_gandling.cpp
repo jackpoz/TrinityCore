@@ -60,7 +60,7 @@ class boss_darkmaster_gandling : public CreatureScript
 
         struct boss_darkmaster_gandlingAI : public BossAI
         {
-            boss_darkmaster_gandlingAI(Creature* creature) : BossAI(creature, DATA_DARKMASTERGANDLING) { }
+            boss_darkmaster_gandlingAI(Creature* creature) : BossAI(creature, DATA_DARKMASTER_GANDLING) { }
 
             void Reset() override
             {
@@ -123,7 +123,7 @@ class boss_darkmaster_gandling : public CreatureScript
                         case EVENT_SHADOW_PORTAL:
                             if (HealthAbovePct(3))
                             {
-                                DoCast(SelectTarget(SELECT_TARGET_RANDOM, 0, 100, true), SPELL_SHADOW_PORTAL, true);
+                                DoCast(SelectTarget(SelectTargetMethod::Random, 0, 100, true), SPELL_SHADOW_PORTAL, true);
                                 events.ScheduleEvent(EVENT_SHADOW_PORTAL, 17s, 27s);
                             }
                     }
@@ -162,6 +162,7 @@ enum SPSpells
     SPELL_SHADOW_PORTAL_VAULTOFTHERAVENIAN     = 17948
 };
 
+// 17950 - Shadow Portal
 class spell_shadow_portal : public SpellScriptLoader
 {
     public:
@@ -245,8 +246,6 @@ Position const SummonPos[18] =
 {
     // Hall of Secrects
 
-
-
     // The Hall of the damned
     { 177.9624f, -68.23893f, 84.95197f, 3.228859f },
     { 183.7705f, -61.43489f, 84.92424f, 5.148721f },
@@ -265,8 +264,6 @@ Position const SummonPos[18] =
     { 185.6157f, -42.91200f, 75.4812f, 4.45059f },
     // Vault of the Ravenian
 
-
-
 };
 
 enum Creatures
@@ -284,6 +281,7 @@ enum ScriptEventId
     SPELL_EVENT_VAULTOFTHERAVENIAN     = 5623
 };
 
+// 17863, 17939, 17943, 17944, 17946, 17948 - Shadow Portal
 class spell_shadow_portal_rooms : public SpellScriptLoader
 {
     public:
@@ -299,7 +297,7 @@ class spell_shadow_portal_rooms : public SpellScriptLoader
                 return InstanceHasScript(GetCaster(), ScholomanceScriptName);
             }
 
-            void HandleSendEvent(SpellEffIndex effIndex)
+            void HandleSendEvent(SpellEffIndex /*effIndex*/)
             {
                 // If only one player in threat list fail spell
 
@@ -309,7 +307,7 @@ class spell_shadow_portal_rooms : public SpellScriptLoader
                 int8 phase_to_set = 0;
                 int32 gate_to_close = 0;
 
-                switch (GetSpellInfo()->Effects[effIndex].MiscValue)
+                switch (GetEffectInfo().MiscValue)
                 {
                     case SPELL_EVENT_HALLOFSECRETS:
                         pos_to_summon = 0; // Not yet spawned
@@ -349,7 +347,7 @@ class spell_shadow_portal_rooms : public SpellScriptLoader
                 {
                     for (uint8 i = 0; i < 3; ++i)
                     {
-                        if (Creature* Summoned = caster->SummonCreature(NPC_RISEN_GUARDIAN, SummonPos[pos_to_summon++], TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 120000))
+                        if (Creature* Summoned = caster->SummonCreature(NPC_RISEN_GUARDIAN, SummonPos[pos_to_summon++], TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 2min))
                         {
                             Summoned->GetMotionMaster()->MoveRandom(5);
                             Summoned->AI()->SetData(0, phase_to_set);

@@ -54,7 +54,6 @@ class TC_GAME_API TempSummon : public Creature
         uint32 GetTimer() const { return m_timer; }
         bool CanFollowOwner() const { return m_canFollowOwner; }
         void SetCanFollowOwner(bool can) { m_canFollowOwner = can; }
-
         SummonPropertiesEntry const* const m_Properties;
 
         std::string GetDebugInfo() const override;

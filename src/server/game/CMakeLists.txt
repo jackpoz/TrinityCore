@@ -14,9 +14,9 @@ CollectSourceFiles(
   # Exclude
   ${CMAKE_CURRENT_SOURCE_DIR}/PrecompiledHeaders)
 
-if (USE_COREPCH)
+if(USE_COREPCH)
   set(PRIVATE_PCH_HEADER PrecompiledHeaders/gamePCH.h)
-endif ()
+endif()
 
 GroupSources(${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -51,21 +51,26 @@ target_include_directories(game
 target_link_libraries(game
   PRIVATE
     trinity-core-interface
-    efsw
   PUBLIC
     game-interface)
+
+if(TARGET efsw)
+  target_link_libraries(game
+    PRIVATE
+      efsw)
+endif()
 
 set_target_properties(game
     PROPERTIES
       FOLDER
         "server")
 
-if( BUILD_SHARED_LIBS )
-  if( UNIX )
+if(BUILD_SHARED_LIBS)
+  if(UNIX)
     install(TARGETS game
       LIBRARY
         DESTINATION lib)
-  elseif( WIN32 )
+  elseif(WIN32)
     install(TARGETS game
       RUNTIME
         DESTINATION "${CMAKE_INSTALL_PREFIX}")
@@ -73,6 +78,6 @@ if( BUILD_SHARED_LIBS )
 endif()
 
 # Generate precompiled header
-if (USE_COREPCH)
+if(USE_COREPCH)
   add_cxx_pch(game ${PRIVATE_PCH_HEADER})
-endif ()
+endif()

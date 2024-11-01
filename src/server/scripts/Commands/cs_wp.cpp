@@ -35,6 +35,10 @@ EndScriptData */
 #include "WaypointManager.h"
 #include "WorldSession.h"
 
+#if TRINITY_COMPILER == TRINITY_COMPILER_GNU
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+
 class wp_commandscript : public CommandScript
 {
 public:
@@ -97,7 +101,7 @@ public:
                 pathid = target->GetWaypointPath();
             else
             {
-                PreparedStatement* stmt = WorldDatabase.GetPreparedStatement(WORLD_SEL_WAYPOINT_DATA_MAX_ID);
+                WorldDatabasePreparedStatement* stmt = WorldDatabase.GetPreparedStatement(WORLD_SEL_WAYPOINT_DATA_MAX_ID);
 
                 PreparedQueryResult result = WorldDatabase.Query(stmt);
 
@@ -118,7 +122,7 @@ public:
             return true;
         }
 
-        PreparedStatement* stmt = WorldDatabase.GetPreparedStatement(WORLD_SEL_WAYPOINT_DATA_MAX_POINT);
+        WorldDatabasePreparedStatement* stmt = WorldDatabase.GetPreparedStatement(WORLD_SEL_WAYPOINT_DATA_MAX_POINT);
         stmt->setUInt32(0, pathid);
         PreparedQueryResult result = WorldDatabase.Query(stmt);
 
@@ -186,7 +190,7 @@ public:
 
         guidLow = target->GetSpawnId();
 
-        PreparedStatement* stmt = WorldDatabase.GetPreparedStatement(WORLD_SEL_CREATURE_ADDON_BY_GUID);
+        WorldDatabasePreparedStatement* stmt = WorldDatabase.GetPreparedStatement(WORLD_SEL_CREATURE_ADDON_BY_GUID);
 
         stmt->setUInt32(0, guidLow);
 
@@ -243,7 +247,7 @@ public:
     {
 
         Creature* target = handler->getSelectedCreature();
-        PreparedStatement* stmt = nullptr;
+        WorldDatabasePreparedStatement* stmt = nullptr;
 
         if (!target)
         {
@@ -288,36 +292,36 @@ public:
 
         char* show_str = strtok((char*)args, " ");
         std::string show = show_str;
-        PreparedStatement* stmt = nullptr;
+        WorldDatabasePreparedStatement* stmt = nullptr;
 
         // Check
         if ((show != "add") && (show != "mod") && (show != "del") && (show != "listid"))
             return false;
 
         char* arg_id = strtok(nullptr, " ");
-        uint32 id = 0;
 
         if (show == "add")
         {
+            Optional<uint32> id;
             if (arg_id)
-                id = atoi(arg_id);
+                id = Trinity::StringTo<uint32>(arg_id);
 
             if (id)
             {
                 stmt = WorldDatabase.GetPreparedStatement(WORLD_SEL_WAYPOINT_SCRIPT_ID_BY_GUID);
-                stmt->setUInt32(0, id);
+                stmt->setUInt32(0, *id);
                 PreparedQueryResult result = WorldDatabase.Query(stmt);
 
                 if (!result)
                 {
                     stmt = WorldDatabase.GetPreparedStatement(WORLD_INS_WAYPOINT_SCRIPT);
-                    stmt->setUInt32(0, id);
+                    stmt->setUInt32(0, *id);
                     WorldDatabase.Execute(stmt);
 
-                    handler->PSendSysMessage("%s%s%u|r", "|cff00ff00", "Wp Event: New waypoint event added: ", id);
+                    handler->PSendSysMessage("%s%s%u|r", "|cff00ff00", "Wp Event: New waypoint event added: ", *id);
                 }
                 else
-                    handler->PSendSysMessage("|cff00ff00Wp Event: You have choosed an existing waypoint script guid: %u|r", id);
+                    handler->PSendSysMessage("|cff00ff00Wp Event: You have choosed an existing waypoint script guid: %u|r", *id);
             }
             else
             {
@@ -325,10 +329,10 @@ public:
                 PreparedQueryResult result = WorldDatabase.Query(stmt);
                 id = result->Fetch()->GetUInt32();
                 stmt = WorldDatabase.GetPreparedStatement(WORLD_INS_WAYPOINT_SCRIPT);
-                stmt->setUInt32(0, id + 1);
+                stmt->setUInt32(0, *id + 1);
                 WorldDatabase.Execute(stmt);
 
-                handler->PSendSysMessage("%s%s%u|r", "|cff00ff00", "Wp Event: New waypoint event added: |r|cff00ffff", id+1);
+                handler->PSendSysMessage("%s%s%u|r", "|cff00ff00", "Wp Event: New waypoint event added: |r|cff00ffff", *id+1);
             }
 
             return true;
@@ -342,11 +346,10 @@ public:
                 return true;
             }
 
-            id = atoi(arg_id);
+            uint32 id = Trinity::StringTo<uint32>(arg_id).value_or(0);
 
-            uint32 a2, a3, a4, a5, a6;
+            uint32 a2, a3, a4, a5, a6, a7;
             float a8, a9, a10, a11;
-            char const* a7;
 
             stmt = WorldDatabase.GetPreparedStatement(WORLD_SEL_WAYPOINT_SCRIPT_BY_ID);
             stmt->setUInt32(0, id);
@@ -368,13 +371,13 @@ public:
                 a4 = fields[2].GetUInt32();
                 a5 = fields[3].GetUInt32();
                 a6 = fields[4].GetUInt32();
-                a7 = fields[5].GetCString();
+                a7 = fields[5].GetUInt32();
                 a8 = fields[6].GetFloat();
                 a9 = fields[7].GetFloat();
                 a10 = fields[8].GetFloat();
                 a11 = fields[9].GetFloat();
 
-                handler->PSendSysMessage("|cffff33ffid:|r|cff00ffff %u|r|cff00ff00, guid: |r|cff00ffff%u|r|cff00ff00, delay: |r|cff00ffff%u|r|cff00ff00, command: |r|cff00ffff%u|r|cff00ff00, datalong: |r|cff00ffff%u|r|cff00ff00, datalong2: |r|cff00ffff%u|r|cff00ff00, datatext: |r|cff00ffff%s|r|cff00ff00, posx: |r|cff00ffff%f|r|cff00ff00, posy: |r|cff00ffff%f|r|cff00ff00, posz: |r|cff00ffff%f|r|cff00ff00, orientation: |r|cff00ffff%f|r", id, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11);
+                handler->PSendSysMessage("|cffff33ffid:|r|cff00ffff %u|r|cff00ff00, guid: |r|cff00ffff%u|r|cff00ff00, delay: |r|cff00ffff%u|r|cff00ff00, command: |r|cff00ffff%u|r|cff00ff00, datalong: |r|cff00ffff%u|r|cff00ff00, datalong2: |r|cff00ffff%u|r|cff00ff00, dataint: |r|cff00ffff%u|r|cff00ff00, posx: |r|cff00ffff%f|r|cff00ff00, posy: |r|cff00ffff%f|r|cff00ff00, posz: |r|cff00ffff%f|r|cff00ff00, orientation: |r|cff00ffff%f|r", id, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11);
             }
             while (result->NextRow());
         }
@@ -387,7 +390,7 @@ public:
                 return true;
             }
 
-            id = atoi(arg_id);
+            uint32 id = Trinity::StringTo<uint32>(arg_id).value_or(0);
 
             stmt = WorldDatabase.GetPreparedStatement(WORLD_SEL_WAYPOINT_SCRIPT_ID_BY_GUID);
             stmt->setUInt32(0, id);
@@ -415,7 +418,7 @@ public:
                 return true;
             }
 
-            id = atoi(arg_id);
+            uint32 id = Trinity::StringTo<uint32>(arg_id).value_or(0);
 
             if (!id)
             {
@@ -453,8 +456,8 @@ public:
 
             if (arg_str_2 == "setid")
             {
-                uint32 newid = atoi(arg_3);
-                handler->PSendSysMessage("%s%s|r|cff00ffff%u|r|cff00ff00%s|r|cff00ffff%u|r", "|cff00ff00", "Wp Event: Wypoint scipt guid: ", newid, " id changed: ", id);
+                uint32 newid = Trinity::StringTo<uint32>(arg_3).value_or(0);
+                handler->PSendSysMessage("%s%s|r|cff00ffff%u|r|cff00ff00%s|r|cff00ffff%u|r", "|cff00ff00", "Wp Event: Waypoint script guid: ", newid, " id changed: ", id);
 
                 stmt = WorldDatabase.GetPreparedStatement(WORLD_UPD_WAYPOINT_SCRIPT_ID);
                 stmt->setUInt32(0, newid);
@@ -521,7 +524,7 @@ public:
                 }
                 else if (arg_str_2 == "dataint")
                 {
-                    WorldDatabase.PExecute("UPDATE waypoint_scripts SET %s='%u' WHERE guid='%u'", arg_2, atoi(arg_3), id); // Query can't be a prepared statement
+                    WorldDatabase.PExecute("UPDATE waypoint_scripts SET {}='{}' WHERE guid='{}'", arg_2, arg_3, id); // Query can't be a prepared statement
 
                     handler->PSendSysMessage("|cff00ff00Waypoint script: |r|cff00ffff%u|r|cff00ff00 dataint updated.|r", id);
                     return true;
@@ -530,7 +533,7 @@ public:
                 {
                     std::string arg_str_3 = arg_3;
                     WorldDatabase.EscapeString(arg_str_3);
-                    WorldDatabase.PExecute("UPDATE waypoint_scripts SET %s='%s' WHERE guid='%u'", arg_2, arg_str_3.c_str(), id); // Query can't be a prepared statement
+                    WorldDatabase.PExecute("UPDATE waypoint_scripts SET {}='{}' WHERE guid='{}'", arg_2, arg_str_3, id); // Query can't be a prepared statement
                 }
             }
             handler->PSendSysMessage("%s%s|r|cff00ffff%u:|r|cff00ff00 %s %s|r", "|cff00ff00", "Waypoint script:", id, arg_2, "updated.");
@@ -569,7 +572,7 @@ public:
         uint32 pathid = 0;
         uint32 point = 0;
         Creature* target = handler->getSelectedCreature();
-        PreparedStatement* stmt = nullptr;
+        WorldDatabasePreparedStatement* stmt = nullptr;
 
         // User did select a visual waypoint?
         if (!target || target->GetEntry() != VISUAL_WAYPOINT)
@@ -708,14 +711,14 @@ public:
         if (text == 0)
         {
             // show_str check for present in list of correct values, no sql injection possible
-            WorldDatabase.PExecute("UPDATE waypoint_data SET %s=NULL WHERE id='%u' AND point='%u'", show_str, pathid, point); // Query can't be a prepared statement
+            WorldDatabase.PExecute("UPDATE waypoint_data SET {}=NULL WHERE id='{}' AND point='{}'", show_str, pathid, point); // Query can't be a prepared statement
         }
         else
         {
             // show_str check for present in list of correct values, no sql injection possible
             std::string text2 = text;
             WorldDatabase.EscapeString(text2);
-            WorldDatabase.PExecute("UPDATE waypoint_data SET %s='%s' WHERE id='%u' AND point='%u'", show_str, text2.c_str(), pathid, point); // Query can't be a prepared statement
+            WorldDatabase.PExecute("UPDATE waypoint_data SET {}='{}' WHERE id='{}' AND point='{}'", show_str, text2, pathid, point); // Query can't be a prepared statement
         }
 
         handler->PSendSysMessage(LANG_WAYPOINT_CHANGED_NO, show_str);
@@ -737,7 +740,7 @@ public:
 
         uint32 pathid = 0;
         Creature* target = handler->getSelectedCreature();
-        PreparedStatement* stmt = nullptr;
+        WorldDatabasePreparedStatement* stmt = nullptr;
 
         // Did player provide a PathID?
 
@@ -763,7 +766,7 @@ public:
             if (target)
                 handler->SendSysMessage(LANG_WAYPOINT_CREATSELECTED);
 
-            pathid = atoul(guid_str);
+            pathid = Trinity::StringTo<uint32>(guid_str).value_or(0);
         }
 
         std::string show = show_str;
@@ -800,7 +803,7 @@ public:
                 uint32 delay            = fields[2].GetUInt32();
                 uint32 flag             = fields[3].GetUInt32();
                 uint32 ev_id            = fields[4].GetUInt32();
-                uint32 ev_chance        = fields[5].GetUInt32();
+                uint32 ev_chance        = fields[5].GetUInt16();
 
                 handler->PSendSysMessage("|cff00ff00Show info: for current point: |r|cff00ffff%u|r|cff00ff00, Path ID: |r|cff00ffff%u|r", point, pathid);
                 handler->PSendSysMessage("|cff00ff00Show info: delay: |r|cff00ffff%u|r", delay);

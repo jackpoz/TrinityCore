@@ -18,12 +18,11 @@
 #ifndef TRINITY_UNITAI_H
 #define TRINITY_UNITAI_H
 
-#include "Containers.h"
 #include "Errors.h"
 #include "EventMap.h"
 #include "ObjectGuid.h"
+#include "SharedDefines.h"
 #include "SpellDefines.h"
-#include "ThreatManager.h"
 
 #define CAST_AI(a, b)   (dynamic_cast<a*>(b))
 #define ENSURE_AI(a,b)  (EnsureAI<a>(b))
@@ -34,7 +33,7 @@ T* EnsureAI(U* ai)
     T* cast_ai = dynamic_cast<T*>(ai);
     ASSERT(cast_ai);
     return cast_ai;
-};
+}
 
 class Player;
 class Quest;
@@ -42,16 +41,17 @@ class SpellInfo;
 class Unit;
 struct AISpellInfoType;
 enum DamageEffectType : uint8;
+enum MovementGeneratorType : uint8;
 enum SpellEffIndex : uint8;
 
-//Selection method used by SelectTarget
-enum SelectAggroTarget
+// Selection method used by SelectTarget
+enum class SelectTargetMethod
 {
-    SELECT_TARGET_RANDOM = 0,  // just pick a random target
-    SELECT_TARGET_MAXTHREAT,   // prefer targets higher in the threat list
-    SELECT_TARGET_MINTHREAT,   // prefer targets lower in the threat list
-    SELECT_TARGET_MAXDISTANCE, // prefer targets further from us
-    SELECT_TARGET_MINDISTANCE  // prefer targets closer to us
+    Random,      // just pick a random target
+    MaxThreat,   // prefer targets higher in the threat list
+    MinThreat,   // prefer targets lower in the threat list
+    MaxDistance, // prefer targets further from us
+    MinDistance  // prefer targets closer to us
 };
 
 // default predicate function to select target based on distance, player and/or aura criteria
@@ -158,47 +158,31 @@ class TC_GAME_API UnitAI
         virtual ObjectGuid GetGUID(int32 /*id*/ = 0) const { return ObjectGuid::Empty; }
 
         // Select the best target (in <targetType> order) from the threat list that fulfill the following:
-        // - Not among the first <offset> entries in <targetType> order (or MAXTHREAT order, if <targetType> is RANDOM).
+        // - Not among the first <offset> entries in <targetType> order (or SelectTargetMethod::MaxThreat order,
+        //   if <targetType> is SelectTargetMethod::Random).
         // - Within at most <dist> yards (if dist > 0.0f)
         // - At least -<dist> yards away (if dist < 0.0f)
         // - Is a player (if playerOnly = true)
         // - Not the current tank (if withTank = false)
         // - Has aura with ID <aura> (if aura > 0)
         // - Does not have aura with ID -<aura> (if aura < 0)
-        Unit* SelectTarget(SelectAggroTarget targetType, uint32 offset = 0, float dist = 0.0f, bool playerOnly = false, bool withTank = true, int32 aura = 0);
+        Unit* SelectTarget(SelectTargetMethod targetType, uint32 offset = 0, float dist = 0.0f, bool playerOnly = false, bool withTank = true, int32 aura = 0);
+
         // Select the best target (in <targetType> order) satisfying <predicate> from the threat list.
-        // If <offset> is nonzero, the first <offset> entries in <targetType> order (or MAXTHREAT order, if <targetType> is RANDOM) are skipped.
+        // If <offset> is nonzero, the first <offset> entries in <targetType> order (or SelectTargetMethod::MaxThreat
+        // order, if <targetType> is SelectTargetMethod::Random) are skipped.
         template<class PREDICATE>
-        Unit* SelectTarget(SelectAggroTarget targetType, uint32 offset, PREDICATE const& predicate)
+        Unit* SelectTarget(SelectTargetMethod targetType, uint32 offset, PREDICATE const& predicate)
         {
-            ThreatManager& mgr = GetThreatManager();
-            // shortcut: if we ignore the first <offset> elements, and there are at most <offset> elements, then we ignore ALL elements
-            if (mgr.GetThreatListSize() <= offset)
-                return nullptr;
-
             std::list<Unit*> targetList;
-            SelectTargetList(targetList, mgr.GetThreatListSize(), targetType, offset, predicate);
+            SelectTargetList(targetList, std::numeric_limits<uint32>::max(), targetType, offset, predicate);
 
-            // maybe nothing fulfills the predicate
-            if (targetList.empty())
-                return nullptr;
-
-            switch (targetType)
-            {
-                case SELECT_TARGET_MAXTHREAT:
-                case SELECT_TARGET_MINTHREAT:
-                case SELECT_TARGET_MAXDISTANCE:
-                case SELECT_TARGET_MINDISTANCE:
-                    return targetList.front();
-                case SELECT_TARGET_RANDOM:
-                    return Trinity::Containers::SelectRandomContainerElement(targetList);
-                default:
-                    return nullptr;
-            }
+            return FinalizeTargetSelection(targetList, targetType);
         }
 
         // Select the best (up to) <num> targets (in <targetType> order) from the threat list that fulfill the following:
-        // - Not among the first <offset> entries in <targetType> order (or MAXTHREAT order, if <targetType> is RANDOM).
+        // - Not among the first <offset> entries in <targetType> order (or SelectTargetMethod::MaxThreat order,
+        //   if <targetType> is SelectTargetMethod::Random).
         // - Within at most <dist> yards (if dist > 0.0f)
         // - At least -<dist> yards away (if dist < 0.0f)
         // - Is a player (if playerOnly = true)
@@ -206,78 +190,21 @@ class TC_GAME_API UnitAI
         // - Has aura with ID <aura> (if aura > 0)
         // - Does not have aura with ID -<aura> (if aura < 0)
         // The resulting targets are stored in <targetList> (which is cleared first).
-        void SelectTargetList(std::list<Unit*>& targetList, uint32 num, SelectAggroTarget targetType, uint32 offset = 0, float dist = 0.0f, bool playerOnly = false, bool withTank = true, int32 aura = 0);
+        void SelectTargetList(std::list<Unit*>& targetList, uint32 num, SelectTargetMethod targetType, uint32 offset = 0, float dist = 0.0f, bool playerOnly = false, bool withTank = true, int32 aura = 0);
 
         // Select the best (up to) <num> targets (in <targetType> order) satisfying <predicate> from the threat list and stores them in <targetList> (which is cleared first).
-        // If <offset> is nonzero, the first <offset> entries in <targetType> order (or MAXTHREAT order, if <targetType> is RANDOM) are skipped.
+        // If <offset> is nonzero, the first <offset> entries in <targetType> order (or SelectTargetMethod::MaxThreat
+        // order, if <targetType> is SelectTargetMethod::Random) are skipped.
         template <class PREDICATE>
-        void SelectTargetList(std::list<Unit*>& targetList, uint32 num, SelectAggroTarget targetType, uint32 offset, PREDICATE const& predicate)
+        void SelectTargetList(std::list<Unit*>& targetList, uint32 num, SelectTargetMethod targetType, uint32 offset, PREDICATE const& predicate)
         {
-            targetList.clear();
-            ThreatManager& mgr = GetThreatManager();
-            // shortcut: we're gonna ignore the first <offset> elements, and there's at most <offset> elements, so we ignore them all - nothing to do here
-            if (mgr.GetThreatListSize() <= offset)
+            if (!PrepareTargetListSelection(targetList, targetType, offset))
                 return;
-
-            if (targetType == SELECT_TARGET_MAXDISTANCE || targetType == SELECT_TARGET_MINDISTANCE)
-            {
-                for (ThreatReference const* ref : mgr.GetUnsortedThreatList())
-                {
-                    if (ref->IsOffline())
-                        continue;
-
-                    targetList.push_back(ref->GetVictim());
-                }
-            }
-            else
-            {
-                Unit* currentVictim = mgr.GetCurrentVictim();
-                if (currentVictim)
-                    targetList.push_back(currentVictim);
-
-                for (ThreatReference const* ref : mgr.GetSortedThreatList())
-                {
-                    if (ref->IsOffline())
-                        continue;
-
-                    Unit* thisTarget = ref->GetVictim();
-                    if (thisTarget != currentVictim)
-                        targetList.push_back(thisTarget);
-                }
-            }
-
-            // shortcut: the list isn't gonna get any larger
-            if (targetList.size() <= offset)
-            {
-                targetList.clear();
-                return;
-            }
-
-            // right now, list is unsorted for DISTANCE types - re-sort by MAXDISTANCE
-            if (targetType == SELECT_TARGET_MAXDISTANCE || targetType == SELECT_TARGET_MINDISTANCE)
-                SortByDistance(targetList, targetType == SELECT_TARGET_MINDISTANCE);
-
-            // now the list is MAX sorted, reverse for MIN types
-            if (targetType == SELECT_TARGET_MINTHREAT)
-                targetList.reverse();
-
-            // ignore the first <offset> elements
-            while (offset)
-            {
-                targetList.pop_front();
-                --offset;
-            }
 
             // then finally filter by predicate
             targetList.remove_if([&predicate](Unit* target) { return !predicate(target); });
 
-            if (targetList.size() <= num)
-                return;
-
-            if (targetType == SELECT_TARGET_RANDOM)
-                Trinity::Containers::RandomResize(targetList, num);
-            else
-                targetList.resize(num);
+            FinalizeTargetListSelection(targetList, num, targetType);
         }
 
         // Called when the unit enters combat
@@ -288,14 +215,14 @@ class TC_GAME_API UnitAI
         virtual void JustExitedCombat() { }
 
         // Called when the unit is about to be removed from the world (despawn, grid unload, corpse disappearing, player logging out etc.)
-        virtual void LeavingWorld() { }
+        virtual void OnDespawn() { }
 
         // Called at any Damage to any victim (before damage apply)
         virtual void DamageDealt(Unit* /*victim*/, uint32& /*damage*/, DamageEffectType /*damageType*/) { }
 
         // Called at any Damage from any attacker (before damage apply)
         // Note: it for recalculation damage or special reaction at damage
-        virtual void DamageTaken(Unit* /*attacker*/, uint32& /*damage*/) { }
+        virtual void DamageTaken(Unit* /*attacker*/, uint32& /*damage*/, DamageEffectType /*damageType*/, SpellInfo const* /*spellInfo = nullptr*/) { }
 
         // Called when the creature receives heal
         virtual void HealReceived(Unit* /*done_by*/, uint32& /*addhealth*/) { }
@@ -334,8 +261,9 @@ class TC_GAME_API UnitAI
         UnitAI(UnitAI const& right) = delete;
         UnitAI& operator=(UnitAI const& right) = delete;
 
-        ThreatManager& GetThreatManager();
-        void SortByDistance(std::list<Unit*> list, bool ascending = true);
+        Unit* FinalizeTargetSelection(std::list<Unit*>& targetList, SelectTargetMethod targetType);
+        bool PrepareTargetListSelection(std::list<Unit*>& targetList, SelectTargetMethod targetType, uint32 offset);
+        void FinalizeTargetListSelection(std::list<Unit*>& targetList, uint32 num, SelectTargetMethod targetType);
 };
 
 #endif

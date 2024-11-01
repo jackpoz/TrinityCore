@@ -20,6 +20,7 @@
 
 #include "Define.h"
 #include "ObjectGuid.h"
+#include "UniqueTrackablePtr.h"
 #include <unordered_map>
 #include <vector>
 
@@ -38,7 +39,7 @@ public:
 
     Guild* GetGuildByLeader(ObjectGuid guid) const;
     Guild* GetGuildById(ObjectGuid::LowType guildId) const;
-    Guild* GetGuildByName(std::string const& guildName) const;
+    Guild* GetGuildByName(std::string_view guildName) const;
     std::string GetGuildNameById(ObjectGuid::LowType guildId) const;
 
     void LoadGuilds();
@@ -50,7 +51,7 @@ public:
 
     void ResetTimes();
 protected:
-    typedef std::unordered_map<ObjectGuid::LowType, Guild*> GuildContainer;
+    typedef std::unordered_map<ObjectGuid::LowType, Trinity::unique_trackable_ptr<Guild>> GuildContainer;
     ObjectGuid::LowType NextGuildId;
     GuildContainer GuildStore;
 };

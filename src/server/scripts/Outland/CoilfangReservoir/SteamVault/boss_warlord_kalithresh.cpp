@@ -65,14 +65,14 @@ public:
 
         void Reset() override
         {
-            me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
-            me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+            me->SetUnitFlag(UNIT_FLAG_UNINTERACTIBLE);
+            me->SetUnitFlag(UNIT_FLAG_NON_ATTACKABLE);
 
             //hack, due to really weird spell behaviour :(
             if (instance->GetData(DATA_DISTILLER) == IN_PROGRESS)
             {
-                me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
-                me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+                me->RemoveUnitFlag(UNIT_FLAG_UNINTERACTIBLE);
+                me->RemoveUnitFlag(UNIT_FLAG_NON_ATTACKABLE);
             }
         }
 
@@ -80,15 +80,15 @@ public:
 
         void StartRageGen(Unit* /*caster*/)
         {
-            me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
-            me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+            me->RemoveUnitFlag(UNIT_FLAG_UNINTERACTIBLE);
+            me->RemoveUnitFlag(UNIT_FLAG_NON_ATTACKABLE);
 
             DoCast(me, SPELL_WARLORDS_RAGE_NAGA, true);
 
             instance->SetData(DATA_DISTILLER, IN_PROGRESS);
         }
 
-        void DamageTaken(Unit* /*done_by*/, uint32 &damage) override
+        void DamageTaken(Unit* /*done_by*/, uint32& damage, DamageEffectType /*damageType*/, SpellInfo const* /*spellInfo = nullptr*/) override
         {
             if (me->GetHealth() <= damage)
                 instance->SetData(DATA_DISTILLER, DONE);
@@ -149,10 +149,10 @@ public:
             Talk(SAY_SLAY);
         }
 
-        void SpellHit(Unit* /*caster*/, SpellInfo const* spell) override
+        void SpellHit(WorldObject* /*caster*/, SpellInfo const* spellInfo) override
         {
             //hack :(
-            if (spell->Id == SPELL_WARLORDS_RAGE_PROC)
+            if (spellInfo->Id == SPELL_WARLORDS_RAGE_PROC)
                 if (instance->GetData(DATA_DISTILLER) == DONE)
                     me->RemoveAurasDueToSpell(SPELL_WARLORDS_RAGE_PROC);
         }
@@ -190,7 +190,7 @@ public:
             //Impale_Timer
             if (Impale_Timer <= diff)
             {
-                if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0))
+                if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0))
                     DoCast(target, SPELL_IMPALE);
 
                 Impale_Timer = 7500 + rand32() % 5000;

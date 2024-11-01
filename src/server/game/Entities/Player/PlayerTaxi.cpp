@@ -19,6 +19,7 @@
 #include "DBCStores.h"
 #include "ObjectMgr.h"
 #include "Player.h"
+#include "StringConvert.h"
 #include <sstream>
 
 void PlayerTaxi::InitTaxiNodesForLevel(uint32 race, uint32 chrClass, uint8 level)
@@ -28,7 +29,7 @@ void PlayerTaxi::InitTaxiNodesForLevel(uint32 race, uint32 chrClass, uint8 level
     {
         case CLASS_DEATH_KNIGHT:
         {
-            for (uint8 i = 0; i < TaxiMaskSize; ++i)
+            for (std::size_t i = 0; i < m_taximask.size(); ++i)
                 m_taximask[i] |= sOldContinentsNodesMask[i];
             break;
         }
@@ -61,46 +62,58 @@ void PlayerTaxi::InitTaxiNodesForLevel(uint32 race, uint32 chrClass, uint8 level
         SetTaximaskNode(213);                               //Shattered Sun Staging Area
 }
 
-void PlayerTaxi::LoadTaxiMask(std::string const& data)
+bool PlayerTaxi::LoadTaxiMask(std::string const& data)
 {
-    Tokenizer tokens(data, ' ');
-
-    uint8 index = 0;
-    for (Tokenizer::const_iterator iter = tokens.begin(); index < TaxiMaskSize && iter != tokens.end(); ++iter, ++index)
+    bool warn = false;
+    std::vector<std::string_view> tokens = Trinity::Tokenize(data, ' ', false);
+    for (size_t index = 0; (index < m_taximask.size()) && (index < tokens.size()); ++index)
     {
-        // load and set bits only for existing taxi nodes
-        m_taximask[index] = sTaxiNodesMask[index] & atoul(*iter);
+        if (Optional<uint32> mask = Trinity::StringTo<uint32>(tokens[index]))
+        {
+            // load and set bits only for existing taxi nodes
+            m_taximask[index] = sTaxiNodesMask[index] & *mask;
+            if (m_taximask[index] != *mask)
+                warn = true;
+        }
+        else
+        {
+            m_taximask[index] = 0;
+            warn = true;
+        }
     }
+    return !warn;
 }
 
 void PlayerTaxi::AppendTaximaskTo(ByteBuffer& data, bool all)
 {
     if (all)
-    {
-        for (uint8 i = 0; i < TaxiMaskSize; ++i)
-            data << uint32(sTaxiNodesMask[i]);              // all existing nodes
-    }
+        data.append(sTaxiNodesMask.data(), sTaxiNodesMask.size());  // all existing nodes
     else
-    {
-        for (uint8 i = 0; i < TaxiMaskSize; ++i)
-            data << uint32(m_taximask[i]);                  // known nodes
-    }
+        data.append(m_taximask.data(), m_taximask.size());          // known nodes
 }
 
 bool PlayerTaxi::LoadTaxiDestinationsFromString(const std::string& values, uint32 team)
 {
     ClearTaxiDestinations();
 
-    Tokenizer tokens(values, ' ');
-    auto iter = tokens.begin();
-    if (iter != tokens.end())
-        m_flightMasterFactionId = atoul(*iter);
-
-    ++iter;
-    for (; iter != tokens.end(); ++iter)
+    std::vector<std::string_view> tokens = Trinity::Tokenize(values, ' ', false);
+    auto itr = tokens.begin();
+    if (itr != tokens.end())
     {
-        uint32 node = atoul(*iter);
-        AddTaxiDestination(node);
+        if (Optional<uint32> faction = Trinity::StringTo<uint32>(*itr))
+            m_flightMasterFactionId = *faction;
+        else
+            return false;
+    }
+    else
+        return false;
+
+    while ((++itr) != tokens.end())
+    {
+        if (Optional<uint32> node = Trinity::StringTo<uint32>(*itr))
+            AddTaxiDestination(*node);
+        else
+            return false;
     }
 
     if (m_TaxiDestinations.empty())
@@ -157,8 +170,8 @@ uint32 PlayerTaxi::GetCurrentTaxiPath() const
 
 std::ostringstream& operator<<(std::ostringstream& ss, PlayerTaxi const& taxi)
 {
-    for (uint8 i = 0; i < TaxiMaskSize; ++i)
-        ss << taxi.m_taximask[i] << ' ';
+    for (std::size_t i = 0; i < taxi.m_taximask.size(); ++i)
+        ss << uint32(taxi.m_taximask[i]) << ' ';
     return ss;
 }
 

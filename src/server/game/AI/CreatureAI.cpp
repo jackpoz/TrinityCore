@@ -78,7 +78,7 @@ void CreatureAI::DoZoneInCombat(Creature* creature /*= nullptr*/)
     Map* map = creature->GetMap();
     if (!map->IsDungeon()) // use IsDungeon instead of Instanceable, in case battlegrounds will be instantiated
     {
-        TC_LOG_ERROR("scripts.ai", "CreatureAI::DoZoneInCombat: call for map that isn't an instance (%s)", creature->GetGUID().ToString().c_str());
+        TC_LOG_ERROR("scripts.ai", "CreatureAI::DoZoneInCombat: call for map that isn't an instance ({})", creature->GetGUID().ToString());
         return;
     }
 
@@ -161,7 +161,7 @@ static bool ShouldFollowOnSpawn(SummonPropertiesEntry const* properties)
     if (!properties)
         return false;
 
-    switch (properties->Category)
+    switch (properties->Control)
     {
         case SUMMON_CATEGORY_PET:
             return true;
@@ -170,7 +170,7 @@ static bool ShouldFollowOnSpawn(SummonPropertiesEntry const* properties)
         case SUMMON_CATEGORY_UNK:
             if (properties->Flags & 512)
                 return true;
-            switch (properties->Type)
+            switch (properties->Title)
             {
                 case SUMMON_TYPE_PET:
                 case SUMMON_TYPE_GUARDIAN:
@@ -216,7 +216,7 @@ void CreatureAI::EnterEvadeMode(EvadeReason why)
     if (!_EnterEvadeMode(why))
         return;
 
-    TC_LOG_DEBUG("scripts.ai", "CreatureAI::EnterEvadeMode: entering evade mode (why: %u) (%s)", why, me->GetGUID().ToString().c_str());
+    TC_LOG_DEBUG("scripts.ai", "CreatureAI::EnterEvadeMode: entering evade mode (why: {}) ({})", why, me->GetGUID().ToString());
 
     if (!me->GetVehicle()) // otherwise me will be in evade mode forever
     {
@@ -251,7 +251,7 @@ bool CreatureAI::UpdateVictim()
     if (!me->HasReactState(REACT_PASSIVE))
     {
         if (Unit* victim = me->SelectVictim())
-            if (!me->HasSpellFocus() && victim != me->GetVictim())
+            if (victim != me->GetVictim())
                 AttackStart(victim);
 
         return me->GetVictim() != nullptr;
@@ -271,7 +271,7 @@ void CreatureAI::EngagementStart(Unit* who)
 {
     if (_isEngaged)
     {
-        TC_LOG_ERROR("scripts.ai", "CreatureAI::EngagementStart called even though creature is already engaged. Creature debug info:\n%s", me->GetDebugInfo().c_str());
+        TC_LOG_ERROR("scripts.ai", "CreatureAI::EngagementStart called even though creature is already engaged. Creature debug info:\n{}", me->GetDebugInfo());
         return;
     }
     _isEngaged = true;
@@ -283,7 +283,7 @@ void CreatureAI::EngagementOver()
 {
     if (!_isEngaged)
     {
-        TC_LOG_DEBUG("scripts.ai", "CreatureAI::EngagementOver called even though creature is not currently engaged. Creature debug info:\n%s", me->GetDebugInfo().c_str());
+        TC_LOG_DEBUG("scripts.ai", "CreatureAI::EngagementOver called even though creature is not currently engaged. Creature debug info:\n{}", me->GetDebugInfo());
         return;
     }
     _isEngaged = false;
@@ -303,7 +303,7 @@ bool CreatureAI::_EnterEvadeMode(EvadeReason /*why*/)
     }
 
     me->RemoveAurasOnEvade();
-
+    me->ClearComboPointHolders(); // Remove all combo points targeting this unit
     me->CombatStop(true);
     me->LoadCreaturesAddon();
     me->SetLootRecipient(nullptr);
@@ -323,7 +323,7 @@ static const float BOUNDARY_VISUALIZE_CREATURE_SCALE = 0.25f;
 static const int8 BOUNDARY_VISUALIZE_STEP_SIZE = 1;
 static const int32 BOUNDARY_VISUALIZE_FAILSAFE_LIMIT = 750;
 static const float BOUNDARY_VISUALIZE_SPAWN_HEIGHT = 5.0f;
-int32 CreatureAI::VisualizeBoundary(uint32 duration, Unit* owner, bool fill) const
+int32 CreatureAI::VisualizeBoundary(Seconds duration, Unit* owner, bool fill) const
 {
     typedef std::pair<int32, int32> coordinate;
 
@@ -381,13 +381,13 @@ int32 CreatureAI::VisualizeBoundary(uint32 duration, Unit* owner, bool fill) con
         }
         if (fill || hasOutOfBoundsNeighbor)
         {
-            if (TempSummon* point = owner->SummonCreature(BOUNDARY_VISUALIZE_CREATURE, Position(startPosition.GetPositionX() + front.first * BOUNDARY_VISUALIZE_STEP_SIZE, startPosition.GetPositionY() + front.second * BOUNDARY_VISUALIZE_STEP_SIZE, spawnZ), TEMPSUMMON_TIMED_DESPAWN, duration * IN_MILLISECONDS))
+            if (TempSummon* point = owner->SummonCreature(BOUNDARY_VISUALIZE_CREATURE, Position(startPosition.GetPositionX() + front.first * BOUNDARY_VISUALIZE_STEP_SIZE, startPosition.GetPositionY() + front.second * BOUNDARY_VISUALIZE_STEP_SIZE, spawnZ), TEMPSUMMON_TIMED_DESPAWN, duration))
             {
                 point->SetObjectScale(BOUNDARY_VISUALIZE_CREATURE_SCALE);
-                point->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_STUNNED);
+                point->SetUnitFlag(UNIT_FLAG_STUNNED);
                 point->SetImmuneToAll(true);
                 if (!hasOutOfBoundsNeighbor)
-                    point->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+                    point->SetUnitFlag(UNIT_FLAG_UNINTERACTIBLE);
             }
         }
 
@@ -434,18 +434,18 @@ void CreatureAI::SetBoundary(CreatureBoundary const* boundary, bool negateBounda
     me->DoImmediateBoundaryCheck();
 }
 
-Creature* CreatureAI::DoSummon(uint32 entry, Position const& pos, uint32 despawnTime, TempSummonType summonType)
+Creature* CreatureAI::DoSummon(uint32 entry, Position const& pos, Milliseconds despawnTime, TempSummonType summonType)
 {
     return me->SummonCreature(entry, pos, summonType, despawnTime);
 }
 
-Creature* CreatureAI::DoSummon(uint32 entry, WorldObject* obj, float radius, uint32 despawnTime, TempSummonType summonType)
+Creature* CreatureAI::DoSummon(uint32 entry, WorldObject* obj, float radius, Milliseconds despawnTime, TempSummonType summonType)
 {
     Position pos = obj->GetRandomNearPosition(radius);
     return me->SummonCreature(entry, pos, summonType, despawnTime);
 }
 
-Creature* CreatureAI::DoSummonFlyer(uint32 entry, WorldObject* obj, float flightZ, float radius, uint32 despawnTime, TempSummonType summonType)
+Creature* CreatureAI::DoSummonFlyer(uint32 entry, WorldObject* obj, float flightZ, float radius, Milliseconds despawnTime, TempSummonType summonType)
 {
     Position pos = obj->GetRandomNearPosition(radius);
     pos.m_positionZ += flightZ;

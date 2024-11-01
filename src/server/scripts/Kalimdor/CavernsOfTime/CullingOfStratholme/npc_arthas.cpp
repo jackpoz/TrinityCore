@@ -16,6 +16,7 @@
  */
 
 #include "culling_of_stratholme.h"
+#include "Containers.h"
 #include "GameObject.h"
 #include "InstanceScript.h"
 #include "Log.h"
@@ -555,10 +556,10 @@ public:
 
         void AdvanceToState(COSProgressStates newState)
         {
-            TC_LOG_TRACE("scripts.cos", "npc_arthas_stratholmeAI::AdvanceToState: advancing to 0x%X", newState);
+            TC_LOG_TRACE("scripts.cos", "npc_arthas_stratholmeAI::AdvanceToState: advancing to 0x{:X}", newState);
             if (!_progressRP)
             {
-                TC_LOG_WARN("scripts.cos", "npc_arthas_stratholmeAI::AdvanceToState: advancing to instance state 0x%X, but RP is paused. Overriding!", newState);
+                TC_LOG_WARN("scripts.cos", "npc_arthas_stratholmeAI::AdvanceToState: advancing to instance state 0x{:X}, but RP is paused. Overriding!", newState);
                 _progressRP = true;
             }
 
@@ -576,11 +577,11 @@ public:
 
                 // Adjust gossip flag based on whether we have a gossip menu or not
                 if (target.HasGossip)
-                    me->SetFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_GOSSIP);
+                    me->SetNpcFlag(UNIT_NPC_FLAG_GOSSIP);
                 else
-                    me->RemoveFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_GOSSIP);
+                    me->RemoveNpcFlag(UNIT_NPC_FLAG_GOSSIP);
 
-                TC_LOG_TRACE("scripts.cos", "npc_arthas_stratholmeAI::AdvanceToState: has snapback for this state, distance = %f", target.SnapbackPosition->GetExactDist(me));
+                TC_LOG_TRACE("scripts.cos", "npc_arthas_stratholmeAI::AdvanceToState: has snapback for this state, distance = {}", target.SnapbackPosition->GetExactDist(me));
                 // Snapback handling - if we're too far from where we're supposed to be, teleport there
                 if (target.SnapbackPosition->GetExactDist(me) > ArthasSnapbackDistanceThreshold)
                     me->NearTeleportTo(*target.SnapbackPosition);
@@ -898,7 +899,7 @@ public:
             {
                 if (me->HasUnitState(UNIT_STATE_CASTING))
                     _exorcismCooldown = 0;
-                else if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0))
+                else if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0))
                 {
                     DoCast(target, SPELL_EXORCISM);
                     _exorcismCooldown = urandms(7, 14);
@@ -1074,7 +1075,7 @@ public:
                             DoCast(citizen, SPELL_CRUSADER_STRIKE, TRIGGERED_IGNORE_SET_FACING);
                         if (Creature* resident = me->FindNearestCreature(NPC_RESIDENT, 100.0f, true))
                         {
-                            resident->SetFlag(UNIT_NPC_EMOTESTATE, EMOTE_STATE_COWER);
+                            resident->SetEmoteState(EMOTE_STATE_COWER);
                             resident->AI()->Talk(RP2_LINE_RESIDENT1, ObjectAccessor::GetUnit(*me, _eventStarterGuid));
                         }
                         break;
@@ -1095,28 +1096,17 @@ public:
                         me->GetCreatureListWithEntryInGrid(nearbyVictims, urand(0, 1) ? NPC_CITIZEN : NPC_RESIDENT, 60.0f);
                         if (!nearbyVictims.empty())
                         {
-                            std::list<Creature*>::iterator it = nearbyVictims.begin();
-                            std::advance(it, urand(0, nearbyVictims.size()-1));
-                            Emote emote;
-                            switch (urand(0, 3))
+                            Emote emotes[] =
                             {
-                                case 0:
-                                    emote = EMOTE_ONESHOT_TALK;
-                                    break;
-                                case 1:
-                                    emote = EMOTE_ONESHOT_EXCLAMATION;
-                                    break;
-                                case 2:
-                                    emote = EMOTE_ONESHOT_RUDE;
-                                    break;
-                                case 3:
-                                    emote = EMOTE_ONESHOT_ROAR;
-                                    break;
-                                default:
-                                    break;
-                            }
-                            if ((*it)->IsAlive())
-                                (*it)->HandleEmoteCommand(emote);
+                                EMOTE_ONESHOT_TALK,
+                                EMOTE_ONESHOT_EXCLAMATION,
+                                EMOTE_ONESHOT_RUDE,
+                                EMOTE_ONESHOT_ROAR
+                            };
+
+                            Creature* victim = Trinity::Containers::SelectRandomContainerElement(nearbyVictims);
+                            if (victim->IsAlive())
+                                victim->HandleEmoteCommand(Trinity::Containers::SelectRandomContainerElement(emotes));
                         }
                         break;
                     }
@@ -1160,7 +1150,7 @@ public:
                         break;
                     case RP2_EVENT_MALGANIS_LEAVE2:
                         if (Creature* malganis = me->FindNearestCreature(NPC_MALGANIS, 80.0f, true))
-                            malganis->DespawnOrUnsummon(0);
+                            malganis->DespawnOrUnsummon();
                         if (Creature* bunny = me->FindNearestCreature(NPC_MALGANIS_BUNNY, 80.0f, true))
                             bunny->CastSpell(bunny, SPELL_SHADOWSTEP_VISUAL);
                         break;
@@ -1430,7 +1420,7 @@ public:
                             malganis->CastSpell(malganis, SPELL_MALGANIS_QUEST_CREDIT, true);
                             malganis->CastSpell(malganis, SPELL_MALGANIS_KILL_CREDIT, true);
                             if (GameObject* chest = malganis->FindNearestGameObject(RAID_MODE(GO_CHEST_NORMAL, GO_CHEST_HEROIC), 100.0f))
-                                chest->RemoveFlag(GAMEOBJECT_FLAGS, GO_FLAG_NOT_SELECTABLE);
+                                chest->RemoveFlag(GO_FLAG_NOT_SELECTABLE);
                         }
                         events.ScheduleEvent(RP5_EVENT_MALGANIS12, 3s);
                         events.ScheduleEvent(RP5_EVENT_MALGANIS_LEAVE, 19s);
@@ -1476,26 +1466,29 @@ public:
                     case RP5_EVENT_CHROMIE_SPAWN:
                         if (Creature* chromie = instance->instance->SummonCreature(NPC_CHROMIE_3, ArthasPositions[RP5_CHROMIE_SPAWN]))
                         {
-                            chromie->RemoveFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_GOSSIP | UNIT_NPC_FLAG_QUESTGIVER);
-                            Movement::PointsArray path(ChromieSplinePos, ChromieSplinePos + chromiePathSize);
-                            Movement::MoveSplineInit init(chromie);
-                            init.SetFly();
-                            init.SetWalk(true);
-                            init.MovebyPath(path, 0);
-                            me->GetMotionMaster()->LaunchMoveSpline(std::move(init), 0, MOTION_PRIORITY_NORMAL, POINT_MOTION_TYPE);
+                            chromie->RemoveNpcFlag(UNIT_NPC_FLAG_GOSSIP | UNIT_NPC_FLAG_QUESTGIVER);
+                            std::function<void(Movement::MoveSplineInit&)> initializer = [](Movement::MoveSplineInit& init)
+                            {
+                                Movement::PointsArray path(ChromieSplinePos, ChromieSplinePos + chromiePathSize);
+                                init.SetFly();
+                                init.SetWalk(true);
+                                init.MovebyPath(path, 0);
+                            };
+                            chromie->GetMotionMaster()->LaunchMoveSpline(std::move(initializer), 0, MOTION_PRIORITY_NORMAL, POINT_MOTION_TYPE);
                         }
                         break;
                     case RP5_EVENT_CHROMIE_LAND:
                         if (Creature* chromie = me->FindNearestCreature(NPC_CHROMIE_3, 100.0f, true))
-                            chromie->SetByteValue(UNIT_FIELD_BYTES_1, 3, 0);
+                            chromie->SetAnimTier(AnimTier::Ground);
                         break;
                     case RP5_EVENT_CHROMIE_TRANSFORM:
                         if (Creature* chromie = me->FindNearestCreature(NPC_CHROMIE_3, 100.0f, true))
                         {
                             chromie->CastSpell(chromie, SPELL_CHROMIE_3_TRANSFORM);
                             chromie->AI()->Talk(RP5_LINE_CHROMIE0);
-                            chromie->SetFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_GOSSIP | UNIT_NPC_FLAG_QUESTGIVER);
+                            chromie->SetNpcFlag(UNIT_NPC_FLAG_GOSSIP | UNIT_NPC_FLAG_QUESTGIVER);
                         }
+                        break;
                     default:
                         break;
                 }
@@ -1541,7 +1534,7 @@ public:
 
         void JustEngagedWith(Unit* who) override
         {
-            TC_LOG_TRACE("scripts.cos", "npc_arthas_stratholmeAI::JustEngagedWith: RP in progress? '%s'", _progressRP ? "YES" : "NO");
+            TC_LOG_TRACE("scripts.cos", "npc_arthas_stratholmeAI::JustEngagedWith: RP in progress? '{}'", _progressRP ? "YES" : "NO");
             if (_progressRP)
             {
                 _progressRP = false;
@@ -1558,7 +1551,7 @@ public:
 
         void EnterEvadeMode(EvadeReason why) override
         {
-            TC_LOG_TRACE("scripts.cos", "npc_arthas_stratholmeAI::EnterEvadeMode: why = %u ", why);
+            TC_LOG_TRACE("scripts.cos", "npc_arthas_stratholmeAI::EnterEvadeMode: why = {} ", why);
             ScriptedAI::EnterEvadeMode(why);
         }
 
@@ -1605,10 +1598,10 @@ public:
                 instance->SetGuidData(command, cause->GetGUID());
         }
 
-        bool GossipSelect(Player* player, uint32 /*sender*/, uint32 listId) override
+        bool OnGossipSelect(Player* player, uint32 /*sender*/, uint32 listId) override
         {
             uint32 const action = GetGossipActionFor(player, listId);
-            TC_LOG_TRACE("scripts.cos", "npc_arthas_stratholmeAI::GossipSelect: '%s' selects action '%u' on '%s'", player->GetGUID().ToString().c_str(), action, me->GetGUID().ToString().c_str());
+            TC_LOG_TRACE("scripts.cos", "npc_arthas_stratholmeAI::GossipSelect: '{}' selects action '{}' on '{}'", player->GetGUID().ToString(), action, me->GetGUID().ToString());
 
             AdvanceDungeon(player, PURGE_PENDING, DATA_START_PURGE);
             AdvanceDungeon(player, TOWN_HALL_PENDING, DATA_START_TOWN_HALL);
@@ -1618,7 +1611,7 @@ public:
             return true;
         }
 
-        bool GossipHello(Player* /*player*/) override
+        bool OnGossipHello(Player* /*player*/) override
         {
             return false;
         }
@@ -1661,6 +1654,7 @@ struct npc_stratholme_rp_dummy : NullCreatureAI
     }
 };
 
+// 50773 - Crusader Strike
 class spell_stratholme_crusader_strike : public SpellScript
 {
     PrepareSpellScript(spell_stratholme_crusader_strike);

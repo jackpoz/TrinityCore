@@ -45,7 +45,7 @@ class boss_lord_alexei_barov : public CreatureScript
 
         struct boss_lordalexeibarovAI : public BossAI
         {
-            boss_lordalexeibarovAI(Creature* creature) : BossAI(creature, DATA_LORDALEXEIBAROV) { }
+            boss_lordalexeibarovAI(Creature* creature) : BossAI(creature, DATA_LORD_ALEXEI_BAROV) { }
 
             void Reset() override
             {
@@ -77,7 +77,7 @@ class boss_lord_alexei_barov : public CreatureScript
                     switch (eventId)
                     {
                         case EVENT_IMMOLATE:
-                            DoCast(SelectTarget(SELECT_TARGET_RANDOM, 0, 100, true), SPELL_IMMOLATE, true);
+                            DoCast(SelectTarget(SelectTargetMethod::Random, 0, 100, true), SPELL_IMMOLATE, true);
                             events.ScheduleEvent(EVENT_IMMOLATE, 12s);
                             break;
                         case EVENT_VEILOFSHADOW:

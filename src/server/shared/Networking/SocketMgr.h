@@ -46,7 +46,7 @@ public:
         }
         catch (boost::system::system_error const& err)
         {
-            TC_LOG_ERROR("network", "Exception caught in SocketMgr.StartNetwork (%s:%u): %s", bindIp.c_str(), port, err.what());
+            TC_LOG_ERROR("network", "Exception caught in SocketMgr.StartNetwork ({}:{}): {}", bindIp, port, err.what());
             return false;
         }
 
@@ -65,6 +65,8 @@ public:
 
         for (int32 i = 0; i < _threadCount; ++i)
             _threads[i].Start();
+
+        _acceptor->SetSocketFactory([this]() { return GetSocketForAccept(); });
 
         return true;
     }
@@ -104,7 +106,7 @@ public:
         }
         catch (boost::system::system_error const& err)
         {
-            TC_LOG_WARN("network", "Failed to retrieve client's remote address %s", err.what());
+            TC_LOG_WARN("network", "Failed to retrieve client's remote address {}", err.what());
         }
     }
 

@@ -110,7 +110,7 @@ class boss_grand_warlock_nethekurse : public CreatureScript
             void Reset() override
             {
                 _Reset();
-                me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+                me->SetUnitFlag(UNIT_FLAG_NON_ATTACKABLE);
 
                 Initialize();
             }
@@ -146,7 +146,7 @@ class boss_grand_warlock_nethekurse : public CreatureScript
                         {
                             IsIntroEvent = false;
                             IsMainEvent = true;
-                            me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+                            me->RemoveUnitFlag(UNIT_FLAG_NON_ATTACKABLE);
                         }
                         break;
                     default:
@@ -163,7 +163,7 @@ class boss_grand_warlock_nethekurse : public CreatureScript
                 PeonEngagedCount = 4;
                 PeonKilledCount = 4;
                 IsMainEvent = true;
-                me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+                me->RemoveUnitFlag(UNIT_FLAG_NON_ATTACKABLE);
             }
 
             void AttackStart(Unit* who) override
@@ -207,10 +207,6 @@ class boss_grand_warlock_nethekurse : public CreatureScript
 
             void JustSummoned(Creature* summoned) override
             {
-                summoned->SetFaction(FACTION_MONSTER_2);
-                summoned->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
-                summoned->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
-
                 //triggered spell of consumption does not properly show it's SpellVisual, wrong spellid?
                 summoned->CastSpell(summoned, SPELL_TEMPORARY_VISUAL, true);
                 summoned->CastSpell(summoned, SPELL_CONSUMPTION, CastSpellExtraArgs().SetOriginalCaster(me->GetGUID()));
@@ -260,7 +256,7 @@ class boss_grand_warlock_nethekurse : public CreatureScript
                 {
                     if (ShadowFissure_Timer <= diff)
                     {
-                        if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0))
+                        if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0))
                             DoCast(target, SPELL_SHADOW_FISSURE);
                         ShadowFissure_Timer = urand(7500, 15000);
                     }
@@ -269,7 +265,7 @@ class boss_grand_warlock_nethekurse : public CreatureScript
 
                     if (DeathCoil_Timer <= diff)
                     {
-                        if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0))
+                        if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0))
                             DoCast(target, SPELL_DEATH_COIL);
                         DeathCoil_Timer = urand(15000, 20000);
                     }
@@ -355,7 +351,7 @@ class npc_fel_orc_convert : public CreatureScript
                 if (events.ExecuteEvent() == EVENT_HEMORRHAGE)
                 {
                     DoCastVictim(SPELL_HEMORRHAGE);
-                    events.ScheduleEvent(EVENT_HEMORRHAGE, 15000);
+                    events.ScheduleEvent(EVENT_HEMORRHAGE, 15s);
                 }
 
                 DoMeleeAttackIfReady();

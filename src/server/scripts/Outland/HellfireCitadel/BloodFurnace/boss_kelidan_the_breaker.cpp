@@ -95,7 +95,7 @@ class boss_kelidan_the_breaker : public CreatureScript
                 Initialize();
                 SummonChannelers();
                 me->SetReactState(REACT_PASSIVE);
-                me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+                me->SetUnitFlag(UNIT_FLAG_NON_ATTACKABLE);
                 me->SetImmuneToAll(true);
             }
 
@@ -140,7 +140,7 @@ class boss_kelidan_the_breaker : public CreatureScript
                         return;
                 }
                 me->SetReactState(REACT_AGGRESSIVE);
-                me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+                me->RemoveUnitFlag(UNIT_FLAG_NON_ATTACKABLE);
                 me->SetImmuneToAll(false);
                 if (killer)
                     AttackStart(killer);
@@ -168,7 +168,7 @@ class boss_kelidan_the_breaker : public CreatureScript
                 {
                     Creature* channeler = ObjectAccessor::GetCreature(*me, Channelers[i]);
                     if (!channeler || channeler->isDead())
-                        channeler = me->SummonCreature(ENTRY_CHANNELER, ShadowmoonChannelers[i][0], ShadowmoonChannelers[i][1], ShadowmoonChannelers[i][2], ShadowmoonChannelers[i][3], TEMPSUMMON_CORPSE_TIMED_DESPAWN, 300000);
+                        channeler = me->SummonCreature(ENTRY_CHANNELER, ShadowmoonChannelers[i][0], ShadowmoonChannelers[i][1], ShadowmoonChannelers[i][2], ShadowmoonChannelers[i][3], TEMPSUMMON_CORPSE_TIMED_DESPAWN, 5min);
                     if (channeler)
                         Channelers[i] = channeler->GetGUID();
                     else
@@ -343,7 +343,7 @@ class npc_shadowmoon_channeler : public CreatureScript
 
                 if (MarkOfShadow_Timer <= diff)
                 {
-                    if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0))
+                    if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0))
                         DoCast(target, SPELL_MARK_OF_SHADOW);
                     MarkOfShadow_Timer = 15000 + rand32() % 5000;
                 }

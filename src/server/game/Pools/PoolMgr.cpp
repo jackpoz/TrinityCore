@@ -133,7 +133,7 @@ bool PoolGroup<T>::CheckPool() const
 // If no guid is passed, the pool is just removed (event end case)
 // If guid is filled, cache will be used and no removal will occur, it just fill the cache
 template<class T>
-void PoolGroup<T>::DespawnObject(ActivePoolData& spawns, ObjectGuid::LowType guid)
+void PoolGroup<T>::DespawnObject(ActivePoolData& spawns, ObjectGuid::LowType guid, bool alwaysDeleteRespawnTime)
 {
     for (size_t i=0; i < EqualChanced.size(); ++i)
     {
@@ -142,10 +142,12 @@ void PoolGroup<T>::DespawnObject(ActivePoolData& spawns, ObjectGuid::LowType gui
         {
             if (!guid || EqualChanced[i].guid == guid)
             {
-                Despawn1Object(EqualChanced[i].guid);
+                Despawn1Object(EqualChanced[i].guid, alwaysDeleteRespawnTime);
                 spawns.RemoveObject<T>(EqualChanced[i].guid, poolId);
             }
         }
+        else if (alwaysDeleteRespawnTime)
+            RemoveRespawnTimeFromDB(EqualChanced[i].guid);
     }
 
     for (size_t i = 0; i < ExplicitlyChanced.size(); ++i)
@@ -155,16 +157,18 @@ void PoolGroup<T>::DespawnObject(ActivePoolData& spawns, ObjectGuid::LowType gui
         {
             if (!guid || ExplicitlyChanced[i].guid == guid)
             {
-                Despawn1Object(ExplicitlyChanced[i].guid);
+                Despawn1Object(ExplicitlyChanced[i].guid, alwaysDeleteRespawnTime);
                 spawns.RemoveObject<T>(ExplicitlyChanced[i].guid, poolId);
             }
         }
+        else if (alwaysDeleteRespawnTime)
+            RemoveRespawnTimeFromDB(ExplicitlyChanced[i].guid);
     }
 }
 
 // Method that is actualy doing the removal job on one creature
 template<>
-void PoolGroup<Creature>::Despawn1Object(ObjectGuid::LowType guid)
+void PoolGroup<Creature>::Despawn1Object(ObjectGuid::LowType guid, bool alwaysDeleteRespawnTime, bool saveRespawnTime)
 {
     if (CreatureData const* data = sObjectMgr->GetCreatureData(guid))
     {
@@ -179,17 +183,20 @@ void PoolGroup<Creature>::Despawn1Object(ObjectGuid::LowType guid)
                 Creature* creature = itr->second;
                 ++itr;
                 // For dynamic spawns, save respawn time here
-                if (!creature->GetRespawnCompatibilityMode())
+                if (saveRespawnTime && !creature->GetRespawnCompatibilityMode())
                     creature->SaveRespawnTime();
                 creature->AddObjectToRemoveList();
             }
+
+            if (alwaysDeleteRespawnTime)
+                map->RemoveRespawnTime(SpawnObjectType::SPAWN_TYPE_CREATURE, guid, nullptr, true);
         }
     }
 }
 
 // Same on one gameobject
 template<>
-void PoolGroup<GameObject>::Despawn1Object(ObjectGuid::LowType guid)
+void PoolGroup<GameObject>::Despawn1Object(ObjectGuid::LowType guid, bool alwaysDeleteRespawnTime, bool saveRespawnTime)
 {
     if (GameObjectData const* data = sObjectMgr->GetGameObjectData(guid))
     {
@@ -205,19 +212,22 @@ void PoolGroup<GameObject>::Despawn1Object(ObjectGuid::LowType guid)
                 ++itr;
 
                 // For dynamic spawns, save respawn time here
-                if (!go->GetRespawnCompatibilityMode())
+                if (saveRespawnTime && !go->GetRespawnCompatibilityMode())
                     go->SaveRespawnTime();
                 go->AddObjectToRemoveList();
             }
+
+            if (alwaysDeleteRespawnTime)
+                map->RemoveRespawnTime(SpawnObjectType::SPAWN_TYPE_GAMEOBJECT, guid, nullptr, true);
         }
     }
 }
 
 // Same on one pool
 template<>
-void PoolGroup<Pool>::Despawn1Object(uint32 child_pool_id)
+void PoolGroup<Pool>::Despawn1Object(uint32 child_pool_id, bool alwaysDeleteRespawnTime, bool /*saveRespawnTime*/)
 {
-    sPoolMgr->DespawnPool(child_pool_id);
+    sPoolMgr->DespawnPool(child_pool_id, alwaysDeleteRespawnTime);
 }
 
 // Method for a pool only to remove any found record causing a circular dependency loop
@@ -321,7 +331,7 @@ void PoolGroup<Creature>::Spawn1Object(PoolObject* obj)
         if (!map->Instanceable() && map->IsGridLoaded(data->spawnPoint))
         {
             Creature* creature = new Creature();
-            //TC_LOG_DEBUG("pool", "Spawning creature %u", guid);
+            //TC_LOG_DEBUG("pool", "Spawning creature {}", guid);
             if (!creature->LoadFromDB(obj->guid, map, true, false))
             {
                 delete creature;
@@ -345,7 +355,7 @@ void PoolGroup<GameObject>::Spawn1Object(PoolObject* obj)
         if (!map->Instanceable() && map->IsGridLoaded(data->spawnPoint))
         {
             GameObject* pGameobject = new GameObject;
-            //TC_LOG_DEBUG("pool", "Spawning gameobject %u", guid);
+            //TC_LOG_DEBUG("pool", "Spawning gameobject {}", guid);
             if (!pGameobject->LoadFromDB(obj->guid, map, false))
             {
                 delete pGameobject;
@@ -369,21 +379,52 @@ void PoolGroup<Pool>::Spawn1Object(PoolObject* obj)
 
 // Method that does the respawn job on the specified creature
 template <>
-void PoolGroup<Creature>::ReSpawn1Object(PoolObject* /*obj*/)
+void PoolGroup<Creature>::ReSpawn1Object(PoolObject* obj)
 {
-    // Creature is still on map, nothing to do
+    Despawn1Object(obj->guid, false, false);
+    Spawn1Object(obj);
 }
 
 // Method that does the respawn job on the specified gameobject
 template <>
-void PoolGroup<GameObject>::ReSpawn1Object(PoolObject* /*obj*/)
+void PoolGroup<GameObject>::ReSpawn1Object(PoolObject* obj)
 {
-    // GameObject is still on map, nothing to do
+    Despawn1Object(obj->guid, false, false);
+    Spawn1Object(obj);
 }
 
 // Nothing to do for a child Pool
 template <>
 void PoolGroup<Pool>::ReSpawn1Object(PoolObject* /*obj*/) { }
+
+template <>
+void PoolGroup<Creature>::RemoveRespawnTimeFromDB(ObjectGuid::LowType guid)
+{
+    if (CreatureData const* data = sObjectMgr->GetCreatureData(guid))
+    {
+        Map* map = sMapMgr->CreateBaseMap(data->mapId);
+        if (!map->Instanceable())
+        {
+            map->RemoveRespawnTime(SPAWN_TYPE_CREATURE, guid, nullptr, true);
+        }
+    }
+}
+
+template <>
+void PoolGroup<GameObject>::RemoveRespawnTimeFromDB(ObjectGuid::LowType guid)
+{
+    if (GameObjectData const* data = sObjectMgr->GetGameObjectData(guid))
+    {
+        Map* map = sMapMgr->CreateBaseMap(data->mapId);
+        if (!map->Instanceable())
+        {
+            map->RemoveRespawnTime(SPAWN_TYPE_GAMEOBJECT, guid, nullptr, true);
+        }
+    }
+}
+
+template <>
+void PoolGroup<Pool>::RemoveRespawnTimeFromDB(ObjectGuid::LowType /*guid*/) { }
 
 ////////////////////////////////////////////////////////////
 // Methods of class PoolMgr
@@ -430,7 +471,7 @@ void PoolMgr::LoadFromDB()
         }
         while (result->NextRow());
 
-        TC_LOG_INFO("server.loading", ">> Loaded %u objects pools in %u ms", count, GetMSTimeDiffToNow(oldMSTime));
+        TC_LOG_INFO("server.loading", ">> Loaded {} objects pools in {} ms", count, GetMSTimeDiffToNow(oldMSTime));
     }
 
     // Creatures
@@ -460,18 +501,18 @@ void PoolMgr::LoadFromDB()
                 CreatureData const* data = sObjectMgr->GetCreatureData(guid);
                 if (!data)
                 {
-                    TC_LOG_ERROR("sql.sql", "`pool_creature` has a non existing creature spawn (GUID: %u) defined for pool id (%u), skipped.", guid, pool_id);
+                    TC_LOG_ERROR("sql.sql", "`pool_creature` has a non existing creature spawn (GUID: {}) defined for pool id ({}), skipped.", guid, pool_id);
                     continue;
                 }
                 auto it = mPoolTemplate.find(pool_id);
                 if (it == mPoolTemplate.end())
                 {
-                    TC_LOG_ERROR("sql.sql", "`pool_creature` pool id (%u) is not in `pool_template`, skipped.", pool_id);
+                    TC_LOG_ERROR("sql.sql", "`pool_creature` pool id ({}) is not in `pool_template`, skipped.", pool_id);
                     continue;
                 }
                 if (chance < 0 || chance > 100)
                 {
-                    TC_LOG_ERROR("sql.sql", "`pool_creature` has an invalid chance (%f) for creature guid (%u) in pool id (%u), skipped.", chance, guid, pool_id);
+                    TC_LOG_ERROR("sql.sql", "`pool_creature` has an invalid chance ({}) for creature guid ({}) in pool id ({}), skipped.", chance, guid, pool_id);
                     continue;
                 }
                 PoolTemplateData* pPoolTemplate = &mPoolTemplate[pool_id];
@@ -486,7 +527,7 @@ void PoolMgr::LoadFromDB()
             }
             while (result->NextRow());
 
-            TC_LOG_INFO("server.loading", ">> Loaded %u creatures in pools in %u ms", count, GetMSTimeDiffToNow(oldMSTime));
+            TC_LOG_INFO("server.loading", ">> Loaded {} creatures in pools in {} ms", count, GetMSTimeDiffToNow(oldMSTime));
         }
     }
 
@@ -517,29 +558,30 @@ void PoolMgr::LoadFromDB()
                 GameObjectData const* data = sObjectMgr->GetGameObjectData(guid);
                 if (!data)
                 {
-                    TC_LOG_ERROR("sql.sql", "`pool_gameobject` has a non existing gameobject spawn (GUID: %u) defined for pool id (%u), skipped.", guid, pool_id);
+                    TC_LOG_ERROR("sql.sql", "`pool_gameobject` has a non existing gameobject spawn (GUID: {}) defined for pool id ({}), skipped.", guid, pool_id);
                     continue;
                 }
 
                 GameObjectTemplate const* goinfo = sObjectMgr->GetGameObjectTemplate(data->id);
+                ASSERT(goinfo);
                 if (goinfo->type != GAMEOBJECT_TYPE_CHEST &&
                     goinfo->type != GAMEOBJECT_TYPE_GOOBER &&
                     goinfo->type != GAMEOBJECT_TYPE_FISHINGHOLE)
                 {
-                    TC_LOG_ERROR("sql.sql", "`pool_gameobject` has a not lootable gameobject spawn (GUID: %u, type: %u) defined for pool id (%u), skipped.", guid, goinfo->type, pool_id);
+                    TC_LOG_ERROR("sql.sql", "`pool_gameobject` has a not lootable gameobject spawn (GUID: {}, type: {}) defined for pool id ({}), skipped.", guid, goinfo->type, pool_id);
                     continue;
                 }
 
                 auto it = mPoolTemplate.find(pool_id);
                 if (it == mPoolTemplate.end())
                 {
-                    TC_LOG_ERROR("sql.sql", "`pool_gameobject` pool id (%u) is not in `pool_template`, skipped.", pool_id);
+                    TC_LOG_ERROR("sql.sql", "`pool_gameobject` pool id ({}) is not in `pool_template`, skipped.", pool_id);
                     continue;
                 }
 
                 if (chance < 0 || chance > 100)
                 {
-                    TC_LOG_ERROR("sql.sql", "`pool_gameobject` has an invalid chance (%f) for gameobject guid (%u) in pool id (%u), skipped.", chance, guid, pool_id);
+                    TC_LOG_ERROR("sql.sql", "`pool_gameobject` has an invalid chance ({}) for gameobject guid ({}) in pool id ({}), skipped.", chance, guid, pool_id);
                     continue;
                 }
 
@@ -555,7 +597,7 @@ void PoolMgr::LoadFromDB()
             }
             while (result->NextRow());
 
-            TC_LOG_INFO("server.loading", ">> Loaded %u gameobject in pools in %u ms", count, GetMSTimeDiffToNow(oldMSTime));
+            TC_LOG_INFO("server.loading", ">> Loaded {} gameobject in pools in {} ms", count, GetMSTimeDiffToNow(oldMSTime));
         }
     }
 
@@ -587,7 +629,7 @@ void PoolMgr::LoadFromDB()
                     auto it = mPoolTemplate.find(mother_pool_id);
                     if (it == mPoolTemplate.end())
                     {
-                        TC_LOG_ERROR("sql.sql", "`pool_pool` mother_pool id (%u) is not in `pool_template`, skipped.", mother_pool_id);
+                        TC_LOG_ERROR("sql.sql", "`pool_pool` mother_pool id ({}) is not in `pool_template`, skipped.", mother_pool_id);
                         continue;
                     }
                 }
@@ -595,18 +637,18 @@ void PoolMgr::LoadFromDB()
                     auto it = mPoolTemplate.find(child_pool_id);
                     if (it == mPoolTemplate.end())
                     {
-                        TC_LOG_ERROR("sql.sql", "`pool_pool` included pool_id (%u) is not in `pool_template`, skipped.", child_pool_id);
+                        TC_LOG_ERROR("sql.sql", "`pool_pool` included pool_id ({}) is not in `pool_template`, skipped.", child_pool_id);
                         continue;
                     }
                 }
                 if (mother_pool_id == child_pool_id)
                 {
-                    TC_LOG_ERROR("sql.sql", "`pool_pool` pool_id (%u) includes itself, dead-lock detected, skipped.", child_pool_id);
+                    TC_LOG_ERROR("sql.sql", "`pool_pool` pool_id ({}) includes itself, dead-lock detected, skipped.", child_pool_id);
                     continue;
                 }
                 if (chance < 0 || chance > 100)
                 {
-                    TC_LOG_ERROR("sql.sql", "`pool_pool` has an invalid chance (%f) for pool id (%u) in mother pool id (%u), skipped.", chance, child_pool_id, mother_pool_id);
+                    TC_LOG_ERROR("sql.sql", "`pool_pool` has an invalid chance ({}) for pool id ({}) in mother pool id ({}), skipped.", chance, child_pool_id, mother_pool_id);
                     continue;
                 }
                 PoolTemplateData* pPoolTemplateMother = &mPoolTemplate[mother_pool_id];
@@ -623,7 +665,7 @@ void PoolMgr::LoadFromDB()
 
             // Now check for circular reference
             // All pool_ids are in pool_template
-            for (auto const it : mPoolTemplate)
+            for (auto const& it : mPoolTemplate)
             {
                 std::set<uint32> checkedPools;
                 for (SearchMap::iterator poolItr = mPoolSearchMap.find(it.first); poolItr != mPoolSearchMap.end(); poolItr = mPoolSearchMap.find(poolItr->second))
@@ -637,7 +679,7 @@ void PoolMgr::LoadFromDB()
                             ss << *itr << ' ';
                         ss << "create(s) a circular reference, which can cause the server to freeze.\nRemoving the last link between mother pool "
                             << poolItr->first << " and child pool " << poolItr->second;
-                        TC_LOG_ERROR("sql.sql", "%s", ss.str().c_str());
+                        TC_LOG_ERROR("sql.sql", "{}", ss.str());
                         mPoolPoolGroups[poolItr->second].RemoveOneRelation(poolItr->first);
                         mPoolSearchMap.erase(poolItr);
                         --count;
@@ -646,7 +688,7 @@ void PoolMgr::LoadFromDB()
                 }
             }
 
-            TC_LOG_INFO("server.loading", ">> Loaded %u pools in mother pools in %u ms", count, GetMSTimeDiffToNow(oldMSTime));
+            TC_LOG_INFO("server.loading", ">> Loaded {} pools in mother pools in {} ms", count, GetMSTimeDiffToNow(oldMSTime));
         }
     }
 
@@ -677,9 +719,9 @@ void PoolMgr::LoadFromDB()
                     if (pool_pool_id)
                         // The pool is a child pool in pool_pool table. Ideally we should remove it from the pool handler to ensure it never gets spawned,
                         // however that could recursively invalidate entire chain of mother pools. It can be done in the future but for now we'll do nothing.
-                        TC_LOG_ERROR("sql.sql", "Pool Id %u has no equal chance pooled entites defined and explicit chance sum is not 100. This broken pool is a child pool of Id %u and cannot be safely removed.", pool_entry, fields[2].GetUInt32());
+                        TC_LOG_ERROR("sql.sql", "Pool Id {} has no equal chance pooled entites defined and explicit chance sum is not 100. This broken pool is a child pool of Id {} and cannot be safely removed.", pool_entry, fields[2].GetUInt32());
                     else
-                        TC_LOG_ERROR("sql.sql", "Pool Id %u has no equal chance pooled entites defined and explicit chance sum is not 100. The pool will not be spawned.", pool_entry);
+                        TC_LOG_ERROR("sql.sql", "Pool Id {} has no equal chance pooled entites defined and explicit chance sum is not 100. The pool will not be spawned.", pool_entry);
                     continue;
                 }
 
@@ -692,7 +734,7 @@ void PoolMgr::LoadFromDB()
             }
             while (result->NextRow());
 
-            TC_LOG_DEBUG("pool", "Pool handling system initialized, %u pools spawned in %u ms", count, GetMSTimeDiffToNow(oldMSTime));
+            TC_LOG_DEBUG("pool", "Pool handling system initialized, {} pools spawned in {} ms", count, GetMSTimeDiffToNow(oldMSTime));
 
         }
     }
@@ -736,22 +778,22 @@ void PoolMgr::SpawnPool(uint32 pool_id)
 }
 
 // Call to despawn a pool, all gameobjects/creatures in this pool are removed
-void PoolMgr::DespawnPool(uint32 pool_id)
+void PoolMgr::DespawnPool(uint32 pool_id, bool alwaysDeleteRespawnTime)
 {
     {
         auto it = mPoolCreatureGroups.find(pool_id);
         if (it != mPoolCreatureGroups.end() && !it->second.isEmpty())
-            it->second.DespawnObject(mSpawnedData);
+            it->second.DespawnObject(mSpawnedData, 0, alwaysDeleteRespawnTime);
     }
     {
         auto it = mPoolGameobjectGroups.find(pool_id);
         if (it != mPoolGameobjectGroups.end() && !it->second.isEmpty())
-            it->second.DespawnObject(mSpawnedData);
+            it->second.DespawnObject(mSpawnedData, 0, alwaysDeleteRespawnTime);
     }
     {
         auto it = mPoolPoolGroups.find(pool_id);
         if (it != mPoolPoolGroups.end() && !it->second.isEmpty())
-            it->second.DespawnObject(mSpawnedData);
+            it->second.DespawnObject(mSpawnedData, 0, alwaysDeleteRespawnTime);
     }
 }
 
@@ -765,7 +807,7 @@ uint32 PoolMgr::IsPartOfAPool(SpawnObjectType type, ObjectGuid::LowType spawnId)
         case SPAWN_TYPE_GAMEOBJECT:
             return IsPartOfAPool<GameObject>(spawnId);
         default:
-            ASSERT(false, "Invalid spawn type %u passed to PoolMgr::IsPartOfPool (with spawnId %u)", uint32(type), spawnId);
+            ABORT_MSG("Invalid spawn type %u passed to PoolMgr::IsPartOfPool (with spawnId %u)", uint32(type), spawnId);
             return 0;
     }
 }
@@ -806,3 +848,18 @@ void PoolMgr::UpdatePool(uint32 pool_id, uint32 db_guid_or_pool_id)
 template void PoolMgr::UpdatePool<Pool>(uint32 pool_id, uint32 db_guid_or_pool_id);
 template void PoolMgr::UpdatePool<GameObject>(uint32 pool_id, uint32 db_guid_or_pool_id);
 template void PoolMgr::UpdatePool<Creature>(uint32 pool_id, uint32 db_guid_or_pool_id);
+
+void PoolMgr::UpdatePool(uint32 pool_id, SpawnObjectType type, uint32 spawnId)
+{
+    switch (type)
+    {
+        case SPAWN_TYPE_CREATURE:
+            UpdatePool<Creature>(pool_id, spawnId);
+            break;
+        case SPAWN_TYPE_GAMEOBJECT:
+            UpdatePool<GameObject>(pool_id, spawnId);
+            break;
+        default:
+            ABORT_MSG("Invalid spawn type %u passed to PoolMgr::IsPartOfPool (with spawnId %u)", uint32(type), spawnId);
+    }
+}

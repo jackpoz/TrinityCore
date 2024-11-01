@@ -16,6 +16,7 @@
  */
 
 #include "ScriptMgr.h"
+#include "Containers.h"
 #include "InstanceScript.h"
 #include "MotionMaster.h"
 #include "Player.h"
@@ -107,7 +108,6 @@ enum Misc
     SPLINE_INITIAL_MOVEMENT = 1,
     POINT_SUMMONED          = 1
 };
-
 
 struct boss_jaraxxus : public BossAI
 {
@@ -209,12 +209,12 @@ struct boss_jaraxxus : public BossAI
                     events.Repeat(11s, 13s);
                     break;
                 case EVENT_FEL_LIGHTNING:
-                    if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 0.0f, true))
+                    if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 0.0f, true))
                         DoCast(target, SPELL_FEL_LIGHTNING);
                     events.Repeat(10s, 30s);
                     break;
                 case EVENT_INCINERATE_FLESH:
-                    if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 1, 0.0f, true))
+                    if (Unit* target = SelectTarget(SelectTargetMethod::Random, 1, 0.0f, true))
                     {
                         Talk(EMOTE_INCINERATE, target);
                         Talk(SAY_INCINERATE);
@@ -231,7 +231,7 @@ struct boss_jaraxxus : public BossAI
                     break;
                 }
                 case EVENT_LEGION_FLAME:
-                    if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 1, 0.0f, true))
+                    if (Unit* target = SelectTarget(SelectTargetMethod::Random, 1, 0.0f, true))
                     {
                         Talk(EMOTE_LEGION_FLAME, target);
                         DoCast(target, SPELL_LEGION_FLAME);
@@ -325,7 +325,7 @@ struct npc_infernal_volcano : public ScriptedAI
         me->SetReactState(REACT_PASSIVE);
         DoCastSelf(SPELL_INFERNAL_ERUPTION_EFFECT, true);
         if (IsHeroic())
-            me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+            me->RemoveUnitFlag(UNIT_FLAG_UNINTERACTIBLE);
     }
 };
 
@@ -351,7 +351,7 @@ struct npc_fel_infernal : public ScriptedAI
 
         _scheduler.Schedule(Seconds(2), [this](TaskContext context)
         {
-            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 0.0f, true))
+            if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 0.0f, true))
                 DoCast(target, SPELL_FEL_STREAK_VISUAL);
             context.Repeat(Seconds(15));
         });
@@ -387,7 +387,7 @@ struct npc_nether_portal : public ScriptedAI
         me->SetReactState(REACT_PASSIVE);
         DoCastSelf(SPELL_NETHER_PORTAL_EFFECT, true);
         if (IsHeroic())
-            me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+            me->RemoveUnitFlag(UNIT_FLAG_UNINTERACTIBLE);
     }
 };
 
@@ -442,7 +442,7 @@ struct npc_mistress_of_pain : public ScriptedAI
                     _events.Repeat(3s, 10s);
                     return;
                 case EVENT_SPINNING_SPIKE:
-                    if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 0.0f, true))
+                    if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 0.0f, true))
                         DoCast(target, SPELL_SPINNING_SPIKE);
                     _events.Repeat(20s);
                     return;
@@ -500,7 +500,7 @@ class spell_mistress_kiss_area : public SpellScript
 
     bool Validate(SpellInfo const* spellInfo) override
     {
-        return ValidateSpellInfo({ static_cast<uint32>(spellInfo->Effects[EFFECT_0].CalcValue()) });
+        return ValidateSpellInfo({ static_cast<uint32>(spellInfo->GetEffect(EFFECT_0).CalcValue()) });
     }
 
     void FilterTargets(std::list<WorldObject*>& targets)
@@ -538,7 +538,7 @@ class spell_fel_streak_visual : public SpellScript
 
     bool Validate(SpellInfo const* spellInfo) override
     {
-        return ValidateSpellInfo({ static_cast<uint32>(spellInfo->Effects[EFFECT_0].CalcValue()) });
+        return ValidateSpellInfo({ static_cast<uint32>(spellInfo->GetEffect(EFFECT_0).CalcValue()) });
     }
 
     void HandleScript(SpellEffIndex /*effIndex*/)
@@ -560,7 +560,7 @@ void AddSC_boss_jaraxxus()
     RegisterTrialOfTheCrusaderCreatureAI(npc_fel_infernal);
     RegisterTrialOfTheCrusaderCreatureAI(npc_nether_portal);
     RegisterTrialOfTheCrusaderCreatureAI(npc_mistress_of_pain);
-    RegisterAuraScript(spell_mistress_kiss);
+    RegisterSpellScript(spell_mistress_kiss);
     RegisterSpellScript(spell_mistress_kiss_area);
     RegisterSpellScript(spell_fel_streak_visual);
 }

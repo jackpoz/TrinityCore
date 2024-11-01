@@ -23,6 +23,7 @@ SDCategory: Zul'Aman
 EndScriptData */
 
 #include "ScriptMgr.h"
+#include "Containers.h"
 #include "InstanceScript.h"
 #include "MotionMaster.h"
 #include "ObjectAccessor.h"
@@ -285,9 +286,6 @@ class boss_hexlord_malacrass : public CreatureScript
                 Initialize();
 
                 SpawnAdds();
-
-                me->SetUInt32Value(UNIT_VIRTUAL_ITEM_SLOT_ID, 46916);
-                me->SetByteValue(UNIT_FIELD_BYTES_2, 0, SHEATH_STATE_MELEE);
             }
 
             void JustEngagedWith(Unit* who) override
@@ -353,7 +351,7 @@ class boss_hexlord_malacrass : public CreatureScript
                     {
                         if (creature)
                             creature->setDeathState(DEAD);
-                        creature = me->SummonCreature(AddEntry[i], Pos_X[i], POS_Y, POS_Z, ORIENT, TEMPSUMMON_DEAD_DESPAWN, 0);
+                        creature = me->SummonCreature(AddEntry[i], Pos_X[i], POS_Y, POS_Z, ORIENT, TEMPSUMMON_DEAD_DESPAWN);
                         if (creature)
                             AddGUID[i] = creature->GetGUID();
                     }
@@ -422,8 +420,8 @@ class boss_hexlord_malacrass : public CreatureScript
 
                 if (SiphonSoul_Timer <= diff)
                 {
-                    Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 70, true);
-                    Unit* trigger = DoSpawnCreature(NPC_TEMP_TRIGGER, 0, 0, 0, 0, TEMPSUMMON_TIMED_DESPAWN, 30000);
+                    Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 70, true);
+                    Unit* trigger = DoSpawnCreature(NPC_TEMP_TRIGGER, 0, 0, 0, 0, TEMPSUMMON_TIMED_DESPAWN, 30s);
                     if (!target || !trigger)
                     {
                         EnterEvadeMode();
@@ -432,7 +430,7 @@ class boss_hexlord_malacrass : public CreatureScript
                     else
                     {
                         trigger->SetDisplayId(11686);
-                        trigger->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+                        trigger->SetUnitFlag(UNIT_FLAG_UNINTERACTIBLE);
                         trigger->CastSpell(target, SPELL_SIPHON_SOUL, true);
                         trigger->GetMotionMaster()->MoveChase(me);
 
@@ -484,7 +482,7 @@ class boss_hexlord_malacrass : public CreatureScript
                         break;
                     case ABILITY_TARGET_ENEMY:
                     default:
-                        target = SelectTarget(SELECT_TARGET_RANDOM, 0, 100, true);
+                        target = SelectTarget(SelectTargetMethod::Random, 0, 100, true);
                         break;
                     case ABILITY_TARGET_HEAL:
                         target = DoSelectLowestHpFriendly(50.f, 0);
@@ -642,7 +640,7 @@ class boss_alyson_antille : public CreatureScript
                         if (urand(0, 1))
                             target = DoSelectLowestHpFriendly(50, 0);
                         else
-                            target = SelectTarget(SELECT_TARGET_RANDOM, 0);
+                            target = SelectTarget(SelectTargetMethod::Random, 0);
                         if (target)
                             DoCast(target, SPELL_DISPEL_MAGIC, false);
                     }
@@ -660,7 +658,7 @@ class boss_alyson_antille : public CreatureScript
                     DoCast(target, SPELL_DISPEL_MAGIC, false);
                 }
                 else
-                    me->CastSpell(SelectUnit(SELECT_TARGET_RANDOM, 0), SPELL_DISPEL_MAGIC, false);
+                    me->CastSpell(SelectUnit(SelectTargetMethod::Random, 0), SPELL_DISPEL_MAGIC, false);
 
                 dispelmagic_timer = 12000;
                 }
@@ -713,7 +711,7 @@ class boss_gazakroth : public CreatureScript
                 if (firebolt_timer <= diff)
                 {
                     DoCastVictim(SPELL_FIREBOLT, false);
-                    firebolt_timer = 0.7 * IN_MILLISECONDS;
+                    firebolt_timer = 700;
                 }
                 else
                     firebolt_timer -= diff;
@@ -837,7 +835,6 @@ class boss_darkheart : public CreatureScript
         }
 };
 
-
 class boss_slither : public CreatureScript
 {
     public:
@@ -885,7 +882,7 @@ class boss_slither : public CreatureScript
 
                 if (venomspit_timer <= diff)
                 {
-                    if (Unit* victim = SelectTarget(SELECT_TARGET_RANDOM, 0, 100, true))
+                    if (Unit* victim = SelectTarget(SelectTargetMethod::Random, 0, 100, true))
                         DoCast(victim, SPELL_VENOM_SPIT, false);
                     venomspit_timer = 2500;
                 }
@@ -991,7 +988,7 @@ class boss_koragg : public CreatureScript
                 }
                 if (coldstare_timer <= diff)
                 {
-                    if (Unit* victim = SelectTarget(SELECT_TARGET_RANDOM, 0, 100, true))
+                    if (Unit* victim = SelectTarget(SelectTargetMethod::Random, 0, 100, true))
                         DoCast(victim, SPELL_COLD_STARE, false);
                     coldstare_timer = 12000;
                 }
@@ -1006,6 +1003,7 @@ class boss_koragg : public CreatureScript
         }
 };
 
+// 43522 - Unstable Affliction
 class spell_hexlord_unstable_affliction : public SpellScriptLoader
 {
     public:

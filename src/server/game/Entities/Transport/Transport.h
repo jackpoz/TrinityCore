@@ -80,7 +80,7 @@ class TC_GAME_API Transport : public GameObject, public TransportBase
         }
 
         uint32 GetTransportPeriod() const override { return GetUInt32Value(GAMEOBJECT_LEVEL); }
-        void SetPeriod(uint32 period) { SetUInt32Value(GAMEOBJECT_LEVEL, period); }
+        void SetPeriod(uint32 period) { SetLevel(period); }
         uint32 GetTimer() const { return GetGOValue()->Transport.PathProgress; }
 
         KeyFrameVec const& GetKeyFrames() const { return _transportInfo->keyFrames; }
@@ -117,7 +117,7 @@ class TC_GAME_API Transport : public GameObject, public TransportBase
 
         KeyFrameVec::const_iterator _currentFrame;
         KeyFrameVec::const_iterator _nextFrame;
-        TimeTrackerSmall _positionChangeTimer;
+        TimeTracker _positionChangeTimer;
         bool _isMoving;
         bool _pendingStop;
 

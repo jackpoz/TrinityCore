@@ -187,7 +187,7 @@ class npc_flash_freeze : public CreatureScript
                 Initialize();
                 instance = me->GetInstanceScript();
                 me->SetDisplayId(me->GetCreatureTemplate()->Modelid2);
-                me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_STUNNED | UNIT_FLAG_PACIFIED);
+                me->SetUnitFlag(UNIT_FLAG_STUNNED | UNIT_FLAG_PACIFIED);
                 me->SetControlled(true, UNIT_STATE_ROOT);
             }
 
@@ -215,7 +215,7 @@ class npc_flash_freeze : public CreatureScript
                  || me->EnsureVictim()->HasAura(SPELL_FLASH_FREEZE_HELPER))
                     return;
 
-                if (me->EnsureVictim()->GetGUID() != targetGUID || instance->GetBossState(BOSS_HODIR) != IN_PROGRESS)
+                if (me->EnsureVictim()->GetGUID() != targetGUID || instance->GetBossState(DATA_HODIR) != IN_PROGRESS)
                     me->DespawnOrUnsummon();
 
                 if (checkDespawnTimer <= diff)
@@ -244,7 +244,7 @@ class npc_flash_freeze : public CreatureScript
                     // Prevents to have Ice Block on other place than target is
                     me->NearTeleportTo(target->GetPositionX(), target->GetPositionY(), target->GetPositionZ(), target->GetOrientation());
                     if (target->GetTypeId() == TYPEID_PLAYER)
-                        if (Creature* hodir = instance->GetCreature(BOSS_HODIR))
+                        if (Creature* hodir = instance->GetCreature(DATA_HODIR))
                             hodir->AI()->DoAction(ACTION_CHEESE_THE_FREEZE);
                 }
             }
@@ -267,7 +267,7 @@ class npc_ice_block : public CreatureScript
             {
                 instance = me->GetInstanceScript();
                 me->SetDisplayId(me->GetCreatureTemplate()->Modelid2);
-                me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_STUNNED | UNIT_FLAG_PACIFIED);
+                me->SetUnitFlag(UNIT_FLAG_STUNNED | UNIT_FLAG_PACIFIED);
                 me->SetControlled(true, UNIT_STATE_ROOT);
             }
 
@@ -282,7 +282,7 @@ class npc_ice_block : public CreatureScript
                     return;
 
                 targetGUID = summoner->GetGUID();
-                summoner->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_STUNNED | UNIT_FLAG_PACIFIED);
+                summoner->SetUnitFlag(UNIT_FLAG_STUNNED | UNIT_FLAG_PACIFIED);
                 summoner->SetControlled(true, UNIT_STATE_ROOT);
                 me->SetInCombatWith(summoner);
                 AddThreat(summoner, 250.0f);
@@ -295,14 +295,14 @@ class npc_ice_block : public CreatureScript
                 }
             }
 
-            void DamageTaken(Unit* who, uint32& /*damage*/) override
+            void DamageTaken(Unit* who, uint32& /*damage*/, DamageEffectType /*damageType*/, SpellInfo const* /*spellInfo = nullptr*/) override
             {
                 if (Creature* helper = ObjectAccessor::GetCreature(*me, targetGUID))
                 {
-                    helper->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_STUNNED | UNIT_FLAG_PACIFIED);
+                    helper->RemoveUnitFlag(UNIT_FLAG_STUNNED | UNIT_FLAG_PACIFIED);
                     helper->SetControlled(false, UNIT_STATE_ROOT);
 
-                    if (Creature* hodir = instance->GetCreature(BOSS_HODIR))
+                    if (Creature* hodir = instance->GetCreature(DATA_HODIR))
                     {
                         if (!hodir->IsInCombat())
                         {
@@ -330,7 +330,7 @@ class boss_hodir : public CreatureScript
 
         struct boss_hodirAI : public BossAI
         {
-            boss_hodirAI(Creature* creature) : BossAI(creature, BOSS_HODIR)
+            boss_hodirAI(Creature* creature) : BossAI(creature, DATA_HODIR)
             {
                 Initialize();
                 me->SetReactState(REACT_PASSIVE);
@@ -390,7 +390,7 @@ class boss_hodir : public CreatureScript
                     Talk(SAY_SLAY);
             }
 
-            void DamageTaken(Unit* who, uint32& damage) override
+            void DamageTaken(Unit* who, uint32& damage, DamageEffectType /*damageType*/, SpellInfo const* /*spellInfo = nullptr*/) override
             {
                 if (damage >= me->GetHealth())
                 {
@@ -403,7 +403,7 @@ class boss_hodir : public CreatureScript
                     me->RemoveAllAttackers();
                     me->AttackStop();
                     me->SetReactState(REACT_PASSIVE);
-                    me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+                    me->SetUnitFlag(UNIT_FLAG_NON_ATTACKABLE);
                     me->SetControlled(true, UNIT_STATE_ROOT);
                     me->InterruptNonMeleeSpells(true);
                     me->StopMoving();
@@ -415,7 +415,7 @@ class boss_hodir : public CreatureScript
                     DoCastAOE(SPELL_KILL_CREDIT, true); /// need to be cast before changing boss faction
                                                         /// spell will target enemies only
                     me->SetFaction(FACTION_FRIENDLY);
-                    me->DespawnOrUnsummon(10000);
+                    me->DespawnOrUnsummon(10s);
 
                     _JustDied();
                 }
@@ -446,15 +446,15 @@ class boss_hodir : public CreatureScript
                             events.ScheduleEvent(EVENT_FREEZE, 30s, 45s);
                             break;
                         case EVENT_ICICLE:
-                            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 100.0f, true))
+                            if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 100.0f, true))
                                 DoCast(target, SPELL_ICICLE);
-                            events.ScheduleEvent(EVENT_ICICLE, RAID_MODE(5500, 3500));
+                            events.ScheduleEvent(EVENT_ICICLE, RAID_MODE(5500ms, 3500ms));
                             break;
                         case EVENT_FLASH_FREEZE:
                             Talk(SAY_FLASH_FREEZE);
                             Talk(EMOTE_FREEZE);
                             for (uint8 n = 0; n < RAID_MODE(2, 3); ++n)
-                                if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 100.0f, true))
+                                if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 100.0f, true))
                                     target->CastSpell(target, SPELL_ICICLE_SNOWDRIFT, true);
                             DoCast(SPELL_FLASH_FREEZE);
                             events.ScheduleEvent(EVENT_FLASH_FREEZE_EFFECT, 500ms);
@@ -563,8 +563,6 @@ class npc_icicle : public CreatureScript
             {
                 Initialize();
                 me->SetDisplayId(me->GetCreatureTemplate()->Modelid1);
-                me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_PACIFIED | UNIT_FLAG_NOT_SELECTABLE);
-                me->SetControlled(true, UNIT_STATE_ROOT);
                 me->SetReactState(REACT_PASSIVE);
             }
 
@@ -618,8 +616,6 @@ class npc_snowpacked_icicle : public CreatureScript
             {
                 Initialize();
                 me->SetDisplayId(me->GetCreatureTemplate()->Modelid2);
-                me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE | UNIT_FLAG_PACIFIED);
-                me->SetControlled(true, UNIT_STATE_ROOT);
                 me->SetReactState(REACT_PASSIVE);
             }
 
@@ -675,7 +671,7 @@ class npc_hodir_priest : public CreatureScript
 
             void UpdateAI(uint32 diff) override
             {
-                if (!UpdateVictim() || me->HasUnitState(UNIT_STATE_STUNNED) || me->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_STUNNED))
+                if (!UpdateVictim() || me->HasUnitState(UNIT_STATE_STUNNED) || me->HasUnitFlag(UNIT_FLAG_STUNNED))
                     return;
 
                 events.Update(diff);
@@ -722,7 +718,7 @@ class npc_hodir_priest : public CreatureScript
 
             void JustDied(Unit* /*killer*/) override
             {
-                if (Creature* hodir = instance->GetCreature(BOSS_HODIR))
+                if (Creature* hodir = instance->GetCreature(DATA_HODIR))
                     hodir->AI()->DoAction(ACTION_I_HAVE_THE_COOLEST_FRIENDS);
             }
 
@@ -757,7 +753,7 @@ class npc_hodir_shaman : public CreatureScript
 
             void UpdateAI(uint32 diff) override
             {
-                if (!UpdateVictim() || me->HasUnitState(UNIT_STATE_STUNNED) || me->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_STUNNED))
+                if (!UpdateVictim() || me->HasUnitState(UNIT_STATE_STUNNED) || me->HasUnitFlag(UNIT_FLAG_STUNNED))
                     return;
 
                 events.Update(diff);
@@ -770,7 +766,7 @@ class npc_hodir_shaman : public CreatureScript
                     switch (eventId)
                     {
                         case EVENT_STORM_CLOUD:
-                            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 100.0f, true))
+                            if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 100.0f, true))
                                 DoCast(target, SPELL_STORM_CLOUD, true);
                             events.ScheduleEvent(EVENT_STORM_CLOUD, 15s, 20s);
                             break;
@@ -787,7 +783,7 @@ class npc_hodir_shaman : public CreatureScript
 
             void JustDied(Unit* /*killer*/) override
             {
-                if (Creature* hodir = instance->GetCreature(BOSS_HODIR))
+                if (Creature* hodir = instance->GetCreature(DATA_HODIR))
                     hodir->AI()->DoAction(ACTION_I_HAVE_THE_COOLEST_FRIENDS);
             }
 
@@ -822,7 +818,7 @@ class npc_hodir_druid : public CreatureScript
 
             void UpdateAI(uint32 diff) override
             {
-                if (!UpdateVictim() || me->HasUnitState(UNIT_STATE_STUNNED) || me->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_STUNNED))
+                if (!UpdateVictim() || me->HasUnitState(UNIT_STATE_STUNNED) || me->HasUnitFlag(UNIT_FLAG_STUNNED))
                     return;
 
                 events.Update(diff);
@@ -851,7 +847,7 @@ class npc_hodir_druid : public CreatureScript
 
             void JustDied(Unit* /*killer*/) override
             {
-                if (Creature* hodir = instance->GetCreature(BOSS_HODIR))
+                if (Creature* hodir = instance->GetCreature(DATA_HODIR))
                     hodir->AI()->DoAction(ACTION_I_HAVE_THE_COOLEST_FRIENDS);
             }
 
@@ -900,7 +896,7 @@ class npc_hodir_mage : public CreatureScript
 
             void UpdateAI(uint32 diff) override
             {
-                if (!UpdateVictim() || me->HasUnitState(UNIT_STATE_STUNNED) || me->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_STUNNED))
+                if (!UpdateVictim() || me->HasUnitState(UNIT_STATE_STUNNED) || me->HasUnitFlag(UNIT_FLAG_STUNNED))
                     return;
 
                 events.Update(diff);
@@ -934,7 +930,7 @@ class npc_hodir_mage : public CreatureScript
 
             void JustDied(Unit* /*killer*/) override
             {
-                if (Creature* hodir = instance->GetCreature(BOSS_HODIR))
+                if (Creature* hodir = instance->GetCreature(DATA_HODIR))
                     hodir->AI()->DoAction(ACTION_I_HAVE_THE_COOLEST_FRIENDS);
             }
 
@@ -967,9 +963,9 @@ class npc_toasty_fire : public CreatureScript
                 DoCast(me, SPELL_SINGED, true);
             }
 
-            void SpellHit(Unit* /*who*/, SpellInfo const* spell) override
+            void SpellHit(WorldObject* /*caster*/, SpellInfo const* spellInfo) override
             {
-                if (spell->Id == SPELL_BLOCK_OF_ICE || spell->Id == SPELL_ICE_SHARD || spell->Id == SPELL_ICE_SHARD_HIT)
+                if (spellInfo->Id == SPELL_BLOCK_OF_ICE || spellInfo->Id == SPELL_ICE_SHARD || spellInfo->Id == SPELL_ICE_SHARD_HIT)
                 {
                     if (GameObject* ToastyFire = me->FindNearestGameObject(GO_TOASTY_FIRE, 1.0f))
                         me->RemoveGameObject(ToastyFire, true);
@@ -984,6 +980,7 @@ class npc_toasty_fire : public CreatureScript
         };
 };
 
+// 62038 - Biting Cold
 class spell_biting_cold : public SpellScriptLoader
 {
     public:
@@ -1040,6 +1037,7 @@ class spell_biting_cold : public SpellScriptLoader
         }
 };
 
+// 62039 - Biting Cold
 class spell_biting_cold_dot : public SpellScriptLoader
 {
 public:

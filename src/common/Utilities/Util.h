@@ -20,9 +20,13 @@
 
 #include "Define.h"
 #include "Errors.h"
+#include "Optional.h"
 
+#include <array>
 #include <string>
+#include <string_view>
 #include <sstream>
+#include <typeinfo>
 #include <utility>
 #include <vector>
 
@@ -33,38 +37,27 @@ enum class TimeFormat : uint8
     Numeric         // 1:2:3:4
 };
 
-class TC_COMMON_API Tokenizer
+namespace Trinity
 {
-public:
-    typedef std::vector<char const*> StorageType;
+    TC_COMMON_API void VerifyOsVersion();
 
-    typedef StorageType::size_type size_type;
+    TC_COMMON_API std::vector<std::string_view> Tokenize(std::string_view str, char sep, bool keepEmpty);
 
-    typedef StorageType::const_iterator const_iterator;
-    typedef StorageType::reference reference;
-    typedef StorageType::const_reference const_reference;
+    /* this would return string_view into temporary otherwise */
+    std::vector<std::string_view> Tokenize(std::string&&, char, bool) = delete;
+    std::vector<std::string_view> Tokenize(std::string const&&, char, bool) = delete;
 
-public:
-    Tokenizer(const std::string &src, char const sep, uint32 vectorReserve = 0, bool keepEmptyStrings = true);
-    ~Tokenizer() { delete[] m_str; }
+    /* the delete overload means we need to make this explicit */
+    inline std::vector<std::string_view> Tokenize(char const* str, char sep, bool keepEmpty) { return Tokenize(std::string_view(str ? str : ""), sep, keepEmpty); }
+}
 
-    const_iterator begin() const { return m_storage.begin(); }
-    const_iterator end() const { return m_storage.end(); }
+TC_COMMON_API Optional<int32> MoneyStringToMoney(std::string const& moneyString);
 
-    size_type size() const { return m_storage.size(); }
-
-    reference operator [] (size_type i) { return m_storage[i]; }
-    const_reference operator [] (size_type i) const { return m_storage[i]; }
-
-private:
-    char* m_str;
-    StorageType m_storage;
-};
-
-TC_COMMON_API int32 MoneyStringToMoney(std::string const& moneyString);
-
+#if (defined(WIN32) || defined(_WIN32) || defined(__WIN32__))
 TC_COMMON_API struct tm* localtime_r(time_t const* time, struct tm *result);
-TC_COMMON_API time_t LocalTimeToUTCTime(time_t time);
+TC_COMMON_API struct tm* gmtime_r(time_t const* time, struct tm *result);
+TC_COMMON_API time_t timegm(struct tm* tm);
+#endif
 TC_COMMON_API time_t GetLocalHourTimestamp(time_t time, uint8 hour, bool onlyAfterTime = true);
 TC_COMMON_API tm TimeBreakdown(time_t t);
 
@@ -102,19 +95,19 @@ template <class T>
 inline T square(T x) { return x*x; }
 
 // UTF8 handling
-TC_COMMON_API bool Utf8toWStr(const std::string& utf8str, std::wstring& wstr);
+TC_COMMON_API bool Utf8toWStr(std::string_view utf8str, std::wstring& wstr);
 
 // in wsize==max size of buffer, out wsize==real string size
 TC_COMMON_API bool Utf8toWStr(char const* utf8str, size_t csize, wchar_t* wstr, size_t& wsize);
 
-inline bool Utf8toWStr(const std::string& utf8str, wchar_t* wstr, size_t& wsize)
+inline bool Utf8toWStr(std::string_view utf8str, wchar_t* wstr, size_t& wsize)
 {
-    return Utf8toWStr(utf8str.c_str(), utf8str.size(), wstr, wsize);
+    return Utf8toWStr(utf8str.data(), utf8str.size(), wstr, wsize);
 }
 
-TC_COMMON_API bool WStrToUtf8(std::wstring const& wstr, std::string& utf8str);
+TC_COMMON_API bool WStrToUtf8(std::wstring_view wstr, std::string& utf8str);
 // size==real string size
-TC_COMMON_API bool WStrToUtf8(wchar_t* wstr, size_t size, std::string& utf8str);
+TC_COMMON_API bool WStrToUtf8(wchar_t const* wstr, size_t size, std::string& utf8str);
 
 // set string to "" if invalid utf8 sequence
 TC_COMMON_API size_t utf8length(std::string& utf8str);
@@ -204,117 +197,182 @@ inline bool isNumericOrSpace(wchar_t wchar)
     return isNumeric(wchar) || wchar == L' ';
 }
 
-inline bool isBasicLatinString(const std::wstring &wstr, bool numericOrSpace)
+inline bool isBasicLatinString(std::wstring_view wstr, bool numericOrSpace)
 {
-    for (size_t i = 0; i < wstr.size(); ++i)
-        if (!isBasicLatinCharacter(wstr[i]) && (!numericOrSpace || !isNumericOrSpace(wstr[i])))
+    for (wchar_t c : wstr)
+        if (!isBasicLatinCharacter(c) && (!numericOrSpace || !isNumericOrSpace(c)))
             return false;
     return true;
 }
 
-inline bool isExtendedLatinString(const std::wstring &wstr, bool numericOrSpace)
+inline bool isExtendedLatinString(std::wstring_view wstr, bool numericOrSpace)
 {
-    for (size_t i = 0; i < wstr.size(); ++i)
-        if (!isExtendedLatinCharacter(wstr[i]) && (!numericOrSpace || !isNumericOrSpace(wstr[i])))
+    for (wchar_t c : wstr)
+        if (!isExtendedLatinCharacter(c) && (!numericOrSpace || !isNumericOrSpace(c)))
             return false;
     return true;
 }
 
-inline bool isCyrillicString(const std::wstring &wstr, bool numericOrSpace)
+inline bool isCyrillicString(std::wstring_view wstr, bool numericOrSpace)
 {
-    for (size_t i = 0; i < wstr.size(); ++i)
-        if (!isCyrillicCharacter(wstr[i]) && (!numericOrSpace || !isNumericOrSpace(wstr[i])))
+    for (wchar_t c : wstr)
+        if (!isCyrillicCharacter(c) && (!numericOrSpace || !isNumericOrSpace(c)))
             return false;
     return true;
 }
 
-inline bool isEastAsianString(const std::wstring &wstr, bool numericOrSpace)
+inline bool isEastAsianString(std::wstring_view wstr, bool numericOrSpace)
 {
-    for (size_t i = 0; i < wstr.size(); ++i)
-        if (!isEastAsianCharacter(wstr[i]) && (!numericOrSpace || !isNumericOrSpace(wstr[i])))
+    for (wchar_t c : wstr)
+        if (!isEastAsianCharacter(c) && (!numericOrSpace || !isNumericOrSpace(c)))
             return false;
     return true;
 }
 
-inline wchar_t wcharToUpper(wchar_t wchar)
+struct WcharToUpper
 {
-    if (wchar >= L'a' && wchar <= L'z')                      // LATIN SMALL LETTER A - LATIN SMALL LETTER Z
-        return wchar_t(uint16(wchar)-0x0020);
-    if (wchar == 0x00DF)                                     // LATIN SMALL LETTER SHARP S
-        return wchar_t(0x1E9E);
-    if (wchar >= 0x00E0 && wchar <= 0x00F6)                  // LATIN SMALL LETTER A WITH GRAVE - LATIN SMALL LETTER O WITH DIAERESIS
-        return wchar_t(uint16(wchar)-0x0020);
-    if (wchar >= 0x00F8 && wchar <= 0x00FE)                  // LATIN SMALL LETTER O WITH STROKE - LATIN SMALL LETTER THORN
-        return wchar_t(uint16(wchar)-0x0020);
-    if (wchar >= 0x0101 && wchar <= 0x012F)                  // LATIN SMALL LETTER A WITH MACRON - LATIN SMALL LETTER I WITH OGONEK (only %2=1)
+    wchar_t operator()(wchar_t wchar) const
     {
-        if (wchar % 2 == 1)
-            return wchar_t(uint16(wchar)-0x0001);
+        if (wchar >= L'a' && wchar <= L'z')                      // LATIN SMALL LETTER A - LATIN SMALL LETTER Z
+            return wchar_t(uint16(wchar) - 0x0020);
+        if (wchar == 0x00DF)                                     // LATIN SMALL LETTER SHARP S
+            return wchar_t(0x1E9E);
+        if (wchar >= 0x00E0 && wchar <= 0x00F6)                  // LATIN SMALL LETTER A WITH GRAVE - LATIN SMALL LETTER O WITH DIAERESIS
+            return wchar_t(uint16(wchar) - 0x0020);
+        if (wchar >= 0x00F8 && wchar <= 0x00FE)                  // LATIN SMALL LETTER O WITH STROKE - LATIN SMALL LETTER THORN
+            return wchar_t(uint16(wchar) - 0x0020);
+        if (wchar >= 0x0101 && wchar <= 0x012F)                  // LATIN SMALL LETTER A WITH MACRON - LATIN SMALL LETTER I WITH OGONEK (only %2=1)
+        {
+            if (wchar % 2 == 1)
+                return wchar_t(uint16(wchar) - 0x0001);
+        }
+        if (wchar >= 0x0430 && wchar <= 0x044F)                  // CYRILLIC SMALL LETTER A - CYRILLIC SMALL LETTER YA
+            return wchar_t(uint16(wchar) - 0x0020);
+        if (wchar == 0x0451)                                     // CYRILLIC SMALL LETTER IO
+            return wchar_t(0x0401);
+
+        return wchar;
     }
-    if (wchar >= 0x0430 && wchar <= 0x044F)                  // CYRILLIC SMALL LETTER A - CYRILLIC SMALL LETTER YA
-        return wchar_t(uint16(wchar)-0x0020);
-    if (wchar == 0x0451)                                     // CYRILLIC SMALL LETTER IO
-        return wchar_t(0x0401);
+} inline constexpr wcharToUpper;
 
-    return wchar;
-}
-
-inline wchar_t wcharToUpperOnlyLatin(wchar_t wchar)
+struct WcharToUpperOnlyLatin
 {
-    return isBasicLatinCharacter(wchar) ? wcharToUpper(wchar) : wchar;
-}
-
-inline wchar_t wcharToLower(wchar_t wchar)
-{
-    if (wchar >= L'A' && wchar <= L'Z')                      // LATIN CAPITAL LETTER A - LATIN CAPITAL LETTER Z
-        return wchar_t(uint16(wchar)+0x0020);
-    if (wchar >= 0x00C0 && wchar <= 0x00D6)                  // LATIN CAPITAL LETTER A WITH GRAVE - LATIN CAPITAL LETTER O WITH DIAERESIS
-        return wchar_t(uint16(wchar)+0x0020);
-    if (wchar >= 0x00D8 && wchar <= 0x00DE)                  // LATIN CAPITAL LETTER O WITH STROKE - LATIN CAPITAL LETTER THORN
-        return wchar_t(uint16(wchar)+0x0020);
-    if (wchar >= 0x0100 && wchar <= 0x012E)                  // LATIN CAPITAL LETTER A WITH MACRON - LATIN CAPITAL LETTER I WITH OGONEK (only %2=0)
+    wchar_t operator()(wchar_t wchar) const
     {
-        if (wchar % 2 == 0)
-            return wchar_t(uint16(wchar)+0x0001);
+        return isBasicLatinCharacter(wchar) ? wcharToUpper(wchar) : wchar;
     }
-    if (wchar == 0x1E9E)                                     // LATIN CAPITAL LETTER SHARP S
-        return wchar_t(0x00DF);
-    if (wchar == 0x0401)                                     // CYRILLIC CAPITAL LETTER IO
-        return wchar_t(0x0451);
-    if (wchar >= 0x0410 && wchar <= 0x042F)                  // CYRILLIC CAPITAL LETTER A - CYRILLIC CAPITAL LETTER YA
-        return wchar_t(uint16(wchar)+0x0020);
+} inline constexpr wcharToUpperOnlyLatin;
 
-    return wchar;
-}
+struct WcharToLower
+{
+    wchar_t operator()(wchar_t wchar) const
+    {
+        if (wchar >= L'A' && wchar <= L'Z')                      // LATIN CAPITAL LETTER A - LATIN CAPITAL LETTER Z
+            return wchar_t(uint16(wchar)+0x0020);
+        if (wchar >= 0x00C0 && wchar <= 0x00D6)                  // LATIN CAPITAL LETTER A WITH GRAVE - LATIN CAPITAL LETTER O WITH DIAERESIS
+            return wchar_t(uint16(wchar)+0x0020);
+        if (wchar >= 0x00D8 && wchar <= 0x00DE)                  // LATIN CAPITAL LETTER O WITH STROKE - LATIN CAPITAL LETTER THORN
+            return wchar_t(uint16(wchar)+0x0020);
+        if (wchar >= 0x0100 && wchar <= 0x012E)                  // LATIN CAPITAL LETTER A WITH MACRON - LATIN CAPITAL LETTER I WITH OGONEK (only %2=0)
+        {
+            if (wchar % 2 == 0)
+                return wchar_t(uint16(wchar)+0x0001);
+        }
+        if (wchar == 0x1E9E)                                     // LATIN CAPITAL LETTER SHARP S
+            return wchar_t(0x00DF);
+        if (wchar == 0x0401)                                     // CYRILLIC CAPITAL LETTER IO
+            return wchar_t(0x0451);
+        if (wchar >= 0x0410 && wchar <= 0x042F)                  // CYRILLIC CAPITAL LETTER A - CYRILLIC CAPITAL LETTER YA
+            return wchar_t(uint16(wchar)+0x0020);
+
+        return wchar;
+    }
+} inline constexpr wcharToLower;
+
+struct CharToUpper
+{
+    char operator()(char c) const { return std::toupper(static_cast<unsigned char>(c)); }
+} inline constexpr charToUpper;
+
+struct CharToLower
+{
+    char operator()(char c) const { return std::tolower(static_cast<unsigned char>(c)); }
+} inline constexpr charToLower;
 
 TC_COMMON_API void wstrToUpper(std::wstring& str);
 TC_COMMON_API void wstrToLower(std::wstring& str);
+TC_COMMON_API void strToUpper(std::string& str);
+TC_COMMON_API void strToLower(std::string& str);
 
 TC_COMMON_API std::wstring GetMainPartOfName(std::wstring const& wname, uint32 declension);
 
-TC_COMMON_API bool utf8ToConsole(const std::string& utf8str, std::string& conStr);
-TC_COMMON_API bool consoleToUtf8(const std::string& conStr, std::string& utf8str);
-TC_COMMON_API bool Utf8FitTo(const std::string& str, std::wstring const& search);
+TC_COMMON_API bool utf8ToConsole(std::string_view utf8str, std::string& conStr);
+TC_COMMON_API bool consoleToUtf8(std::string_view conStr, std::string& utf8str);
+TC_COMMON_API bool Utf8FitTo(std::string_view str, std::wstring_view search);
 TC_COMMON_API void utf8printf(FILE* out, const char *str, ...);
 TC_COMMON_API void vutf8printf(FILE* out, const char *str, va_list* ap);
 TC_COMMON_API bool Utf8ToUpperOnlyLatin(std::string& utf8String);
+
+#if TRINITY_PLATFORM == TRINITY_PLATFORM_WINDOWS
+TC_COMMON_API bool ReadWinConsole(std::string& str, size_t size = 256);
+TC_COMMON_API bool WriteWinConsole(std::string_view str, bool error = false);
+#endif
+
+TC_COMMON_API Optional<std::size_t> RemoveCRLF(std::string& str);
 
 TC_COMMON_API bool IsIPAddress(char const* ipaddress);
 
 TC_COMMON_API uint32 CreatePIDFile(std::string const& filename);
 TC_COMMON_API uint32 GetPID();
 
-TC_COMMON_API std::string ByteArrayToHexStr(uint8 const* bytes, uint32 length, bool reverse = false);
-TC_COMMON_API void HexStrToByteArray(std::string const& str, uint8* out, bool reverse = false);
+namespace Trinity::Impl
+{
+    TC_COMMON_API std::string ByteArrayToHexStr(uint8 const* bytes, size_t length, bool reverse = false);
+    TC_COMMON_API void HexStrToByteArray(std::string_view str, uint8* out, size_t outlen, bool reverse = false);
+}
 
-TC_COMMON_API bool StringToBool(std::string const& str);
+template <typename Container>
+std::string ByteArrayToHexStr(Container const& c, bool reverse = false)
+{
+    return Trinity::Impl::ByteArrayToHexStr(std::data(c), std::size(c), reverse);
+}
 
-TC_COMMON_API bool StringContainsStringI(std::string const& haystack, std::string const& needle);
+template <size_t Size>
+void HexStrToByteArray(std::string_view str, std::array<uint8, Size>& buf, bool reverse = false)
+{
+    Trinity::Impl::HexStrToByteArray(str, buf.data(), Size, reverse);
+}
+template <size_t Size>
+std::array<uint8, Size> HexStrToByteArray(std::string_view str, bool reverse = false)
+{
+    std::array<uint8, Size> arr;
+    HexStrToByteArray(str, arr, reverse);
+    return arr;
+}
+
+inline std::vector<uint8> HexStrToByteVector(std::string_view str, bool reverse = false)
+{
+    std::vector<uint8> buf;
+    size_t const sz = (str.size() / 2);
+    buf.resize(sz);
+    Trinity::Impl::HexStrToByteArray(str, buf.data(), sz, reverse);
+    return buf;
+}
+
+TC_COMMON_API bool StringEqualI(std::string_view str1, std::string_view str2);
+inline bool StringStartsWith(std::string_view haystack, std::string_view needle) { return (haystack.substr(0, needle.length()) == needle); }
+inline bool StringStartsWithI(std::string_view haystack, std::string_view needle) { return StringEqualI(haystack.substr(0, needle.length()), needle); }
+TC_COMMON_API bool StringContainsStringI(std::string_view haystack, std::string_view needle);
 template <typename T>
-inline bool ValueContainsStringI(std::pair<T, std::string> const& haystack, std::string const& needle)
+inline bool ValueContainsStringI(std::pair<T, std::string_view> const& haystack, std::string_view needle)
 {
     return StringContainsStringI(haystack.second, needle);
 }
+TC_COMMON_API bool StringCompareLessI(std::string_view a, std::string_view b);
+
+struct StringCompareLessI_T {
+    bool operator()(std::string_view a, std::string_view b) const { return StringCompareLessI(a, b); }
+};
 
 // simple class for not-modifyable list
 template <typename T>
@@ -380,18 +438,6 @@ public:
         part[2] = p3;
     }
 
-    inline bool operator<(flag96 const& right) const
-    {
-        for (uint8 i = 3; i > 0; --i)
-        {
-            if (part[i - 1] < right.part[i - 1])
-                return true;
-            else if (part[i - 1] > right.part[i - 1])
-                return false;
-        }
-        return false;
-    }
-
     inline bool operator==(flag96 const& right) const
     {
         return
@@ -405,14 +451,6 @@ public:
     inline bool operator!=(flag96 const& right) const
     {
         return !(*this == right);
-    }
-
-    inline flag96& operator=(flag96 const& right)
-    {
-        part[0] = right.part[0];
-        part[1] = right.part[1];
-        part[2] = right.part[2];
-        return *this;
     }
 
     inline flag96 operator&(flag96 const& right) const
@@ -517,6 +555,34 @@ constexpr typename std::underlying_type<E>::type AsUnderlyingType(E enumValue)
 {
     static_assert(std::is_enum<E>::value, "AsUnderlyingType can only be used with enums");
     return static_cast<typename std::underlying_type<E>::type>(enumValue);
+}
+
+template<typename Ret, typename T1, typename... T>
+Ret* Coalesce(T1* first, T*... rest)
+{
+    if constexpr (sizeof...(T) > 0)
+        return (first ? static_cast<Ret*>(first) : Coalesce<Ret>(rest...));
+    else
+        return static_cast<Ret*>(first);
+}
+
+namespace Trinity
+{
+namespace Impl
+{
+    TC_COMMON_API std::string GetTypeName(std::type_info const&);
+}
+
+template <typename T>
+std::string GetTypeName() { return Impl::GetTypeName(typeid(T)); }
+template <typename T>
+std::string GetTypeName(T&& v)
+{
+    if constexpr (std::is_same_v<std::remove_cv_t<T>, std::type_info>)
+        return Impl::GetTypeName(v);
+    else
+        return Impl::GetTypeName(typeid(v));
+}
 }
 
 #endif

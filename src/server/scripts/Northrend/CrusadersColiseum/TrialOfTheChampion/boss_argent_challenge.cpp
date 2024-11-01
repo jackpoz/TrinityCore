@@ -23,6 +23,7 @@ SDCategory: Trial of the Champion
 EndScriptData */
 
 #include "ScriptMgr.h"
+#include "Containers.h"
 #include "InstanceScript.h"
 #include "MotionMaster.h"
 #include "ObjectAccessor.h"
@@ -125,6 +126,7 @@ class OrientationCheck
         Unit* caster;
 };
 
+// 66862, 67681 - Radiance
 class spell_eadric_radiance : public SpellScriptLoader
 {
     public:
@@ -162,7 +164,7 @@ public:
             Initialize();
             instance = creature->GetInstanceScript();
             creature->SetReactState(REACT_PASSIVE);
-            creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+            creature->SetUnitFlag(UNIT_FLAG_NON_ATTACKABLE);
         }
 
         void Initialize()
@@ -189,7 +191,7 @@ public:
             Initialize();
         }
 
-        void DamageTaken(Unit* /*done_by*/, uint32 &damage) override
+        void DamageTaken(Unit* /*done_by*/, uint32& damage, DamageEffectType /*damageType*/, SpellInfo const* /*spellInfo = nullptr*/) override
         {
             if (damage >= me->GetHealth())
             {
@@ -205,7 +207,7 @@ public:
             if (MovementType != POINT_MOTION_TYPE)
                 return;
 
-            instance->SetData(BOSS_ARGENT_CHALLENGE_E, DONE);
+            instance->SetBossState(BOSS_ARGENT_CHALLENGE_E, DONE);
 
             me->DisappearAndDie();
         }
@@ -225,7 +227,7 @@ public:
             {
                 me->InterruptNonMeleeSpells(true);
 
-                if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 250, true))
+                if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 250, true))
                 {
                     if (target->IsAlive())
                     {
@@ -273,7 +275,7 @@ public:
             instance = creature->GetInstanceScript();
 
             creature->SetReactState(REACT_PASSIVE);
-            creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+            creature->SetUnitFlag(UNIT_FLAG_NON_ATTACKABLE);
             creature->RestoreFaction();
         }
 
@@ -317,7 +319,7 @@ public:
                 me->RemoveAura(SPELL_SHIELD);
         }
 
-        void DamageTaken(Unit* /*done_by*/, uint32 &damage) override
+        void DamageTaken(Unit* /*done_by*/, uint32& damage, DamageEffectType /*damageType*/, SpellInfo const* /*spellInfo = nullptr*/) override
         {
             if (damage >= me->GetHealth())
             {
@@ -333,7 +335,7 @@ public:
             if (MovementType != POINT_MOTION_TYPE || Point != 0)
                 return;
 
-            instance->SetData(BOSS_ARGENT_CHALLENGE_P, DONE);
+            instance->SetBossState(BOSS_ARGENT_CHALLENGE_P, DONE);
 
             me->DisappearAndDie();
         }
@@ -351,7 +353,7 @@ public:
 
             if (uiHolyFireTimer <= uiDiff)
             {
-                if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 250, true))
+                if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 250, true))
                 {
                     if (target->IsAlive())
                         DoCast(target, SPELL_HOLY_FIRE);
@@ -364,7 +366,7 @@ public:
 
             if (uiHolySmiteTimer <= uiDiff)
             {
-                if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 250, true))
+                if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0, 250, true))
                 {
                     if (target->IsAlive())
                         DoCast(target, SPELL_SMITE);
@@ -457,7 +459,7 @@ public:
 
             if (uiOldWoundsTimer <= uiDiff)
             {
-                if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0))
+                if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0))
                 {
                     if (target->IsAlive())
                         DoCast(target, SPELL_OLD_WOUNDS);
@@ -473,7 +475,7 @@ public:
 
             if (uiShadowPastTimer <= uiDiff)
             {
-                if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 1))
+                if (Unit* target = SelectTarget(SelectTargetMethod::Random, 1))
                 {
                     if (target->IsAlive())
                         DoCast(target, SPELL_SHADOWS_PAST);

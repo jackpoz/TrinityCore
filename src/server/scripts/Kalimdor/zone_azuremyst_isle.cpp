@@ -28,8 +28,6 @@ npc_engineer_spark_overgrind
 npc_injured_draenei
 npc_magwin
 npc_geezle
-go_ravager_cage
-npc_death_ravager
 EndContentData */
 
 #include "ScriptMgr.h"
@@ -93,8 +91,8 @@ public:
 
             DoCast(me, SPELL_IRRIDATION, true);
 
-            me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED);
-            me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IN_COMBAT);
+            me->SetUnitFlag(UNIT_FLAG_PLAYER_CONTROLLED);
+            me->SetUnitFlag(UNIT_FLAG_IN_COMBAT);
             me->SetHealth(me->CountPctFromMaxHealth(10));
             me->SetStandState(UNIT_STAND_STATE_SLEEP);
         }
@@ -113,16 +111,16 @@ public:
             }
         }
 
-        void SpellHit(Unit* Caster, SpellInfo const* Spell) override
+        void SpellHit(WorldObject* caster, SpellInfo const* spellInfo) override
         {
-            if (Spell->SpellFamilyFlags[2] & 0x080000000)
+            if (spellInfo->SpellFamilyFlags[2] & 0x080000000)
             {
-                me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED);
+                me->RemoveUnitFlag(UNIT_FLAG_PLAYER_CONTROLLED);
                 me->SetStandState(UNIT_STAND_STATE_STAND);
 
                 DoCast(me, SPELL_STUNNED, true);
 
-                pCaster = Caster->GetGUID();
+                pCaster = caster->GetGUID();
 
                 SayThanksTimer = 5000;
             }
@@ -204,7 +202,7 @@ public:
         {
             Initialize();
             NormFaction = creature->GetFaction();
-            NpcFlags = creature->GetUInt32Value(UNIT_NPC_FLAGS);
+            NpcFlags = creature->GetNpcFlags();
         }
 
         void Initialize()
@@ -223,7 +221,7 @@ public:
             Initialize();
 
             me->SetFaction(NormFaction);
-            me->SetUInt32Value(UNIT_NPC_FLAGS, NpcFlags);
+            me->ReplaceAllNpcFlags(NpcFlags);
         }
 
         void JustEngagedWith(Unit* who) override
@@ -231,7 +229,7 @@ public:
             Talk(ATTACK_YELL, who);
         }
 
-        bool GossipSelect(Player* player, uint32 /*menuId*/, uint32 /*gossipListId*/) override
+        bool OnGossipSelect(Player* player, uint32 /*menuId*/, uint32 /*gossipListId*/) override
         {
             CloseGossipMenuFor(player);
             me->SetFaction(FACTION_MONSTER);
@@ -267,7 +265,7 @@ public:
 
     private:
         uint32 NormFaction;
-        uint32 NpcFlags;
+        NPCFlags NpcFlags;
         uint32 DynamiteTimer;
         uint32 EmoteTimer;
         bool   IsTreeEvent;
@@ -294,7 +292,7 @@ public:
 
         void Reset() override
         {
-            me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IN_COMBAT);
+            me->SetUnitFlag(UNIT_FLAG_IN_COMBAT);
             me->SetHealth(me->CountPctFromMaxHealth(15));
             switch (urand(0, 1))
             {
@@ -362,7 +360,7 @@ public:
             Talk(SAY_AGGRO, who);
         }
 
-        void QuestAccept(Player* player, Quest const* quest) override
+        void OnQuestAccept(Player* player, Quest const* quest) override
         {
             if (quest->GetQuestId() == QUEST_A_CRY_FOR_HELP)
             {
@@ -414,7 +412,7 @@ public:
                         _events.ScheduleEvent(EVENT_STAND, 2s);
                         break;
                     case EVENT_STAND: // Remove kneel standstate. Using a separate delayed event because it causes unwanted delay before starting waypoint movement.
-                        me->SetByteValue(UNIT_FIELD_BYTES_1, 0, 0);
+                        me->SetStandState(UNIT_STAND_STATE_STAND);
                         break;
                     case EVENT_TALK_END:
                         if (Player* player = ObjectAccessor::GetPlayer(*me, _player))
@@ -507,11 +505,11 @@ public:
         {
             Step = 0;
             EventStarted = true;
-            if (Creature* Spark = me->SummonCreature(NPC_SPARK, SparkPos, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 1000))
+            if (Creature* Spark = me->SummonCreature(NPC_SPARK, SparkPos, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 1s))
             {
                 SparkGUID = Spark->GetGUID();
                 Spark->setActive(true);
-                Spark->RemoveFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_GOSSIP);
+                Spark->RemoveNpcFlag(UNIT_NPC_FLAG_GOSSIP);
             }
             SayTimer = 8000;
         }
@@ -564,7 +562,7 @@ public:
                     Spark->DisappearAndDie();
                     DespawnNagaFlag(false);
                     me->DisappearAndDie();
-                    /* fallthrough */
+                    [[fallthrough]];
                 default:
                     return 99999999;
             }
@@ -599,8 +597,6 @@ public:
                         (*itr)->Respawn();
                 }
             }
-            else
-                TC_LOG_ERROR("scripts", "SD2 ERROR: FlagList is empty!");
         }
 
         void UpdateAI(uint32 diff) override
@@ -621,106 +617,7 @@ public:
     }
 };
 
-enum RavegerCage
-{
-    NPC_DEATH_RAVAGER       = 17556,
-
-    SPELL_REND              = 13443,
-    SPELL_ENRAGING_BITE     = 30736,
-
-    QUEST_STRENGTH_ONE      = 9582
-};
-
-class go_ravager_cage : public GameObjectScript
-{
-public:
-    go_ravager_cage() : GameObjectScript("go_ravager_cage") { }
-
-    struct go_ravager_cageAI : public GameObjectAI
-    {
-        go_ravager_cageAI(GameObject* go) : GameObjectAI(go) { }
-
-        bool GossipHello(Player* player) override
-        {
-            me->UseDoorOrButton();
-            if (player->GetQuestStatus(QUEST_STRENGTH_ONE) == QUEST_STATUS_INCOMPLETE)
-            {
-                if (Creature* ravager = me->FindNearestCreature(NPC_DEATH_RAVAGER, 5.0f, true))
-                {
-                    ravager->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
-                    ravager->SetReactState(REACT_AGGRESSIVE);
-                    ravager->AI()->AttackStart(player);
-                }
-            }
-            return true;
-        }
-    };
-
-    GameObjectAI* GetAI(GameObject* go) const override
-    {
-        return new go_ravager_cageAI(go);
-    }
-};
-
-class npc_death_ravager : public CreatureScript
-{
-public:
-    npc_death_ravager() : CreatureScript("npc_death_ravager") { }
-
-    struct npc_death_ravagerAI : public ScriptedAI
-    {
-        npc_death_ravagerAI(Creature* creature) : ScriptedAI(creature)
-        {
-            Initialize();
-        }
-
-        void Initialize()
-        {
-            RendTimer = 30000;
-            EnragingBiteTimer = 20000;
-        }
-
-        uint32 RendTimer;
-        uint32 EnragingBiteTimer;
-
-        void Reset() override
-        {
-            Initialize();
-
-            me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
-            me->SetReactState(REACT_PASSIVE);
-        }
-
-        void UpdateAI(uint32 diff) override
-        {
-            if (!UpdateVictim())
-                return;
-
-            if (RendTimer <= diff)
-            {
-                DoCastVictim(SPELL_REND);
-                RendTimer = 30000;
-            }
-            else RendTimer -= diff;
-
-            if (EnragingBiteTimer <= diff)
-            {
-                DoCastVictim(SPELL_ENRAGING_BITE);
-                EnragingBiteTimer = 15000;
-            }
-            else EnragingBiteTimer -= diff;
-
-            DoMeleeAttackIfReady();
-        }
-    };
-
-    CreatureAI* GetAI(Creature* creature) const override
-    {
-        return new npc_death_ravagerAI(creature);
-    }
-};
-
-// 29528 -  Inoculate Nestlewood Owlkin
+// 29528 - Inoculate Nestlewood Owlkin
 class spell_inoculate_nestlewood : public AuraScript
 {
     PrepareAuraScript(spell_inoculate_nestlewood);
@@ -737,6 +634,37 @@ class spell_inoculate_nestlewood : public AuraScript
     }
 };
 
+/*######
+## Quest 9452: Red Snapper - Very Tasty!
+######*/
+
+enum RedSnapperVeryTasty
+{
+    SPELL_FISHED_UP_RED_SNAPPER  = 29867,
+    SPELL_FISHED_UP_MURLOC       = 29869
+};
+
+// 29866 - Cast Fishing Net
+class spell_azuremyst_isle_cast_fishing_net : public SpellScript
+{
+    PrepareSpellScript(spell_azuremyst_isle_cast_fishing_net);
+
+    bool Validate(SpellInfo const* /*spellInfo*/) override
+    {
+        return ValidateSpellInfo({ SPELL_FISHED_UP_RED_SNAPPER, SPELL_FISHED_UP_MURLOC });
+    }
+
+    void HandleDummy(SpellEffIndex /*effIndex*/)
+    {
+        GetCaster()->CastSpell(GetCaster(), roll_chance_i(66) ? SPELL_FISHED_UP_RED_SNAPPER : SPELL_FISHED_UP_MURLOC);
+    }
+
+    void Register() override
+    {
+        OnEffectHit += SpellEffectFn(spell_azuremyst_isle_cast_fishing_net::HandleDummy, EFFECT_0, SPELL_EFFECT_DUMMY);
+    }
+};
+
 void AddSC_azuremyst_isle()
 {
     new npc_draenei_survivor();
@@ -744,7 +672,6 @@ void AddSC_azuremyst_isle()
     new npc_injured_draenei();
     new npc_magwin();
     new npc_geezle();
-    new npc_death_ravager();
-    new go_ravager_cage();
-    RegisterAuraScript(spell_inoculate_nestlewood);
+    RegisterSpellScript(spell_inoculate_nestlewood);
+    RegisterSpellScript(spell_azuremyst_isle_cast_fishing_net);
 }

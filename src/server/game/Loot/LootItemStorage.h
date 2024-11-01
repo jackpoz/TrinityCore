@@ -21,6 +21,7 @@
 #include "Define.h"
 #include "DatabaseEnvFwd.h"
 
+#include <shared_mutex>
 #include <unordered_map>
 
 class Item;
@@ -28,17 +29,13 @@ class Player;
 struct Loot;
 struct LootItem;
 
-namespace boost
-{
-    class shared_mutex;
-}
-
 struct StoredLootItem
 {
     explicit StoredLootItem(LootItem const& lootItem);
 
     uint32 ItemId;
     uint32 Count;
+    uint32 ItemIndex;
     bool FollowRules;
     bool FFA;
     bool Blocked;
@@ -56,11 +53,11 @@ class StoredLootContainer
 
         explicit StoredLootContainer(uint32 containerId) : _containerId(containerId), _money(0) { }
 
-        void AddLootItem(LootItem const& lootItem, SQLTransaction& trans);
-        void AddMoney(uint32 money, SQLTransaction& trans);
+        void AddLootItem(LootItem const& lootItem, CharacterDatabaseTransaction trans);
+        void AddMoney(uint32 money, CharacterDatabaseTransaction trans);
 
         void RemoveMoney();
-        void RemoveItem(uint32 itemId, uint32 count);
+        void RemoveItem(uint32 itemId, uint32 count, uint32 itemIndex);
 
         uint32 GetContainer() const { return _containerId; }
         uint32 GetMoney() const { return _money; }
@@ -76,13 +73,13 @@ class LootItemStorage
 {
     public:
         static LootItemStorage* instance();
-        static boost::shared_mutex* GetLock();
+        static std::shared_mutex* GetLock();
 
         void LoadStorageFromDB();
         bool LoadStoredLoot(Item* item, Player* player);
         void RemoveStoredMoneyForContainer(uint32 containerId);
         void RemoveStoredLootForContainer(uint32 containerId);
-        void RemoveStoredLootItemForContainer(uint32 containerId, uint32 itemId, uint32 count);
+        void RemoveStoredLootItemForContainer(uint32 containerId, uint32 itemId, uint32 count, uint32 itemIndex);
         void AddNewStoredLoot(Loot* loot, Player* player);
 
     private:

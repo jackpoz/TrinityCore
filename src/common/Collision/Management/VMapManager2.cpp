@@ -114,7 +114,7 @@ namespace VMAP
             if (thread_safe_environment)
                 instanceTree = iInstanceMapTrees.insert(InstanceTreeMap::value_type(mapId, nullptr)).first;
             else
-                ASSERT(false, "Invalid mapId %u tile [%u, %u] passed to VMapManager2 after startup in thread unsafe environment",
+                ABORT_MSG("Invalid mapId %u tile [%u, %u] passed to VMapManager2 after startup in thread unsafe environment",
                 mapId, tileX, tileY);
         }
 
@@ -287,7 +287,7 @@ namespace VMAP
             int32 adtId, rootId, groupId;
             uint32 flags;
             if (getAreaInfo(mapId, x, y, data.floorZ, flags, adtId, rootId, groupId))
-                data.areaInfo = boost::in_place(adtId, rootId, groupId, flags);
+                data.areaInfo.emplace(adtId, rootId, groupId, flags);
             return;
         }
         InstanceTreeMap::const_iterator instanceTree = GetMapTree(mapId);
@@ -304,10 +304,10 @@ namespace VMAP
                 float liquidLevel;
                 if (!reqLiquidType || (GetLiquidFlagsPtr(liquidType) & reqLiquidType))
                     if (info.hitInstance->GetLiquidLevel(pos, info, liquidLevel))
-                        data.liquidInfo = boost::in_place(liquidType, liquidLevel);
+                        data.liquidInfo.emplace(liquidType, liquidLevel);
 
                 if (!IsVMAPDisabledForPtr(mapId, VMAP_DISABLE_AREAFLAG))
-                    data.areaInfo = boost::in_place(info.hitInstance->adtId, info.rootId, info.hitModel->GetWmoID(), info.hitModel->GetMogpFlags());
+                    data.areaInfo.emplace(info.hitInstance->adtId, info.rootId, info.hitModel->GetWmoID(), info.hitModel->GetMogpFlags());
             }
         }
     }
@@ -323,11 +323,11 @@ namespace VMAP
             WorldModel* worldmodel = new WorldModel();
             if (!worldmodel->readFile(basepath + filename + ".vmo"))
             {
-                VMAP_ERROR_LOG("misc", "VMapManager2: could not load '%s%s.vmo'", basepath.c_str(), filename.c_str());
+                TC_LOG_ERROR("misc", "VMapManager2: could not load '{}{}.vmo'", basepath, filename);
                 delete worldmodel;
                 return nullptr;
             }
-            VMAP_DEBUG_LOG("maps", "VMapManager2: loading file '%s%s'", basepath.c_str(), filename.c_str());
+            TC_LOG_DEBUG("maps", "VMapManager2: loading file '{}{}'", basepath, filename);
 
             worldmodel->Flags = flags;
 
@@ -346,12 +346,12 @@ namespace VMAP
         ModelFileMap::iterator model = iLoadedModelFiles.find(filename);
         if (model == iLoadedModelFiles.end())
         {
-            VMAP_ERROR_LOG("misc", "VMapManager2: trying to unload non-loaded file '%s'", filename.c_str());
+            TC_LOG_ERROR("misc", "VMapManager2: trying to unload non-loaded file '{}'", filename);
             return;
         }
         if (model->second.decRefCount() == 0)
         {
-            VMAP_DEBUG_LOG("maps", "VMapManager2: unloading file '%s'", filename.c_str());
+            TC_LOG_DEBUG("maps", "VMapManager2: unloading file '{}'", filename);
             delete model->second.getModel();
             iLoadedModelFiles.erase(model);
         }

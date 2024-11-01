@@ -23,6 +23,7 @@ SDCategory: Karazhan
 EndScriptData */
 
 #include "ScriptMgr.h"
+#include "Containers.h"
 #include "karazhan.h"
 #include "MotionMaster.h"
 #include "ObjectAccessor.h"
@@ -109,7 +110,7 @@ public:
 
             scheduler.Schedule(Seconds(25), Seconds(45), [this](TaskContext task)
             {
-                if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0))
+                if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0))
                     DoCast(target,SPELL_INTANGIBLE_PRESENCE);
 
                 task.Repeat(Seconds(25), Seconds(45));
@@ -122,7 +123,7 @@ public:
             });
         }
 
-        void DamageTaken(Unit* /*attacker*/, uint32 &damage) override
+        void DamageTaken(Unit* /*attacker*/, uint32& damage, DamageEffectType /*damageType*/, SpellInfo const* /*spellInfo = nullptr*/) override
         {
             // Attumen does not die until he mounts Midnight, let health fall to 1 and prevent further damage.
             if (damage >= me->GetHealth() && _phase != PHASE_MOUNTED)
@@ -222,12 +223,12 @@ public:
                 std::bind(&BossAI::DoMeleeAttackIfReady, this));
         }
 
-        void SpellHit(Unit* /*source*/, SpellInfo const* spell) override
+        void SpellHit(WorldObject* /*caster*/, SpellInfo const* spellInfo) override
         {
-            if (spell->Mechanic == MECHANIC_DISARM)
+            if (spellInfo->Mechanic == MECHANIC_DISARM)
                 Talk(SAY_DISARMED);
 
-            if (spell->Id == SPELL_MOUNT)
+            if (spellInfo->Id == SPELL_MOUNT)
             {
                 if (Creature* midnight = ObjectAccessor::GetCreature(*me, _midnightGUID))
                 {
@@ -305,7 +306,7 @@ public:
             me->SetReactState(REACT_DEFENSIVE);
         }
 
-        void DamageTaken(Unit* /*attacker*/, uint32 &damage) override
+        void DamageTaken(Unit* /*attacker*/, uint32& damage, DamageEffectType /*damageType*/, SpellInfo const* /*spellInfo = nullptr*/) override
         {
             // Midnight never dies, let health fall to 1 and prevent further damage.
             if (damage >= me->GetHealth())

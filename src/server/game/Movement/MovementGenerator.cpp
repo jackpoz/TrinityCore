@@ -21,6 +21,7 @@
 #include "MovementDefines.h"
 #include "PathGenerator.h"
 #include "RandomMovementGenerator.h"
+#include "UnitAI.h"
 #include "WaypointMovementGenerator.h"
 
 MovementGenerator::~MovementGenerator() { }

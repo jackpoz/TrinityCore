@@ -76,7 +76,7 @@ void PetAI::UpdateAI(uint32 diff)
 
         if (NeedToStop())
         {
-            TC_LOG_TRACE("scripts.ai.petai", "PetAI::UpdateAI: AI stopped attacking %s", me->GetGUID().ToString().c_str());
+            TC_LOG_TRACE("scripts.ai.petai", "PetAI::UpdateAI: AI stopped attacking {}", me->GetGUID().ToString());
             StopAttack();
             return;
         }
@@ -366,6 +366,12 @@ void PetAI::HandleReturnMovement()
     if (me->IsCharmed())
         return;
 
+    if (!me->GetCharmInfo())
+    {
+        TC_LOG_WARN("scripts.ai.petai", "me->GetCharmInfo() is NULL in PetAI::HandleReturnMovement(). Debug info: {}", GetDebugInfo());
+        return;
+    }
+
     if (me->GetCharmInfo()->HasCommandState(COMMAND_STAY))
     {
         if (!me->GetCharmInfo()->IsAtStay() && !me->GetCharmInfo()->IsReturning())
@@ -396,7 +402,7 @@ void PetAI::HandleReturnMovement()
             me->GetMotionMaster()->MoveFollow(me->GetCharmerOrOwner(), PET_FOLLOW_DIST, me->GetFollowAngle());
         }
     }
-    me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PET_IN_COMBAT); // on player pets, this flag indicates that we're actively going after a target - we're returning, so remove it
+    me->RemoveUnitFlag(UNIT_FLAG_PET_IN_COMBAT); // on player pets, this flag indicates that we're actively going after a target - we're returning, so remove it
 }
 
 void PetAI::DoAttack(Unit* target, bool chase)
@@ -406,7 +412,7 @@ void PetAI::DoAttack(Unit* target, bool chase)
 
     if (me->Attack(target, true))
     {
-        me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PET_IN_COMBAT); // on player pets, this flag indicates we're actively going after a target - that's what we're doing, so set it
+        me->SetUnitFlag(UNIT_FLAG_PET_IN_COMBAT); // on player pets, this flag indicates we're actively going after a target - that's what we're doing, so set it
         // Play sound to let the player know the pet is attacking something it picked on its own
         if (me->HasReactState(REACT_AGGRESSIVE) && !me->GetCharmInfo()->IsCommandAttack())
             me->SendPetAIReaction(me->GetGUID());
@@ -419,7 +425,7 @@ void PetAI::DoAttack(Unit* target, bool chase)
 
             if (me->HasUnitState(UNIT_STATE_FOLLOW))
                 me->GetMotionMaster()->Remove(FOLLOW_MOTION_TYPE);
-            
+
             // Pets with ranged attacks should not care about the chase angle at all.
             float chaseDistance = me->GetPetChaseDistance();
             float angle = chaseDistance == 0.f ? float(M_PI) : 0.f;
@@ -492,7 +498,7 @@ bool PetAI::CanAttack(Unit* target)
 
     if (!me->GetCharmInfo())
     {
-        TC_LOG_ERROR("scripts.ai.petai", "me->GetCharmInfo() is NULL in PetAI::CanAttack(). Debug info: %s", GetDebugInfo().c_str());
+        TC_LOG_WARN("scripts.ai.petai", "me->GetCharmInfo() is NULL in PetAI::CanAttack(). Debug info: {}", GetDebugInfo());
         return false;
     }
 
@@ -633,7 +639,7 @@ void PetAI::UpdateAllies()
 
 void PetAI::OnCharmed(bool isNew)
 {
-    if (me->IsCharmed())
+    if (!me->isPossessedByPlayer() && me->IsCharmed())
         me->GetMotionMaster()->MoveFollow(me->GetCharmer(), PET_FOLLOW_DIST, me->GetFollowAngle());
 
     CreatureAI::OnCharmed(isNew);

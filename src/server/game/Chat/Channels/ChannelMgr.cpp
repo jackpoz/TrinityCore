@@ -44,7 +44,7 @@ ChannelMgr::~ChannelMgr()
     uint32 oldMSTime = getMSTime();
     if (uint32 days = sWorld->getIntConfig(CONFIG_PRESERVE_CUSTOM_CHANNEL_DURATION))
     {
-        PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_OLD_CHANNELS);
+        CharacterDatabasePreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_OLD_CHANNELS);
         stmt->setUInt32(0, days * DAY);
         CharacterDatabase.Execute(stmt);
     }
@@ -71,7 +71,7 @@ ChannelMgr::~ChannelMgr()
         std::wstring channelName;
         if (!Utf8toWStr(dbName, channelName))
         {
-            TC_LOG_ERROR("server.loading", "Failed to load custom chat channel '%s' from database - invalid utf8 sequence? Deleted.", dbName.c_str());
+            TC_LOG_ERROR("server.loading", "Failed to load custom chat channel '{}' from database - invalid utf8 sequence? Deleted.", dbName);
             toDelete.push_back({ dbName, team });
             continue;
         }
@@ -79,7 +79,7 @@ ChannelMgr::~ChannelMgr()
         ChannelMgr* mgr = forTeam(team);
         if (!mgr)
         {
-            TC_LOG_ERROR("server.loading", "Failed to load custom chat channel '%s' from database - invalid team %u. Deleted.", dbName.c_str(), team);
+            TC_LOG_ERROR("server.loading", "Failed to load custom chat channel '{}' from database - invalid team {}. Deleted.", dbName, team);
             toDelete.push_back({ dbName, team });
             continue;
         }
@@ -95,13 +95,13 @@ ChannelMgr::~ChannelMgr()
 
     for (auto pair : toDelete)
     {
-        PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_CHANNEL);
+        CharacterDatabasePreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_CHANNEL);
         stmt->setString(0, pair.first);
         stmt->setUInt32(1, pair.second);
         CharacterDatabase.Execute(stmt);
     }
 
-    TC_LOG_INFO("server.loading", ">> Loaded %u custom chat channels in %u ms", count, GetMSTimeDiffToNow(oldMSTime));
+    TC_LOG_INFO("server.loading", ">> Loaded {} custom chat channels in {} ms", count, GetMSTimeDiffToNow(oldMSTime));
 }
 
 /*static*/ ChannelMgr* ChannelMgr::forTeam(uint32 team)
@@ -154,7 +154,7 @@ Channel* ChannelMgr::GetSystemChannel(uint32 channelId, AreaTableEntry const* zo
 {
     ChatChannelsEntry const* channelEntry = sChatChannelsStore.AssertEntry(channelId);
     uint32 zoneId = zoneEntry ? zoneEntry->ID : 0;
-    if (channelEntry->flags & (CHANNEL_DBC_FLAG_GLOBAL | CHANNEL_DBC_FLAG_CITY_ONLY))
+    if (channelEntry->Flags & (CHANNEL_DBC_FLAG_GLOBAL | CHANNEL_DBC_FLAG_CITY_ONLY))
         zoneId = 0;
 
     std::pair<uint32, uint32> key = std::make_pair(channelId, zoneId);
@@ -210,7 +210,7 @@ Channel* ChannelMgr::GetChannel(uint32 channelId, std::string const& name, Playe
     {
         ChatChannelsEntry const* channelEntry = sChatChannelsStore.AssertEntry(channelId);
         uint32 zoneId = zoneEntry ? zoneEntry->ID : 0;
-        if (channelEntry->flags & (CHANNEL_DBC_FLAG_GLOBAL | CHANNEL_DBC_FLAG_CITY_ONLY))
+        if (channelEntry->Flags & (CHANNEL_DBC_FLAG_GLOBAL | CHANNEL_DBC_FLAG_CITY_ONLY))
             zoneId = 0;
 
         std::pair<uint32, uint32> key = std::make_pair(channelId, zoneId);
@@ -252,7 +252,7 @@ void ChannelMgr::LeftChannel(uint32 channelId, AreaTableEntry const* zoneEntry)
 {
     ChatChannelsEntry const* channelEntry = sChatChannelsStore.AssertEntry(channelId);
     uint32 zoneId = zoneEntry ? zoneEntry->ID : 0;
-    if (channelEntry->flags & (CHANNEL_DBC_FLAG_GLOBAL | CHANNEL_DBC_FLAG_CITY_ONLY))
+    if (channelEntry->Flags & (CHANNEL_DBC_FLAG_GLOBAL | CHANNEL_DBC_FLAG_CITY_ONLY))
         zoneId = 0;
 
     std::pair<uint32, uint32> key = std::make_pair(channelId, zoneId);

@@ -51,7 +51,7 @@ class boss_doctor_theolen_krastinov : public CreatureScript
 
         struct boss_theolenkrastinovAI : public BossAI
         {
-            boss_theolenkrastinovAI(Creature* creature) : BossAI(creature, DATA_DOCTORTHEOLENKRASTINOV) { }
+            boss_theolenkrastinovAI(Creature* creature) : BossAI(creature, DATA_DOCTOR_THEOLEN_KRASTINOV) { }
 
             void JustEngagedWith(Unit* who) override
             {
@@ -86,7 +86,7 @@ class boss_doctor_theolen_krastinov : public CreatureScript
                         case EVENT_FRENZY:
                             DoCast(me, SPELL_FRENZY, true);
                             Talk(EMOTE_FRENZY_KILL);
-                            events.ScheduleEvent(EVENT_FRENZY, 120000);
+                            events.ScheduleEvent(EVENT_FRENZY, 120s);
                             break;
                         default:
                             break;

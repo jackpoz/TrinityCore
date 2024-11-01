@@ -141,9 +141,10 @@ void RandomMovementGenerator<Creature>::SetRandomLocation(Creature* owner)
     }
 
     bool result = _path->CalculatePath(position.GetPositionX(), position.GetPositionY(), position.GetPositionZ());
+    // PATHFIND_FARFROMPOLY shouldn't be checked as creatures in water are most likely far from poly
     if (!result || (_path->GetPathType() & PATHFIND_NOPATH)
                 || (_path->GetPathType() & PATHFIND_SHORTCUT)
-                || (_path->GetPathType() & PATHFIND_FARFROMPOLY))
+                /*|| (_path->GetPathType() & PATHFIND_FARFROMPOLY)*/)
     {
         _timer.Reset(100);
         return;
@@ -182,7 +183,7 @@ void RandomMovementGenerator<Creature>::SetRandomLocation(Creature* owner)
     }
 
     // Call for creature group update
-    owner->SignalFormationMovement(position);
+    owner->SignalFormationMovement();
 }
 
 template<class T>

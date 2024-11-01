@@ -100,7 +100,7 @@ class instance_trial_of_the_crusader : public InstanceMapScript
 
         struct instance_trial_of_the_crusader_InstanceMapScript : public InstanceScript
         {
-            instance_trial_of_the_crusader_InstanceMapScript(Map* map) : InstanceScript(map)
+            instance_trial_of_the_crusader_InstanceMapScript(InstanceMap* map) : InstanceScript(map)
             {
                 SetHeaders(DataHeader);
                 SetBossNumber(EncounterCount);
@@ -120,6 +120,7 @@ class instance_trial_of_the_crusader : public InstanceMapScript
                 TributeToImmortalityEligible = true;
                 NeedSave = false;
                 CrusadersSpecialState = false;
+                TributeToDedicatedInsanity = false; // NYI, set to true when implement it
             }
 
             void OnPlayerEnter(Player* player) override
@@ -184,6 +185,7 @@ class instance_trial_of_the_crusader : public InstanceMapScript
                         {
                             if (Creature* fordring = GetCreature(DATA_FORDRING))
                                 fordring->AI()->DoAction(ACTION_JARAXXUS_WIPE);
+                            MistressOfPainCount = 0;
                         }
                         else if (state == DONE)
                         {
@@ -207,9 +209,9 @@ class instance_trial_of_the_crusader : public InstanceMapScript
                                 DoUpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_BE_SPELL_TARGET, SPELL_DEFEAT_FACTION_CHAMPIONS);
                                 if (ResilienceWillFixItTimer > 0)
                                     DoUpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_BE_SPELL_TARGET, SPELL_CHAMPIONS_KILLED_IN_MINUTE);
-                                DoRespawnGameObject(GetGuidData(DATA_CRUSADERS_CHEST), 7*DAY);
+                                DoRespawnGameObject(GetGuidData(DATA_CRUSADERS_CHEST), 7_days);
                                 if (GameObject* cache = GetGameObject(DATA_CRUSADERS_CHEST))
-                                    cache->RemoveFlag(GAMEOBJECT_FLAGS, GO_FLAG_NOT_SELECTABLE);
+                                    cache->RemoveFlag(GO_FLAG_NOT_SELECTABLE);
                                 if (Creature* fordring = GetCreature(DATA_FORDRING))
                                     fordring->AI()->DoAction(ACTION_CHAMPIONS_DEFEATED);
                                 EventStage = 3100;
@@ -282,7 +284,7 @@ class instance_trial_of_the_crusader : public InstanceMapScript
 
                                 if (tributeChest)
                                     if (Creature* tirion =  GetCreature(DATA_FORDRING))
-                                        if (GameObject* chest = tirion->SummonGameObject(tributeChest, 805.62f, 134.87f, 142.16f, 3.27f, QuaternionData(), WEEK))
+                                        if (GameObject* chest = tirion->SummonGameObject(tributeChest, 805.62f, 134.87f, 142.16f, 3.27f, QuaternionData(), 7_days))
                                             chest->SetRespawnTime(chest->GetRespawnDelay());
                                 break;
                             }
@@ -296,7 +298,7 @@ class instance_trial_of_the_crusader : public InstanceMapScript
 
                 if (type < EncounterCount)
                 {
-                    TC_LOG_DEBUG("scripts", "[ToCr] BossState(type %u) %u = state %u;", type, GetBossState(type), state);
+                    TC_LOG_DEBUG("scripts", "[ToCr] BossState(type {}) {} = state {};", type, GetBossState(type), state);
                     if (state == FAIL)
                     {
                         if (instance->IsHeroic())
@@ -408,13 +410,14 @@ class instance_trial_of_the_crusader : public InstanceMapScript
                                 SetBossState(DATA_NORTHREND_BEASTS, FAIL);
                                 if (Creature* tirion = GetCreature(DATA_FORDRING))
                                     tirion->AI()->DoAction(ACTION_NORTHREND_BEASTS_WIPE);
+                                SnoboldCount = 0;
                                 break;
                             default:
                                 break;
                         }
                         break;
                     case DATA_DESPAWN_SNOBOLDS:
-                        for (ObjectGuid const guid : snoboldGUIDS)
+                        for (ObjectGuid guid : snoboldGUIDS)
                             if (Creature* snobold = instance->GetCreature(guid))
                                 snobold->DespawnOrUnsummon();
                         snoboldGUIDS.clear();
@@ -570,51 +573,28 @@ class instance_trial_of_the_crusader : public InstanceMapScript
 
             void Save()
             {
-                OUT_SAVE_INST_DATA;
-
-                std::ostringstream saveStream;
-
-                for (uint8 i = 0; i < EncounterCount; ++i)
-                    saveStream << GetBossState(i) << ' ';
-
-                saveStream << TrialCounter;
-                SaveDataBuffer = saveStream.str();
-
                 SaveToDB();
-                OUT_SAVE_INST_DATA_COMPLETE;
                 NeedSave = false;
             }
 
-            std::string GetSaveData() override
+            void WriteSaveDataMore(std::ostringstream& data) override
             {
-                return SaveDataBuffer;
+                data << TrialCounter << ' '
+                    << uint32(TributeToImmortalityEligible ? 1 : 0) << ' '
+                    << uint32(TributeToDedicatedInsanity ? 1 : 0);
             }
 
-            void Load(char const* strIn) override
+            void ReadSaveDataMore(std::istringstream& data) override
             {
-                if (!strIn)
-                {
-                    OUT_LOAD_INST_DATA_FAIL;
-                    return;
-                }
+                uint32 temp = 0;
 
-                OUT_LOAD_INST_DATA(strIn);
+                data >> TrialCounter;
 
-                std::istringstream loadStream(strIn);
+                data >> temp;
+                TributeToImmortalityEligible = temp != 0;
 
-                for (uint8 i = 0; i < EncounterCount; ++i)
-                {
-                    uint32 tmpState;
-                    loadStream >> tmpState;
-                    if (tmpState == IN_PROGRESS || tmpState > SPECIAL)
-                        tmpState = NOT_STARTED;
-                    SetBossState(i, EncounterState(tmpState));
-                }
-
-                loadStream >> TrialCounter;
-                EventStage = 0;
-
-                OUT_LOAD_INST_DATA_COMPLETE;
+                data >> temp;
+                TributeToDedicatedInsanity = temp != 0;
             }
 
             bool CheckAchievementCriteriaMeet(uint32 criteria_id, Player const* /*source*/, Unit const* /*target*/, uint32 /*miscvalue1*/) override
@@ -646,7 +626,7 @@ class instance_trial_of_the_crusader : public InstanceMapScript
                     case A_TRIBUTE_TO_IMMORTALITY_ALLIANCE:
                         return TrialCounter == 50 && TributeToImmortalityEligible;
                     case A_TRIBUTE_TO_DEDICATED_INSANITY:
-                        return false/*uiGrandCrusaderAttemptsLeft == 50 && !bHasAtAnyStagePlayerEquippedTooGoodItem*/;
+                        return false/*TrialCounter == 50 && TributeToDedicatedInsanity*/;
                     default:
                         break;
                 }
@@ -662,7 +642,6 @@ class instance_trial_of_the_crusader : public InstanceMapScript
                 uint32 Team;
                 bool NeedSave;
                 bool CrusadersSpecialState;
-                std::string SaveDataBuffer;
                 GuidVector snoboldGUIDS;
 
                 // Achievement stuff
@@ -672,6 +651,7 @@ class instance_trial_of_the_crusader : public InstanceMapScript
                 uint8 MistressOfPainCount;
                 uint8 NorthrendBeastsCount;
                 bool TributeToImmortalityEligible;
+                bool TributeToDedicatedInsanity;
         };
 
         InstanceScript* GetInstanceScript(InstanceMap* map) const override

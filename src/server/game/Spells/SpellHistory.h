@@ -66,7 +66,7 @@ public:
     void LoadFromDB(PreparedQueryResult cooldownsResult);
 
     template<class OwnerType>
-    void SaveToDB(SQLTransaction& trans);
+    void SaveToDB(CharacterDatabaseTransaction trans);
 
     void Update();
 
@@ -86,7 +86,7 @@ public:
     template<class Type, class Period>
     void AddCooldown(uint32 spellId, uint32 itemId, std::chrono::duration<Type, Period> cooldownDuration)
     {
-        Clock::time_point now = GameTime::GetGameTimeSystemPoint();
+        Clock::time_point now = GameTime::GetSystemTime();
         AddCooldown(spellId, itemId, now + std::chrono::duration_cast<Clock::duration>(cooldownDuration), 0, now);
     }
 
@@ -130,6 +130,8 @@ public:
 
     void BuildCooldownPacket(WorldPacket& data, uint8 flags, uint32 spellId, uint32 cooldown) const;
 
+    static void GetCooldownDurations(SpellInfo const* spellInfo, uint32 itemId, int32* cooldown, uint32* categoryId, int32* categoryCooldown);
+
     CooldownStorageType::size_type GetCooldownsSizeForPacket() const { return _spellCooldowns.size(); }
     void SaveCooldownStateBeforeDuel();
     void RestoreCooldownStateAfterDuel();
@@ -145,8 +147,6 @@ private:
 
     typedef std::unordered_map<uint32, uint32> PacketCooldowns;
     void BuildCooldownPacket(WorldPacket& data, uint8 flags, PacketCooldowns const& cooldowns) const;
-
-    static void GetCooldownDurations(SpellInfo const* spellInfo, uint32 itemId, int32* cooldown, uint32* categoryId, int32* categoryCooldown);
 
     Unit* _owner;
     CooldownStorageType _spellCooldowns;

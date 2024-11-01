@@ -195,7 +195,7 @@ class instance_violet_hold : public InstanceMapScript
 
         struct instance_violet_hold_InstanceMapScript : public InstanceScript
         {
-            instance_violet_hold_InstanceMapScript(Map* map) : InstanceScript(map)
+            instance_violet_hold_InstanceMapScript(InstanceMap* map) : InstanceScript(map)
             {
                 SetHeaders(DataHeader);
                 SetBossNumber(EncounterCount);
@@ -409,7 +409,7 @@ class instance_violet_hold : public InstanceMapScript
 
                             for (uint8 i = 0; i < ActivationCrystalCount; ++i)
                                 if (GameObject* crystal = instance->GetGameObject(ActivationCrystalGUIDs[i]))
-                                    crystal->RemoveFlag(GAMEOBJECT_FLAGS, GO_FLAG_NOT_SELECTABLE);
+                                    crystal->RemoveFlag(GO_FLAG_NOT_SELECTABLE);
 
                             Scheduler.Schedule(Seconds(3), [this](TaskContext task)
                             {
@@ -422,7 +422,7 @@ class instance_violet_hold : public InstanceMapScript
                             if (GameObject* mainDoor = GetGameObject(DATA_MAIN_DOOR))
                             {
                                 mainDoor->SetGoState(GO_STATE_ACTIVE);
-                                mainDoor->RemoveFlag(GAMEOBJECT_FLAGS, GO_FLAG_LOCKED);
+                                mainDoor->RemoveFlag(GO_FLAG_LOCKED);
                             }
 
                             DoUpdateWorldState(WORLD_STATE_VH_SHOW, 0);
@@ -431,21 +431,21 @@ class instance_violet_hold : public InstanceMapScript
 
                             for (uint8 i = 0; i < ActivationCrystalCount; ++i)
                                 if (GameObject* crystal = instance->GetGameObject(ActivationCrystalGUIDs[i]))
-                                    crystal->SetFlag(GAMEOBJECT_FLAGS, GO_FLAG_NOT_SELECTABLE);
+                                    crystal->SetFlag(GO_FLAG_NOT_SELECTABLE);
                         }
                         else if (data == DONE)
                         {
                             if (GameObject* mainDoor = GetGameObject(DATA_MAIN_DOOR))
                             {
                                 mainDoor->SetGoState(GO_STATE_ACTIVE);
-                                mainDoor->RemoveFlag(GAMEOBJECT_FLAGS, GO_FLAG_LOCKED);
+                                mainDoor->RemoveFlag(GO_FLAG_LOCKED);
                             }
 
                             DoUpdateWorldState(WORLD_STATE_VH_SHOW, 0);
 
                             for (uint8 i = 0; i < ActivationCrystalCount; ++i)
                                 if (GameObject* crystal = instance->GetGameObject(ActivationCrystalGUIDs[i]))
-                                    crystal->SetFlag(GAMEOBJECT_FLAGS, GO_FLAG_NOT_SELECTABLE);
+                                    crystal->SetFlag(GO_FLAG_NOT_SELECTABLE);
 
                             if (Creature* sinclari = GetCreature(DATA_SINCLARI))
                                 sinclari->AI()->DoAction(ACTION_SINCLARI_OUTRO);
@@ -742,7 +742,7 @@ class instance_violet_hold : public InstanceMapScript
                                 guard->SetImmuneToAll(true);
                             }
                         }
-                        /* fallthrough */
+                        [[fallthrough]];
                     default:
                         if (boss->isDead())
                         {
@@ -768,7 +768,7 @@ class instance_violet_hold : public InstanceMapScript
                             FirstBossId = urand(DATA_MORAGG, DATA_ZURAMAT);
                         if (Creature* sinclari = GetCreature(DATA_SINCLARI))
                         {
-                            sinclari->SummonCreature(NPC_TELEPORTATION_PORTAL_INTRO, PortalIntroPositions[3], TEMPSUMMON_TIMED_DESPAWN, 3000);
+                            sinclari->SummonCreature(NPC_TELEPORTATION_PORTAL_INTRO, PortalIntroPositions[3], TEMPSUMMON_TIMED_DESPAWN, 3s);
                             sinclari->SummonCreature(NPC_SABOTEOUR, SaboteurSpawnLocation, TEMPSUMMON_DEAD_DESPAWN);
                         }
                         break;
@@ -780,14 +780,14 @@ class instance_violet_hold : public InstanceMapScript
                             } while (SecondBossId == FirstBossId);
                         if (Creature* sinclari = GetCreature(DATA_SINCLARI))
                         {
-                            sinclari->SummonCreature(NPC_TELEPORTATION_PORTAL_INTRO, PortalIntroPositions[3], TEMPSUMMON_TIMED_DESPAWN, 3000);
+                            sinclari->SummonCreature(NPC_TELEPORTATION_PORTAL_INTRO, PortalIntroPositions[3], TEMPSUMMON_TIMED_DESPAWN, 3s);
                             sinclari->SummonCreature(NPC_SABOTEOUR, SaboteurSpawnLocation, TEMPSUMMON_DEAD_DESPAWN);
                         }
                         break;
                     case 18:
                         if (Creature* sinclari = GetCreature(DATA_SINCLARI))
                         {
-                            sinclari->SummonCreature(NPC_TELEPORTATION_PORTAL_INTRO, PortalIntroPositions[4], TEMPSUMMON_TIMED_DESPAWN, 6000);
+                            sinclari->SummonCreature(NPC_TELEPORTATION_PORTAL_INTRO, PortalIntroPositions[4], TEMPSUMMON_TIMED_DESPAWN, 6s);
                             if (Creature* cyanigosa = sinclari->SummonCreature(NPC_CYANIGOSA, CyanigosaSpawnLocation, TEMPSUMMON_DEAD_DESPAWN))
                                 cyanigosa->CastSpell(cyanigosa, SPELL_CYANIGOSA_ARCANE_POWER_STATE, true);
                             ScheduleCyanigosaIntro();

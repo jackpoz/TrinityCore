@@ -27,10 +27,10 @@
 
 void Metric::Initialize(std::string const& realmName, Trinity::Asio::IoContext& ioContext, std::function<void()> overallStatusLogger)
 {
-    _dataStream = Trinity::make_unique<boost::asio::ip::tcp::iostream>();
+    _dataStream = std::make_unique<boost::asio::ip::tcp::iostream>();
     _realmName = FormatInfluxDBTagValue(realmName);
-    _batchTimer = Trinity::make_unique<Trinity::Asio::DeadlineTimer>(ioContext);
-    _overallStatusTimer = Trinity::make_unique<Trinity::Asio::DeadlineTimer>(ioContext);
+    _batchTimer = std::make_unique<Trinity::Asio::DeadlineTimer>(ioContext);
+    _overallStatusTimer = std::make_unique<Trinity::Asio::DeadlineTimer>(ioContext);
     _overallStatusLogger = overallStatusLogger;
     LoadFromConfigs();
 }
@@ -42,8 +42,8 @@ bool Metric::Connect()
     auto error = stream.error();
     if (error)
     {
-        TC_LOG_ERROR("metric", "Error connecting to '%s:%s', disabling Metric. Error message : %s",
-            _hostname.c_str(), _port.c_str(), error.message().c_str());
+        TC_LOG_ERROR("metric", "Error connecting to '{}:{}', disabling Metric. Error message : {}",
+            _hostname, _port, error.message());
         _enabled = false;
         return false;
     }
@@ -55,18 +55,27 @@ void Metric::LoadFromConfigs()
 {
     bool previousValue = _enabled;
     _enabled = sConfigMgr->GetBoolDefault("Metric.Enable", false);
-    _updateInterval = sConfigMgr->GetIntDefault("Metric.Interval", 10);
+    _updateInterval = sConfigMgr->GetIntDefault("Metric.Interval", 1);
     if (_updateInterval < 1)
     {
-        TC_LOG_ERROR("metric", "'Metric.Interval' config set to %d, overriding to 1.", _updateInterval);
+        TC_LOG_ERROR("metric", "'Metric.Interval' config set to {}, overriding to 1.", _updateInterval);
         _updateInterval = 1;
     }
 
     _overallStatusTimerInterval = sConfigMgr->GetIntDefault("Metric.OverallStatusInterval", 1);
     if (_overallStatusTimerInterval < 1)
     {
-        TC_LOG_ERROR("metric", "'Metric.OverallStatusInterval' config set to %d, overriding to 1.", _overallStatusTimerInterval);
+        TC_LOG_ERROR("metric", "'Metric.OverallStatusInterval' config set to {}, overriding to 1.", _overallStatusTimerInterval);
         _overallStatusTimerInterval = 1;
+    }
+
+    _thresholds.clear();
+    std::vector<std::string> thresholdSettings = sConfigMgr->GetKeysByString("Metric.Threshold.");
+    for (std::string const& thresholdSetting : thresholdSettings)
+    {
+        int thresholdValue = sConfigMgr->GetIntDefault(thresholdSetting, 0);
+        std::string thresholdName = thresholdSetting.substr(strlen("Metric.Threshold."));
+        _thresholds[thresholdName] = thresholdValue;
     }
 
     // Schedule a send at this point only if the config changed from Disabled to Enabled.
@@ -80,7 +89,7 @@ void Metric::LoadFromConfigs()
             return;
         }
 
-        Tokenizer tokens(connectionInfo, ';');
+        std::vector<std::string_view> tokens = Trinity::Tokenize(connectionInfo, ';', true);
         if (tokens.size() != 3)
         {
             TC_LOG_ERROR("metric", "'Metric.ConnectionInfo' specified with wrong format in configuration file.");
@@ -106,16 +115,24 @@ void Metric::Update()
     }
 }
 
-void Metric::LogEvent(std::string const& category, std::string const& title, std::string const& description)
+bool Metric::ShouldLog(std::string const& category, int64 value) const
+{
+    auto threshold = _thresholds.find(category);
+    if (threshold == _thresholds.end())
+        return false;
+    return value >= threshold->second;
+}
+
+void Metric::LogEvent(std::string category, std::string title, std::string description)
 {
     using namespace std::chrono;
 
     MetricData* data = new MetricData;
-    data->Category = category;
+    data->Category = std::move(category);
     data->Timestamp = system_clock::now();
     data->Type = METRIC_DATA_EVENT;
-    data->Title = title;
-    data->Text = description;
+    data->Title = std::move(title);
+    data->ValueOrEventText = std::move(description);
 
     _queuedData.Enqueue(data);
 }
@@ -136,15 +153,18 @@ void Metric::SendBatch()
         if (!_realmName.empty())
             batchedData << ",realm=" << _realmName;
 
+        for (MetricTag const& tag : data->Tags)
+            batchedData << "," << tag.first << "=" << FormatInfluxDBTagValue(tag.second);
+
         batchedData << " ";
 
         switch (data->Type)
         {
             case METRIC_DATA_VALUE:
-                batchedData << "value=" << data->Value;
+                batchedData << "value=" << data->ValueOrEventText;
                 break;
             case METRIC_DATA_EVENT:
-                batchedData << "title=\"" << data->Title << "\",text=\"" << data->Text << "\"";
+                batchedData << "title=\"" << data->Title << "\",text=\"" << data->ValueOrEventText << "\"";
                 break;
         }
 
@@ -181,7 +201,7 @@ void Metric::SendBatch()
     GetDataStream() >> status_code;
     if (status_code != 204)
     {
-        TC_LOG_ERROR("metric", "Error sending data, returned HTTP code: %u", status_code);
+        TC_LOG_ERROR("metric", "Error sending data, returned HTTP code: {}", status_code);
     }
 
     // Read and ignore the status description
@@ -274,6 +294,11 @@ std::string Metric::FormatInfluxDBTagValue(std::string const& value)
 {
     // ToDo: should handle '=' and ',' characters too
     return boost::replace_all_copy(value, " ", "\\ ");
+}
+
+std::string Metric::FormatInfluxDBValue(std::chrono::nanoseconds value)
+{
+    return FormatInfluxDBValue(std::chrono::duration_cast<Milliseconds>(value).count());
 }
 
 Metric::Metric()

@@ -233,11 +233,11 @@ struct npc_barrett_toc : public ScriptedAI
     {
         if (Creature* fordring = _instance->GetCreature(DATA_FORDRING))
             fordring->AI()->DoAction(action);
-        me->RemoveFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_GOSSIP);
+        me->RemoveNpcFlag(UNIT_NPC_FLAG_GOSSIP);
         me->GetMotionMaster()->MoveAlongSplineChain(POINT_BARRETT_DESPAWN, SPLINE_INITIAL_MOVEMENT, false);
     }
 
-    bool GossipSelect(Player* player, uint32 menuId, uint32 gossipListId) override
+    bool OnGossipSelect(Player* player, uint32 menuId, uint32 gossipListId) override
     {
         switch (menuId)
         {
@@ -337,7 +337,7 @@ struct boss_lich_king_toc : public ScriptedAI
                     _instance->SetBossState(DATA_LICH_KING, DONE);
                     break;
                 case EVENT_EMOTE_TALK:
-                    me->SetUInt32Value(UNIT_NPC_EMOTESTATE, EMOTE_STATE_TALK);
+                    me->SetEmoteState(EMOTE_STATE_TALK);
                     me->GetMap()->SetZoneWeather(AREA_TRIAL_OF_THE_CRUSADER, WEATHER_STATE_FOG, 0.0f);
                     _events.ScheduleEvent(EVENT_EMOTE_EXCLAMATION, 10s);
                     break;
@@ -597,7 +597,7 @@ struct npc_tirion_toc : public ScriptedAI
                 case EVENT_LICH_KING_SAY_CHALLENGE:
                     if (Creature* lkVoice = _instance->GetCreature(DATA_LICH_KING_VOICE))
                         lkVoice->AI()->Talk(LK_VOICE_SAY_CHALLENGE);
-                    if (Creature* arthasPortal = me->SummonCreature(NPC_ARTHAS_PORTAL, ArthasPortalSpawnPosition, TEMPSUMMON_TIMED_DESPAWN, Seconds(34)))
+                    if (Creature* arthasPortal = me->SummonCreature(NPC_ARTHAS_PORTAL, ArthasPortalSpawnPosition, TEMPSUMMON_TIMED_DESPAWN, 34s))
                         arthasPortal->m_Events.AddEventAtOffset(new ArthasPortalEvent(arthasPortal), 3s);
                     _events.ScheduleEvent(EVENT_SUMMON_LICH_KING, 5s);
                     break;
@@ -643,7 +643,7 @@ struct npc_open_portal_target_toc : public ScriptedAI
         me->SetDisableGravity(true);
     }
 
-    void SpellHit(Unit* /*caster*/, SpellInfo const* spellInfo) override
+    void SpellHit(WorldObject* /*caster*/, SpellInfo const* spellInfo) override
     {
         if (spellInfo->Id == SPELL_OPEN_PORTAL)
         {
@@ -728,10 +728,10 @@ struct npc_fizzlebang_toc : public ScriptedAI
                         fordring->AI()->DoAction(ACTION_KILL_JARAXXUS);
                     break;
                 case EVENT_EMOTE_TALK:
-                    me->SetUInt32Value(UNIT_NPC_EMOTESTATE, EMOTE_STATE_TALK);
+                    me->SetEmoteState(EMOTE_STATE_TALK);
                     break;
                 case EVENT_REMOVE_EMOTE_TALK:
-                    me->SetUInt32Value(UNIT_NPC_EMOTESTATE, EMOTE_ONESHOT_NONE);
+                    me->SetEmoteState(EMOTE_ONESHOT_NONE);
                     break;
                 default:
                     break;

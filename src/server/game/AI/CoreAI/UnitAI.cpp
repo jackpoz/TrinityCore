@@ -16,6 +16,7 @@
  */
 
 #include "UnitAI.h"
+#include "Containers.h"
 #include "Creature.h"
 #include "CreatureAIImpl.h"
 #include "MotionMaster.h"
@@ -100,12 +101,12 @@ bool UnitAI::DoSpellAttackIfReady(uint32 spell)
     return false;
 }
 
-Unit* UnitAI::SelectTarget(SelectAggroTarget targetType, uint32 position, float dist, bool playerOnly, bool withTank, int32 aura)
+Unit* UnitAI::SelectTarget(SelectTargetMethod targetType, uint32 position, float dist, bool playerOnly, bool withTank, int32 aura)
 {
     return SelectTarget(targetType, position, DefaultTargetSelector(me, dist, playerOnly, withTank, aura));
 }
 
-void UnitAI::SelectTargetList(std::list<Unit*>& targetList, uint32 num, SelectAggroTarget targetType, uint32 offset, float dist, bool playerOnly, bool withTank, int32 aura)
+void UnitAI::SelectTargetList(std::list<Unit*>& targetList, uint32 num, SelectTargetMethod targetType, uint32 offset, float dist, bool playerOnly, bool withTank, int32 aura)
 {
     SelectTargetList(targetList, num, targetType, offset, DefaultTargetSelector(me, dist, playerOnly, withTank, aura));
 }
@@ -128,7 +129,7 @@ SpellCastResult UnitAI::DoCast(uint32 spellId)
             if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId))
             {
                 bool playerOnly = spellInfo->HasAttribute(SPELL_ATTR3_ONLY_TARGET_PLAYERS);
-                target = SelectTarget(SELECT_TARGET_RANDOM, 0, spellInfo->GetMaxRange(false), playerOnly);
+                target = SelectTarget(SelectTargetMethod::Random, 0, spellInfo->GetMaxRange(false), playerOnly);
             }
             break;
         }
@@ -150,7 +151,7 @@ SpellCastResult UnitAI::DoCast(uint32 spellId)
                     && targetSelector(me->GetVictim()))
                     target = me->GetVictim();
                 else
-                    target = SelectTarget(SELECT_TARGET_RANDOM, 0, targetSelector);
+                    target = SelectTarget(SelectTargetMethod::Random, 0, targetSelector);
             }
             break;
         }
@@ -207,13 +208,11 @@ void UnitAI::FillAISpellInfo()
         if (AIInfo->cooldown < spellInfo->RecoveryTime)
             AIInfo->cooldown = spellInfo->RecoveryTime;
 
-        if (!spellInfo->GetMaxRange(false))
-            UPDATE_TARGET(AITARGET_SELF)
-        else
+        if (spellInfo->GetMaxRange(false))
         {
-            for (SpellEffectInfo const& Effect : spellInfo->Effects)
+            for (SpellEffectInfo const& effect : spellInfo->GetEffects())
             {
-                uint32 targetType = Effect.TargetA.GetTarget();
+                uint32 targetType = effect.TargetA.GetTarget();
 
                 if (targetType == TARGET_UNIT_TARGET_ENEMY
                     || targetType == TARGET_DEST_TARGET_ENEMY)
@@ -221,7 +220,7 @@ void UnitAI::FillAISpellInfo()
                 else if (targetType == TARGET_UNIT_DEST_AREA_ENEMY)
                     UPDATE_TARGET(AITARGET_ENEMY)
 
-                if (Effect.Effect == SPELL_EFFECT_APPLY_AURA)
+                if (effect.Effect == SPELL_EFFECT_APPLY_AURA)
                 {
                     if (targetType == TARGET_UNIT_TARGET_ENEMY)
                         UPDATE_TARGET(AITARGET_DEBUFF)
@@ -235,14 +234,97 @@ void UnitAI::FillAISpellInfo()
     }
 }
 
-ThreatManager& UnitAI::GetThreatManager()
+Unit* UnitAI::FinalizeTargetSelection(std::list<Unit*>& targetList, SelectTargetMethod targetType)
 {
-    return me->GetThreatManager();
+    // maybe nothing fulfills the predicate
+    if (targetList.empty())
+        return nullptr;
+
+    switch (targetType)
+    {
+        case SelectTargetMethod::MaxThreat:
+        case SelectTargetMethod::MinThreat:
+        case SelectTargetMethod::MaxDistance:
+        case SelectTargetMethod::MinDistance:
+            return targetList.front();
+        case SelectTargetMethod::Random:
+            return Trinity::Containers::SelectRandomContainerElement(targetList);
+        default:
+            break;
+    }
+
+    return nullptr;
 }
 
-void UnitAI::SortByDistance(std::list<Unit*> list, bool ascending)
+bool UnitAI::PrepareTargetListSelection(std::list<Unit*>& targetList, SelectTargetMethod targetType, uint32 offset)
 {
-    list.sort(Trinity::ObjectDistanceOrderPred(me, ascending));
+    targetList.clear();
+    ThreatManager& mgr = me->GetThreatManager();
+    // shortcut: we're gonna ignore the first <offset> elements, and there's at most <offset> elements, so we ignore them all - nothing to do here
+    if (mgr.GetThreatListSize() <= offset)
+        return false;
+
+    if (targetType == SelectTargetMethod::MaxDistance || targetType == SelectTargetMethod::MinDistance)
+    {
+        for (ThreatReference const* ref : mgr.GetUnsortedThreatList())
+        {
+            if (ref->IsOffline())
+                continue;
+
+            targetList.push_back(ref->GetVictim());
+        }
+    }
+    else
+    {
+        Unit* currentVictim = mgr.GetCurrentVictim();
+        if (currentVictim)
+            targetList.push_back(currentVictim);
+
+        for (ThreatReference const* ref : mgr.GetSortedThreatList())
+        {
+            if (ref->IsOffline())
+                continue;
+
+            Unit* thisTarget = ref->GetVictim();
+            if (thisTarget != currentVictim)
+                targetList.push_back(thisTarget);
+        }
+    }
+
+    // shortcut: the list isn't gonna get any larger
+    if (targetList.size() <= offset)
+    {
+        targetList.clear();
+        return false;
+    }
+
+    // right now, list is unsorted for DISTANCE types - re-sort by SelectTargetMethod::MaxDistance
+    if (targetType == SelectTargetMethod::MaxDistance || targetType == SelectTargetMethod::MinDistance)
+        targetList.sort(Trinity::ObjectDistanceOrderPred(me, targetType == SelectTargetMethod::MinDistance));
+
+    // now the list is MAX sorted, reverse for MIN types
+    if (targetType == SelectTargetMethod::MinThreat)
+        targetList.reverse();
+
+    // ignore the first <offset> elements
+    while (offset)
+    {
+        targetList.pop_front();
+        --offset;
+    }
+
+    return true;
+}
+
+void UnitAI::FinalizeTargetListSelection(std::list<Unit*>& targetList, uint32 num, SelectTargetMethod targetType)
+{
+    if (targetList.size() <= num)
+        return;
+
+    if (targetType == SelectTargetMethod::Random)
+        Trinity::Containers::RandomResize(targetList, num);
+    else
+        targetList.resize(num);
 }
 
 std::string UnitAI::GetDebugInfo() const
@@ -312,7 +394,7 @@ bool SpellTargetSelector::operator()(Unit const* target) const
     float rangeMod = 0.0f;
     if (_spellInfo->RangeEntry)
     {
-        if (_spellInfo->RangeEntry->type & SPELL_RANGE_MELEE)
+        if (_spellInfo->RangeEntry->Flags & SPELL_RANGE_MELEE)
         {
             rangeMod = _caster->GetCombatReach() + 4.0f / 3.0f;
             rangeMod += target->GetCombatReach();
@@ -322,7 +404,7 @@ bool SpellTargetSelector::operator()(Unit const* target) const
         else
         {
             float meleeRange = 0.0f;
-            if (_spellInfo->RangeEntry->type & SPELL_RANGE_RANGED)
+            if (_spellInfo->RangeEntry->Flags & SPELL_RANGE_RANGED)
             {
                 meleeRange = _caster->GetCombatReach() + 4.0f / 3.0f;
                 meleeRange += target->GetCombatReach();
@@ -336,12 +418,12 @@ bool SpellTargetSelector::operator()(Unit const* target) const
             rangeMod = _caster->GetCombatReach();
             rangeMod += target->GetCombatReach();
 
-            if (minRange > 0.0f && !(_spellInfo->RangeEntry->type & SPELL_RANGE_RANGED))
+            if (minRange > 0.0f && !(_spellInfo->RangeEntry->Flags & SPELL_RANGE_RANGED))
                 minRange += rangeMod;
         }
 
         if (_caster->isMoving() && target->isMoving() && !_caster->IsWalking() && !target->IsWalking() &&
-            (_spellInfo->RangeEntry->type & SPELL_RANGE_MELEE || target->GetTypeId() == TYPEID_PLAYER))
+            (_spellInfo->RangeEntry->Flags & SPELL_RANGE_MELEE || target->GetTypeId() == TYPEID_PLAYER))
             rangeMod += 8.0f / 3.0f;
     }
 

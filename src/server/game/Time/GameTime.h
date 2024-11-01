@@ -19,7 +19,9 @@
 #define __GAMETIME_H
 
 #include "Define.h"
-#include <chrono>
+#include "Duration.h"
+
+class WowTime;
 
 namespace GameTime
 {
@@ -33,13 +35,17 @@ namespace GameTime
     TC_GAME_API uint32 GetGameTimeMS();
 
     /// Current chrono system_clock time point
-    TC_GAME_API std::chrono::system_clock::time_point GetGameTimeSystemPoint();
+    TC_GAME_API SystemTimePoint GetSystemTime();
 
     /// Current chrono steady_clock time point
-    TC_GAME_API std::chrono::steady_clock::time_point GetGameTimeSteadyPoint();
+    TC_GAME_API TimePoint Now();
 
     /// Uptime (in secs)
     TC_GAME_API uint32 GetUptime();
+
+    TC_GAME_API WowTime const* GetUtcWowTime();
+
+    TC_GAME_API WowTime const* GetWowTime();
 
     void UpdateGameTimers();
 }

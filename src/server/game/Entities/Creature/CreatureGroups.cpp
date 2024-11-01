@@ -23,6 +23,7 @@
 #include "Log.h"
 #include "Map.h"
 #include "MotionMaster.h"
+#include "MovementGenerator.h"
 #include "ObjectMgr.h"
 
 #define MAX_DESYNC 5.0f
@@ -49,7 +50,7 @@ void FormationMgr::AddCreatureToGroup(ObjectGuid::LowType leaderSpawnId, Creatur
     if (itr != map->CreatureGroupHolder.end())
     {
         //Add member to an existing group
-        TC_LOG_DEBUG("entities.unit", "Group found: %u, inserting creature GUID: %u, Group InstanceID %u", leaderSpawnId, creature->GetGUID().GetCounter(), creature->GetInstanceId());
+        TC_LOG_DEBUG("entities.unit", "Group found: {}, inserting creature {}, Group InstanceID {}", leaderSpawnId, creature->GetGUID().ToString(), creature->GetInstanceId());
 
         // With dynamic spawn the creature may have just respawned
         // we need to find previous instance of creature and delete it from the formation, as it'll be invalidated
@@ -67,7 +68,7 @@ void FormationMgr::AddCreatureToGroup(ObjectGuid::LowType leaderSpawnId, Creatur
     else
     {
         //Create new group
-        TC_LOG_DEBUG("entities.unit", "Group not found: %u. Creating new group.", leaderSpawnId);
+        TC_LOG_DEBUG("entities.unit", "Group not found: {}. Creating new group.", leaderSpawnId);
         CreatureGroup* group = new CreatureGroup(leaderSpawnId);
         std::tie(itr, std::ignore) = map->CreatureGroupHolder.emplace(leaderSpawnId, group);
     }
@@ -77,14 +78,14 @@ void FormationMgr::AddCreatureToGroup(ObjectGuid::LowType leaderSpawnId, Creatur
 
 void FormationMgr::RemoveCreatureFromGroup(CreatureGroup* group, Creature* member)
 {
-    TC_LOG_DEBUG("entities.unit", "Deleting member pointer to GUID: %u from group %u", group->GetLeaderSpawnId(), member->GetSpawnId());
+    TC_LOG_DEBUG("entities.unit", "Deleting member pointer to GUID: {} from group {}", group->GetLeaderSpawnId(), member->GetSpawnId());
     group->RemoveMember(member);
 
     if (group->IsEmpty())
     {
         Map* map = member->GetMap();
 
-        TC_LOG_DEBUG("entities.unit", "Deleting group with InstanceID %u", member->GetInstanceId());
+        TC_LOG_DEBUG("entities.unit", "Deleting group with InstanceID {}", member->GetInstanceId());
         auto itr = map->CreatureGroupHolder.find(group->GetLeaderSpawnId());
         ASSERT(itr != map->CreatureGroupHolder.end(), "Not registered group %u in map %u", group->GetLeaderSpawnId(), map->GetId());
         map->CreatureGroupHolder.erase(itr);
@@ -132,13 +133,13 @@ void FormationMgr::LoadCreatureFormations()
         {
             if (!sObjectMgr->GetCreatureData(member.LeaderSpawnId))
             {
-                TC_LOG_ERROR("sql.sql", "creature_formations table leader guid %u incorrect (not exist)", member.LeaderSpawnId);
+                TC_LOG_ERROR("sql.sql", "creature_formations table leader guid {} incorrect (not exist)", member.LeaderSpawnId);
                 continue;
             }
 
             if (!sObjectMgr->GetCreatureData(memberSpawnId))
             {
-                TC_LOG_ERROR("sql.sql", "creature_formations table member guid %u incorrect (not exist)", memberSpawnId);
+                TC_LOG_ERROR("sql.sql", "creature_formations table member guid {} incorrect (not exist)", memberSpawnId);
                 continue;
             }
 
@@ -153,7 +154,7 @@ void FormationMgr::LoadCreatureFormations()
     {
         if (!_creatureGroupMap.count(leaderSpawnId))
         {
-            TC_LOG_ERROR("sql.sql", "creature_formation contains leader spawn %u which is not included on its formation, removing", leaderSpawnId);
+            TC_LOG_ERROR("sql.sql", "creature_formation contains leader spawn {} which is not included on its formation, removing", leaderSpawnId);
             for (auto itr = _creatureGroupMap.begin(); itr != _creatureGroupMap.end();)
             {
                 if (itr->second.LeaderSpawnId == leaderSpawnId)
@@ -167,7 +168,7 @@ void FormationMgr::LoadCreatureFormations()
         }
     }
 
-    TC_LOG_INFO("server.loading", ">> Loaded %u creatures in formations in %u ms", count, GetMSTimeDiffToNow(oldMSTime));
+    TC_LOG_INFO("server.loading", ">> Loaded {} creatures in formations in {} ms", count, GetMSTimeDiffToNow(oldMSTime));
 }
 
 FormationInfo* FormationMgr::GetFormationInfo(ObjectGuid::LowType spawnId)
@@ -198,12 +199,12 @@ CreatureGroup::~CreatureGroup()
 
 void CreatureGroup::AddMember(Creature* member)
 {
-    TC_LOG_DEBUG("entities.unit", "CreatureGroup::AddMember: Adding unit GUID: %u.", member->GetGUID().GetCounter());
+    TC_LOG_DEBUG("entities.unit", "CreatureGroup::AddMember: Adding unit {}.", member->GetGUID().ToString());
 
     //Check if it is a leader
     if (member->GetSpawnId() == _leaderSpawnId)
     {
-        TC_LOG_DEBUG("entities.unit", "Unit GUID: %u is formation leader. Adding group.", member->GetGUID().GetCounter());
+        TC_LOG_DEBUG("entities.unit", "Unit {} is formation leader. Adding group.", member->GetGUID().ToString());
         _leader = member;
     }
 
@@ -265,25 +266,20 @@ void CreatureGroup::FormationReset(bool dismiss)
         if (pair.first != _leader && pair.first->IsAlive())
         {
             if (dismiss)
-                pair.first->GetMotionMaster()->Initialize();
+                pair.first->GetMotionMaster()->Remove(FORMATION_MOTION_TYPE, MOTION_SLOT_DEFAULT);
             else
                 pair.first->GetMotionMaster()->MoveIdle();
-            TC_LOG_DEBUG("entities.unit", "CreatureGroup::FormationReset: Set %s movement for member GUID: %u", dismiss ? "default" : "idle", pair.first->GetGUID().GetCounter());
+            TC_LOG_DEBUG("entities.unit", "CreatureGroup::FormationReset: Set {} movement for member {}", dismiss ? "default" : "idle", pair.first->GetGUID().ToString());
         }
     }
 
     _formed = !dismiss;
 }
 
-void CreatureGroup::LeaderMoveTo(Position const& destination, uint32 id /*= 0*/, uint32 moveType /*= 0*/, bool orientation /*= false*/)
+void CreatureGroup::LeaderStartedMoving()
 {
-    //! To do: This should probably get its own movement generator or use WaypointMovementGenerator.
-    //! If the leader's path is known, member's path can be plotted as well using formation offsets.
     if (!_leader)
         return;
-
-    Position pos(destination);
-    float pathangle = std::atan2(_leader->GetPositionY() - pos.GetPositionY(), _leader->GetPositionX() - pos.GetPositionX());
 
     for (auto const& pair : _members)
     {
@@ -291,35 +287,11 @@ void CreatureGroup::LeaderMoveTo(Position const& destination, uint32 id /*= 0*/,
         if (member == _leader || !member->IsAlive() || member->IsEngaged() || !(pair.second->GroupAI & FLAG_IDLE_IN_FORMATION))
             continue;
 
-        if (pair.second->LeaderWaypointIDs[0])
-        {
-            for (uint8 i = 0; i < 2; ++i)
-            {
-                if (_leader->GetCurrentWaypointInfo().first == pair.second->LeaderWaypointIDs[i])
-                {
-                    pair.second->FollowAngle = float(M_PI) * 2.f - pair.second->FollowAngle;
-                    break;
-                }
-            }
-        }
-
-        float angle = pair.second->FollowAngle;
+        float angle = pair.second->FollowAngle + float(M_PI); // for some reason, someone thought it was a great idea to invert relativ angles...
         float dist = pair.second->FollowDist;
 
-        float dx = pos.GetPositionX() + std::cos(angle + pathangle) * dist;
-        float dy = pos.GetPositionY() + std::sin(angle + pathangle) * dist;
-        float dz = pos.GetPositionZ();
-
-        Trinity::NormalizeMapCoord(dx);
-        Trinity::NormalizeMapCoord(dy);
-
-        if (!member->IsFlying())
-            member->UpdateGroundPositionZ(dx, dy, dz);
-
-        member->SetHomePosition(dx, dy, dz, pathangle);
-
-        Position point(dx, dy, dz, destination.GetOrientation());
-        member->GetMotionMaster()->MoveFormation(id, point, moveType, !member->IsWithinDist(_leader, dist + MAX_DESYNC), orientation);
+        if (!member->HasUnitState(UNIT_STATE_FOLLOW_FORMATION))
+            member->GetMotionMaster()->MoveFormation(_leader, dist, angle, pair.second->LeaderWaypointIDs[0], pair.second->LeaderWaypointIDs[1]);
     }
 }
 

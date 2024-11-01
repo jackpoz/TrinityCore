@@ -132,8 +132,8 @@ class boss_nalorakk : public CreatureScript
 
                 if (MoveEvent)
                 {
-                    me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
-                    me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+                    me->SetUnitFlag(UNIT_FLAG_UNINTERACTIBLE);
+                    me->SetUnitFlag(UNIT_FLAG_NON_ATTACKABLE);
                     inMove = false;
                     waitTimer = 0;
                     me->SetSpeedRate(MOVE_RUN, 2);
@@ -225,8 +225,8 @@ class boss_nalorakk : public CreatureScript
 
                                         Talk(YELL_NALORAKK_WAVE4);
 
-                                        me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
-                                        me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+                                        me->RemoveUnitFlag(UNIT_FLAG_UNINTERACTIBLE);
+                                        me->RemoveUnitFlag(UNIT_FLAG_NON_ATTACKABLE);
 
                                         MoveEvent = false;
                                     }
@@ -289,7 +289,6 @@ class boss_nalorakk : public CreatureScript
                         case 6:
                             ++MovePhase;
                             waitTimer = 1;
-                            inMove = true;
                             return;
                         case 5:
                             me->SetOrientation(3.1415f*0.5f);
@@ -383,7 +382,7 @@ class boss_nalorakk : public CreatureScript
                     if (Surge_Timer <= diff)
                     {
                         Talk(YELL_SURGE);
-                        Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 1, 45, true);
+                        Unit* target = SelectTarget(SelectTargetMethod::Random, 1, 45, true);
                         if (target)
                             DoCast(target, SPELL_SURGE);
                         Surge_Timer = urand(15000, 20000);

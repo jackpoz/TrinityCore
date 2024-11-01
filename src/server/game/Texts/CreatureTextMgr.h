@@ -64,10 +64,7 @@ struct CreatureTextId
 {
     CreatureTextId(uint32 e, uint32 g, uint32 i) : entry(e), textGroup(g), textId(i) { }
 
-    bool operator<(CreatureTextId const& right) const
-    {
-        return std::tie(entry, textGroup, textId) < std::tie(right.entry, right.textGroup, right.textId);
-    }
+    friend std::strong_ordering operator<=>(CreatureTextId const& left, CreatureTextId const& right) = default;
 
     uint32 entry;
     uint32 textGroup;
@@ -94,7 +91,7 @@ class TC_GAME_API CreatureTextMgr
         CreatureTextMap const& GetTextMap() const { return mTextMap; }
 
         void SendSound(Creature* source, uint32 sound, ChatMsg msgType, WorldObject const* whisperTarget, CreatureTextRange range, Team team, bool gmOnly);
-        void SendEmote(Unit* source, uint32 emote);
+        void SendEmote(Unit* source, Emote emote);
 
         //if sent, returns the 'duration' of the text else 0 if error
         uint32 SendChat(Creature* source, uint8 textGroup, WorldObject const* whisperTarget = nullptr, ChatMsg msgType = CHAT_MSG_ADDON, Language language = LANG_ADDON, CreatureTextRange range = TEXT_RANGE_NORMAL, uint32 sound = 0, Team team = TEAM_OTHER, bool gmOnly = false, Player* srcPlr = nullptr);

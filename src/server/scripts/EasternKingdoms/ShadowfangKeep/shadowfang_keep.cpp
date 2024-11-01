@@ -111,7 +111,7 @@ public:
         void Reset() override { }
         void JustEngagedWith(Unit* /*who*/) override { }
 
-        bool GossipSelect(Player* player, uint32 /*menuId*/, uint32 gossipListId) override
+        bool OnGossipSelect(Player* player, uint32 /*menuId*/, uint32 gossipListId) override
         {
             uint32 const action = player->PlayerTalkClass->GetGossipOptionAction(gossipListId);
             ClearGossipMenuFor(player);
@@ -123,10 +123,12 @@ public:
             return true;
         }
 
-        bool GossipHello(Player* player) override
+        bool OnGossipHello(Player* player) override
         {
+            uint32 gossipMenuId = Player::GetDefaultGossipMenuForSource(me);
+            InitGossipMenuFor(player, gossipMenuId);
             if (instance->GetData(TYPE_FREE_NPC) != DONE && instance->GetData(TYPE_RETHILGORE) == DONE)
-                AddGossipItemFor(player, Player::GetDefaultGossipMenuForSource(me), 0, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 1);
+                AddGossipItemFor(player, gossipMenuId, 0, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 1);
 
             SendGossipMenuFor(player, player->GetGossipTextId(me), me->GetGUID());
             return true;
@@ -244,9 +246,9 @@ class boss_archmage_arugal : public CreatureScript
                     Talk(SAY_SLAY);
             }
 
-            void SpellHitTarget(Unit* /*target*/, SpellInfo const* spell) override
+            void SpellHitTarget(WorldObject* /*target*/, SpellInfo const* spellInfo) override
             {
-                if (spell->Id == SPELL_ARUGAL_CURSE)
+                if (spellInfo->Id == SPELL_ARUGAL_CURSE)
                     Talk(SAY_TRANSFORM);
             }
 
@@ -280,7 +282,7 @@ class boss_archmage_arugal : public CreatureScript
                     switch (eventId)
                     {
                         case EVENT_CURSE:
-                            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 1, 30.0f, true))
+                            if (Unit* target = SelectTarget(SelectTargetMethod::Random, 1, 30.0f, true))
                                 DoCast(target, SPELL_ARUGAL_CURSE);
                             events.Repeat(Seconds(15));
                             break;
@@ -313,6 +315,7 @@ class boss_archmage_arugal : public CreatureScript
         }
 };
 
+// 7057 - Haunting Spirits
 class spell_shadowfang_keep_haunting_spirits : public SpellScriptLoader
 {
     public:

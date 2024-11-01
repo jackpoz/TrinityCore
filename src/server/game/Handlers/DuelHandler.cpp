@@ -36,8 +36,8 @@ void WorldSession::HandleDuelAcceptedOpcode(WorldPacket& recvPacket)
         return;
 
     //TC_LOG_DEBUG("network", "WORLD: Received CMSG_DUEL_ACCEPTED");
-    TC_LOG_DEBUG("network", "Player 1 is: %u (%s)", player->GetGUID().GetCounter(), player->GetName().c_str());
-    TC_LOG_DEBUG("network", "Player 2 is: %u (%s)", target->GetGUID().GetCounter(), target->GetName().c_str());
+    TC_LOG_DEBUG("network", "Player 1 is: {} ({})", player->GetGUID().ToString(), player->GetName());
+    TC_LOG_DEBUG("network", "Player 2 is: {} ({})", target->GetGUID().ToString(), target->GetName());
 
     time_t now = GameTime::GetGameTime();
     player->duel->StartTime = now + 3;

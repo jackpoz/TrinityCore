@@ -22,6 +22,8 @@
 #include "SharedDefines.h"
 #include "SpawnData.h"
 #include "WorldPacket.h"
+
+#include <array>
 #include <string>
 #include <vector>
 
@@ -418,6 +420,7 @@ struct GameObjectTemplate
 
     std::string AIName;
     uint32 ScriptId;
+    std::string StringId;
     WorldPacket QueryData[TOTAL_LOCALES];
 
     // helpers
@@ -610,9 +613,20 @@ struct GameObjectTemplate
             case GAMEOBJECT_TYPE_DOOR:                  return true;
             case GAMEOBJECT_TYPE_FLAGSTAND:             return true;
             case GAMEOBJECT_TYPE_FLAGDROP:              return true;
-            case GAMEOBJECT_TYPE_DUNGEON_DIFFICULTY:    return true;
             case GAMEOBJECT_TYPE_TRAPDOOR:              return true;
             default: return false;
+        }
+    }
+
+    uint32 GetServerOnly() const
+    {
+        switch (type)
+        {
+            case GAMEOBJECT_TYPE_GENERIC: return _generic.serverOnly;
+            case GAMEOBJECT_TYPE_TRAP: return trap.serverOnly;
+            case GAMEOBJECT_TYPE_SPELL_FOCUS: return spellFocus.serverOnly;
+            case GAMEOBJECT_TYPE_AURA_GENERATOR: return auraGenerator.serverOnly;
+            default: return 0;
         }
     }
 
@@ -630,8 +644,9 @@ struct GameObjectOverride
 // From `gameobject_template_addon`
 struct GameObjectTemplateAddon : public GameObjectOverride
 {
-    uint32 Mingold;
-    uint32 Maxgold;
+    uint32 Mingold = 0;
+    uint32 Maxgold = 0;
+    std::array<uint32, 4> artKits = {};
 };
 
 struct GameObjectLocale
@@ -650,6 +665,8 @@ struct TC_GAME_API QuaternionData
     bool isUnit() const;
     void toEulerAnglesZYX(float& Z, float& Y, float& X) const;
     static QuaternionData fromEulerAnglesZYX(float Z, float Y, float X);
+
+    friend bool operator==(QuaternionData const& left, QuaternionData const& right) = default;
 };
 
 // `gameobject_addon` table
@@ -668,6 +685,36 @@ struct GameObjectData : public SpawnData
     uint32 animprogress = 0;
     GOState goState = GO_STATE_ACTIVE;
     uint8 artKit = 0;
+};
+
+enum class GameObjectActions : uint32
+{
+                                    // Name from client executable      // Comments
+    None                     = 0,   // -NONE-
+    AnimateCustom0           = 1,   // Animate Custom0
+    AnimateCustom1           = 2,   // Animate Custom1
+    AnimateCustom2           = 3,   // Animate Custom2
+    AnimateCustom3           = 4,   // Animate Custom3
+    Disturb                  = 5,   // Disturb                          // Triggers trap
+    Unlock                   = 6,   // Unlock                           // Resets GO_FLAG_LOCKED
+    Lock                     = 7,   // Lock                             // Sets GO_FLAG_LOCKED
+    Open                     = 8,   // Open                             // Sets GO_STATE_ACTIVE
+    OpenAndUnlock            = 9,   // Open + Unlock                    // Sets GO_STATE_ACTIVE and resets GO_FLAG_LOCKED
+    Close                    = 10,  // Close                            // Sets GO_STATE_READY
+    ToggleOpen               = 11,  // Toggle Open
+    Destroy                  = 12,  // Destroy                          // Sets GO_STATE_DESTROYED
+    Rebuild                  = 13,  // Rebuild                          // Resets from GO_STATE_DESTROYED
+    Creation                 = 14,  // Creation
+    Despawn                  = 15,  // Despawn
+    MakeInert                = 16,  // Make Inert                       // Disables interactions
+    MakeActive               = 17,  // Make Active                      // Enables interactions
+    CloseAndLock             = 18,  // Close + Lock                     // Sets GO_STATE_READY and sets GO_FLAG_LOCKED
+    UseArtKit0               = 19,  // Use ArtKit0                      // 46904: 121
+    UseArtKit1               = 20,  // Use ArtKit1                      // 36639: 81, 46903: 122
+    UseArtKit2               = 21,  // Use ArtKit2
+    UseArtKit3               = 22,  // Use ArtKit3
+    SetTapList               = 23,  // Set Tap List
+    Max
 };
 
 #endif // GameObjectData_h__

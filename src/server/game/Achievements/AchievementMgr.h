@@ -21,6 +21,7 @@
 #include "DatabaseEnvFwd.h"
 #include "DBCEnums.h"
 #include "DBCStores.h"
+#include "Duration.h"
 #include "ObjectGuid.h"
 #include <string>
 #include <unordered_map>
@@ -278,7 +279,7 @@ class TC_GAME_API AchievementMgr
         void Reset();
         static void DeleteFromDB(ObjectGuid lowguid);
         void LoadFromDB(PreparedQueryResult achievementResult, PreparedQueryResult criteriaResult);
-        void SaveToDB(SQLTransaction& trans);
+        void SaveToDB(CharacterDatabaseTransaction trans);
         void ResetAchievementCriteria(AchievementCriteriaCondition condition, uint32 value, bool evenIfCriteriaComplete);
         void UpdateAchievementCriteria(AchievementCriteriaTypes type, uint32 miscValue1 = 0, uint32 miscValue2 = 0, WorldObject* ref = nullptr);
         void CompletedAchievement(AchievementEntry const* entry);
@@ -301,7 +302,7 @@ class TC_GAME_API AchievementMgr
         bool IsCompletedCriteria(AchievementCriteriaEntry const* achievementCriteria, AchievementEntry const* achievement);
         bool IsCompletedAchievement(AchievementEntry const* entry);
         bool CanUpdateCriteria(AchievementCriteriaEntry const* criteria, AchievementEntry const* achievement, uint32 miscValue1, uint32 miscValue2, WorldObject const* ref);
-        void BuildAllDataPacket(WorldPacket* data) const;
+        void BuildAllDataPacket(Player const* receiver, WorldPacket* data) const;
 
         bool ConditionsSatisfied(AchievementCriteriaEntry const* criteria) const;
         bool RequirementsSatisfied(AchievementCriteriaEntry const* criteria, AchievementEntry const* achievement, uint32 miscValue1, uint32 miscValue2, WorldObject const* ref) const;
@@ -384,6 +385,8 @@ class TC_GAME_API AchievementGlobalMgr
         // store achievement criterias by type to speed up lookup
         AchievementCriteriaEntryList m_AchievementCriteriasByType[ACHIEVEMENT_CRITERIA_TYPE_TOTAL];
 
+        static AchievementCriteriaEntryList const EmptyCriteriaList;
+
         // store achievement criterias split by misc values
         AchievementCriteriaListByMiscValue m_AchievementCriteriasByMiscValue[ACHIEVEMENT_CRITERIA_TYPE_TOTAL];
 
@@ -398,12 +401,14 @@ class TC_GAME_API AchievementGlobalMgr
         AchievementListByReferencedId m_AchievementListByReferencedId;
 
         // store realm first achievements
-        // std::chrono::system_clock::time_point::min() is a placeholder value for realm firsts not yet completed
-        // std::chrono::system_clock::time_point::max() is a value assigned to realm firsts complete before worldserver started
-        std::unordered_map<uint32 /*achievementId*/, std::chrono::system_clock::time_point /*completionTime*/> _allCompletedAchievements;
+        // SystemTimePoint::min() is a placeholder value for realm firsts not yet completed
+        // SystemTimePoint::max() is a value assigned to realm firsts complete before worldserver started
+        std::unordered_map<uint32 /*achievementId*/, SystemTimePoint /*completionTime*/> _allCompletedAchievements;
 
         AchievementRewards m_achievementRewards;
         AchievementRewardLocales m_achievementRewardLocales;
+
+        friend class UnitTestDataLoader;
 };
 
 #define sAchievementMgr AchievementGlobalMgr::instance()
