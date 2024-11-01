@@ -41,7 +41,7 @@ endif()
 
 include_directories(${cli_includes})
 
-add_library(cli SHARED ${cli_sources} 
+add_library(cli SHARED ${cli_sources}
   ${CMAKE_SOURCE_DIR}/src/server/game/DataStores/DBCStores.cpp
   ${CMAKE_SOURCE_DIR}/src/common/DataStores/DBCFileLoader.cpp
   ${CMAKE_SOURCE_DIR}/src/server/shared/DataStores/DBCStore.cpp
@@ -80,4 +80,4 @@ elseif( WIN32 )
   install(TARGETS cli DESTINATION "${CMAKE_INSTALL_PREFIX}")
 endif()
 
-set_target_properties(cli PROPERTIES DOTNET_TARGET_FRAMEWORK "netcoreapp3.1" COMMON_LANGUAGE_RUNTIME "netcore" VS_GLOBAL_CLRSupport "NetCore" LINKER_LANGUAGE CXX)
+set_target_properties(cli PROPERTIES DOTNET_TARGET_FRAMEWORK "net8.0" COMMON_LANGUAGE_RUNTIME "netcore" VS_GLOBAL_CLRSupport "NetCore" LINKER_LANGUAGE CXX)
