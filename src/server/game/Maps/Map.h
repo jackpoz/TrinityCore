@@ -38,10 +38,17 @@
 #include <list>
 #include <memory>
 #include <mutex>
+#ifdef ELUNA
+#include "LuaValue.h"
+#include "ElunaMgr.h"
+#endif
 
 class Battleground;
 class BattlegroundMap;
 class CreatureGroup;
+#ifdef ELUNA
+class Eluna;
+#endif
 class GameObjectModel;
 class Group;
 class InstanceMap;
@@ -800,7 +807,11 @@ class TC_GAME_API Map : public GridRefManager<NGridType>
 
         typedef std::function<void(Map*)> FarSpellCallback;
         void AddFarSpellCallback(FarSpellCallback&& callback);
-
+        bool IsParentMap() const { return GetParent() == this; }
+#ifdef ELUNA
+        Eluna* GetEluna() const { return sElunaMgr->Get(_elunaInfo); }
+        LuaVal lua_data = LuaVal({});
+#endif
     private:
         // Type specific code for add/remove to/from grid
         template<class T>
@@ -880,6 +891,9 @@ class TC_GAME_API Map : public GridRefManager<NGridType>
         std::unordered_set<Object*> _updateObjects;
 
         MPSCQueue<FarSpellCallback> _farSpellCallbacks;
+#ifdef ELUNA
+        ElunaInfo _elunaInfo;
+#endif
 };
 
 enum InstanceResetMethod

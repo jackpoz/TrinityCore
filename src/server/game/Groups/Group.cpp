@@ -41,6 +41,9 @@
 #include "World.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
+#ifdef ELUNA
+#include "LuaEngine.h"
+#endif
 
 Roll::Roll(ObjectGuid _guid, LootItem const& li) : itemGUID(_guid), itemid(li.itemid),
 itemRandomPropId(li.randomPropertyId), itemRandomPropertySeed(li.randomPropertySeed), itemCount(li.count),
@@ -214,6 +217,11 @@ bool Group::Create(Player* leader)
     }
     else if (!AddMember(leader))
         return false;
+
+#ifdef ELUNA
+    if (Eluna* e = sWorld->GetEluna())
+        e->OnCreate(this, m_leaderGuid, m_groupType);
+#endif
 
     return true;
 }
